@@ -1,0 +1,35 @@
+{
+  "name": "appendix-b-reference",
+  "comment": "The CONTRACT.md / PLAN.md Appendix B example, verbatim — the canonical schema-coverage fixture (exercises all five context motif types incl. P1 social_proof and a page-stage expectation_violation). index:false because it shares (1000042, 2000003) with twin_need_on; validated by tests, not served by the mock.",
+  "stimulus_id": 2000003,
+  "index": false,
+  "context": {
+    "scalars": {
+      "shopper_id": 1000042,
+      "aware_of_brand": true,
+      "adstock": 0.62,
+      "exposures_72h": 3,
+      "last_seen_t": 1755150000,
+      "reference_price": {"3000001": 39.0},
+      "current_price_gap": -0.15,
+      "budget_left": 120.0,
+      "cart": [],
+      "trust_belief": {"value": 0.70, "evidence": 3.0, "confidence": 0.81},
+      "quality_belief": null,
+      "active_need": {"category": 5504, "strength": 0.8, "urgency": 0.7, "budget_cap": 90.0},
+      "habit": {"stim_brand": 0.0, "rival_max": 0.55}
+    },
+    "motifs": [
+      {"type": "goal_fit", "strength": 0.8, "urgency": 0.7,
+       "path": [1000042, "NEEDS", 5504, "IN_CATEGORY", 3000001, "OFFERS", 2000003]},
+      {"type": "preference_fit", "strength": 0.61, "evidence": 2.85, "recency": 1.0,
+       "path": [1000042, "PREFERS", 5003, "CLAIMS", 2000003]},
+      {"type": "brand_semantic_fatigue", "strength": 0.6, "recency": 0.7, "brand": 6001,
+       "path": [1000042, "SAW", 2000001, "CLAIMS", 5003, "CLAIMS", 2000003]},
+      {"type": "expectation_violation", "strength": 0.9,
+       "path": [1000042, "EXPECTS", 5011, "NOT_SHOWN_BY", 4000002]},
+      {"type": "social_proof", "valence": 0.8, "peer_trust": 0.7, "experience": 0.9,
+       "path": [1000042, "TRUSTS_PERSON", 1000077, "BOUGHT", 3000001]}
+    ]
+  }
+}

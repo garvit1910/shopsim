@@ -1,0 +1,7 @@
+{
+  "comment": "P1: seeded small-world trust graph, generated per substream (seed,'social',population). Reads are as-of-previous-tick (no intra-tick feedback). Disabled until the social layer is pulled from the P1 list.",
+  "priority": "P1",
+  "enabled": false,
+  "degree": 4,
+  "weight_range": [0.4, 0.9]
+}

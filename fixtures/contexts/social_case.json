@@ -1,0 +1,28 @@
+{
+  "name": "social-case",
+  "comment": "P1 social case: a trusted peer (1000077, same run block) bought the stimulus product and had a good experience. social_proof reads are as-of-previous-tick.",
+  "stimulus_id": 2000003,
+  "context": {
+    "scalars": {
+      "shopper_id": 1000046,
+      "aware_of_brand": true,
+      "adstock": 0.40,
+      "exposures_72h": 2,
+      "last_seen_t": 1755140000,
+      "reference_price": {"3000001": 39.0},
+      "current_price_gap": -0.15,
+      "budget_left": 120.0,
+      "cart": [],
+      "trust_belief": {"value": 0.70, "evidence": 3.0, "confidence": 0.81},
+      "quality_belief": null,
+      "active_need": null,
+      "habit": {"stim_brand": 0.0, "rival_max": 0.55}
+    },
+    "motifs": [
+      {"type": "preference_fit", "strength": 0.55, "evidence": 2.5, "recency": 0.9,
+       "path": [1000046, "PREFERS", 5003, "CLAIMS", 2000003]},
+      {"type": "social_proof", "valence": 0.8, "peer_trust": 0.7, "experience": 0.9,
+       "path": [1000046, "TRUSTS_PERSON", 1000077, "BOUGHT", 3000001]}
+    ]
+  }
+}

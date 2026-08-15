@@ -1,0 +1,30 @@
+{
+  "name": "twin-need-on",
+  "comment": "Goal twin, treatment side: same graph as twin_need_off plus one live NEEDS edge -> active_need scalar + goal_fit motif. Matches the Appendix-B shopper (1000042).",
+  "stimulus_id": 2000003,
+  "context": {
+    "scalars": {
+      "shopper_id": 1000042,
+      "aware_of_brand": true,
+      "adstock": 0.62,
+      "exposures_72h": 3,
+      "last_seen_t": 1755150000,
+      "reference_price": {"3000001": 39.0},
+      "current_price_gap": -0.15,
+      "budget_left": 120.0,
+      "cart": [],
+      "trust_belief": {"value": 0.70, "evidence": 3.0, "confidence": 0.81},
+      "quality_belief": null,
+      "active_need": {"category": 5504, "strength": 0.8, "urgency": 0.7, "budget_cap": 90.0},
+      "habit": {"stim_brand": 0.0, "rival_max": 0.55}
+    },
+    "motifs": [
+      {"type": "goal_fit", "strength": 0.8, "urgency": 0.7,
+       "path": [1000042, "NEEDS", 5504, "IN_CATEGORY", 3000001, "OFFERS", 2000003]},
+      {"type": "preference_fit", "strength": 0.61, "evidence": 2.85, "recency": 1.0,
+       "path": [1000042, "PREFERS", 5003, "CLAIMS", 2000003]},
+      {"type": "brand_semantic_fatigue", "strength": 0.6, "recency": 0.7, "brand": 6001,
+       "path": [1000042, "SAW", 2000001, "CLAIMS", 5003, "CLAIMS", 2000003]}
+    ]
+  }
+}

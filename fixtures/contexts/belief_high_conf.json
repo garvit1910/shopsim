@@ -1,0 +1,26 @@
+{
+  "name": "belief-high-conf",
+  "comment": "Belief pair, high-confidence side: same belief VALUE (0.60) but heavy evidence (E=6.0, conf 0.90) — identical contradictory evidence must move this shopper less (F10).",
+  "stimulus_id": 2000003,
+  "context": {
+    "scalars": {
+      "shopper_id": 1000044,
+      "aware_of_brand": true,
+      "adstock": 0.30,
+      "exposures_72h": 1,
+      "last_seen_t": 1755100000,
+      "reference_price": {"3000001": 39.0},
+      "current_price_gap": -0.15,
+      "budget_left": 120.0,
+      "cart": [],
+      "trust_belief": {"value": 0.60, "evidence": 6.0, "confidence": 0.90},
+      "quality_belief": null,
+      "active_need": null,
+      "habit": {"stim_brand": 0.0, "rival_max": 0.0}
+    },
+    "motifs": [
+      {"type": "preference_fit", "strength": 0.50, "evidence": 2.0, "recency": 0.8,
+       "path": [1000044, "PREFERS", 5003, "CLAIMS", 2000003]}
+    ]
+  }
+}

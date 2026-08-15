@@ -1,0 +1,23 @@
+{
+  "name": "unknown-brand-abstention",
+  "comment": "The abstention story, structurally: an UrbanStride ad (2000005) hits a shopper with no history of the brand. No belief node -> trust_belief null; no paths -> motifs empty; no awareness, no adstock, no reference price. Gated appraisal must produce engagement ~ 0 (F2/F6), never hallucinated familiarity.",
+  "stimulus_id": 2000005,
+  "context": {
+    "scalars": {
+      "shopper_id": 1000047,
+      "aware_of_brand": false,
+      "adstock": 0.0,
+      "exposures_72h": 0,
+      "last_seen_t": null,
+      "reference_price": {},
+      "current_price_gap": 0.0,
+      "budget_left": 120.0,
+      "cart": [],
+      "trust_belief": null,
+      "quality_belief": null,
+      "active_need": null,
+      "habit": {"stim_brand": 0.0, "rival_max": 0.0}
+    },
+    "motifs": []
+  }
+}
