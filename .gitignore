@@ -1,0 +1,29 @@
+# Secrets — never commit. .env.local holds live API keys.
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Next.js (Phase 5)
+node_modules/
+.next/
+out/
+
+# HydraDB local store (Phase 0.2 / infra)
+store/
+cache/
+
+# OS / editor
+.DS_Store
+.idea/
