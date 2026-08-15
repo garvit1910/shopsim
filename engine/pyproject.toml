@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shopsim"
+version = "0.1.0"
+description = "Six-state-shopper market simulator on HydraDB (Hack Hydra, Track 3)"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "numpy>=1.26",
+    "neo4j>=5.20",
+    "fastapi>=0.111",
+    "uvicorn>=0.30",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+include = ["shopsim*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
