@@ -76,6 +76,17 @@ Beyond PLAN decisions 1–7, probing found:
   — returns real Path objects. relTypes list accepted. (Latency + heterogeneous
   relTypes/direction measurements = Phase 1.1 proper.)
 - Variable-length reads work: `MATCH (a {id: $a})-[:R*1..2]->(b) RETURN b.id`.
+- **UNWIND batching is narrow** (probed): batched edge CREATE takes one fixed
+  relationship type with **no properties**; `UNWIND … MATCH` must end in RETURN
+  or DELETE (no batched SET); the only batch-read shape is
+  `UNWIND $rows AS row MATCH (s {id: row.sid})-[e:TYPE]->(x) RETURN row.sid, x.id`
+  — exactly two unsorted projections, second must be `destination.id`, the
+  destination pattern unconstrained. Adjacency only — edge props need per-row
+  singles. Node ids in UNWIND patterns must read a row-map field (`row.sid`,
+  never a bare scalar).
+- **Edge supersession round-trips as designed**: `MATCH (s {id})-[n:NEEDS]->(c {id})
+  WHERE n.valid_to > $now SET n.valid_to = $now` works; live-edge reads filter it
+  out; history reads (no WHERE) still see it.
 - One transient `mutation engine` rejection was observed once right after
   restart-heavy probing and did not reproduce; if a write 50N42s spuriously,
   retry once before digging.

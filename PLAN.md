@@ -37,11 +37,11 @@ Rules: any contract or registry change = 5-minute call + version bump in CONTRAC
 
 1. No `IS NULL`/`IN`/`CONTAINS` → sentinel bitemporality: live edges carry `valid_to = 9007199254740991`; supersede = SET old `valid_to = now`, CREATE new. History is never erased — on every layer (prices, beliefs, preferences, needs).
 2. `WITH` pass-through; aggregates only `count/sum/avg/collect` → all scoring math in Python; "latest" = `ORDER BY t DESC LIMIT 1`.
-3. `UNWIND $rows` batches via Bolt/HTTP only; one statement per request; multi-step ops sequenced client-side.
-4. `MERGE` on id only → upsert = MERGE + SET.
+3. One statement per request; multi-step ops sequenced client-side. **0.2-verified, stricter than assumed:** compound writes are rejected outright (`MERGE…SET`, `MATCH…MERGE/CREATE` all fail), and `UNWIND $rows` batching is narrow — batched CREATE takes **one fixed relationship type with NO properties**; `UNWIND…MATCH` must end in RETURN or DELETE (no batched SET), and the only read shape is `RETURN row.<field>, destination.id` (two unsorted projections, destination unconstrained — adjacency only, no edge/node props). Everything else = per-row single statements; throughput to be measured in Phase 1.3 against the 10k-events-≤10s target.
+4. ~~`MERGE` on id only → upsert = MERGE + SET~~ **Rewritten by 0.2 probing:** bare-node CREATE/MERGE does not exist ("only one-hop edge patterns are executable"). Nodes are **implicit by integer id** — `MATCH (n {id})` succeeds on any id, props null until set. Node props: `MATCH (n {id: $id}) SET …`. Edges: single-statement one-hop `CREATE`/`MERGE (a {id: $a})-[:REL {props}]->(b {id: $b})`, inline props allowed. Consequence: "node absent" is unobservable — abstention must key off **absent edges / null props**, never node existence.
 5. Integer ids, patterns anchor on id → central ID allocator (Appendix A); run isolation via shopper-id blocks.
 6. Scalar properties only (no lists) → claims/attributes/needs are edges to enum nodes, never list properties.
-7. One relationship type per MATCH, directed only → multi-hop motifs are never one MATCH. Route A: `algo.SPpaths` (relTypes whitelist, maxLen ≤ 4), classify paths client-side by edge-type signature. Route B: per-motif single-hop queries + Python set logic. Hour-one probe in Phase 1 decides per motif.
+7. One relationship type per MATCH, directed only → multi-hop motifs are never one MATCH. Route A: `algo.SPpaths` (relTypes whitelist, maxLen ≤ 4), classify paths client-side by edge-type signature. Route B: per-motif single-hop queries + Python set logic. Hour-one probe in Phase 1 decides per motif. **0.2-verified: SPpaths exists and works — bare CALL only (any MATCH prefix is rejected), integer ids in the config map: `CALL algo.SPpaths({sourceNode: $a, targetNode: $b, relTypes: ['R'], maxLen: 4}) YIELD path RETURN path` returns real Path objects; relTypes list accepted. Variable-length reads (`-[:R*1..2]->`) also work.**
 8. One admitted writer per (scope, cell) → the engine process owns all writes; minds return deltas, never write; dashboard reads only through the engine.
 9. Docker: pre-create `store/`+`cache/`, `--user "$(id -u):$(id -g)"`, `GRAPH_ALLOW_PLAINTEXT=true` locally, auth token file, ports 7687/8443/9090, pin the image digest.
 10. v0.1.x software → all Cypher lives inside HydraMem; repo smoke scripts + Discord for anything weird.
@@ -61,7 +61,7 @@ Rules: any contract or registry change = 5-minute call + version bump in CONTRAC
 |---|---|---|---|
 | 1 | **Objective world** — what is true | Brand/Product/Category/Concept/Creative/PageVariant; CLAIMS{strength} PROMOTES OFFERS{claimed_pct} SHOWS HAS_ATTR SOLD_BY IN_CATEGORY PRICED_AT{valid_to}; latent product props from fixtures (hidden, Law 15) | the shared truth every subjective layer diverges from; price history is time travel |
 | 2 | **Episodic** — what happened | SAW CLICKED VISITED BROWSED BOUNCED CARTED ABANDONED BOUGHT PRICE_SEEN EXPERIENCED all {t, run, …}. IGNORE is derived (SAW with no CLICK), never stored | raw evidence, chronological, replayable |
-| 3 | **Subjective worldview** — what they believe | reified Belief {value, evidence, about_id, that_id, t, valid_to} + HOLDS/ABOUT/THAT + DERIVED_FROM{count, first_t, last_t, kind, weight}; EXPECTS{about, strength, valid_to, cause_id}; REFERENCE_PRICE{valid_to}. confidence = E/(E+0.7), computed in Python. No belief node = unknown = abstention | provenance edges; belief-vs-truth divergence queries; as-of-T |
+| 3 | **Subjective worldview** — what they believe | reified Belief {value, evidence, about_id, that_id, t, valid_to} + HOLDS/ABOUT/THAT + DERIVED_FROM{count, first_t, last_t, kind, weight}; EXPECTS{about, strength, valid_to, cause_id}; REFERENCE_PRICE{valid_to}. confidence = E/(E+0.7), computed in Python. No live HOLDS edge = unknown = abstention (0.2: nodes are implicit by id, so absence lives on edges/props, never node existence) | provenance edges; belief-vs-truth divergence queries; as-of-T |
 | 4 | **Preferences & habits** — what they like/do | PREFERS {w, evidence, source: prior\|learned, cause_kind, cause_id, t, valid_to} — the supersession chain IS the provenance timeline; HABIT {evidence, valid_to} (P1), strength = E/(E+2) | bitemporal history of a person's tastes — the flagship "what breaks without HydraDB" |
 | 5 | **Goal state** — what they need now | NEEDS → Category {strength, budget_cap, deadline_t, valid_to, source: seeded\|scripted}; satisfied on category BUY (supersede w/ cause), expires at deadline; urgency computed in Python from deadline_t | goal_fit is a real 3-hop join need↔category↔product↔creative, with a queryable lifecycle |
 | 6 | **Social context (P1)** — what people near them experienced | TRUSTS_PERSON {w} shopper↔shopper, seeded small-world; reads are as-of-previous-tick (no intra-tick feedback) | inherently relational; multi-hop influence paths; the strongest "vector store can't" exhibit |
@@ -79,16 +79,16 @@ Rules: any contract or registry change = 5-minute call + version bump in CONTRAC
 Monorepo: `/engine /web /infra /eval /fixtures CONTRACT.md PLAN.md`. Both registered; both in Discord.
 
 **Checkpoints**
-- [ ] git log clean (nothing pre-hackathon; both authors). LICENSE + README skeleton in.
-- [ ] Both can push.
+- [x] git log clean (nothing pre-hackathon; both authors). LICENSE + README skeleton in. *(both authors committing as of 2026-08-16)*
+- [ ] Both can push. *(Garvit ✓; Atishay added as collaborator, first push pending `gh auth login`)*
 
 ### 0.2 HydraDB up and proven [Atishay drives]
 
 Run the pinned image per repo README; verify with a round-tripped write over Bolt and HTTP; restart the container and confirm durability.
 
 **Checkpoints**
-- [ ] CREATE→MATCH round-trips over Bolt and HTTP; survives docker restart.
-- [ ] /readyz healthy; exact run command saved in /infra/README.
+- [x] CREATE→MATCH round-trips over Bolt and HTTP; survives docker restart. *(2026-08-16: `infra/smoke.py all` + restart + `verify`; Bolt auth = `neo4j.bearer_auth(token)`; HTTP = `POST /v1/graphs/default/query`, plain http locally)*
+- [x] /readyz healthy; exact run command saved in /infra/README. *(digest-pinned compose + up.sh; findings recorded in /infra/README.md)*
 
 ### 0.3 Contracts v3 + stand-ins + shared artifacts
 
@@ -99,10 +99,10 @@ Stand-ins: Garvit writes MockHydraMem (canned scalars + canned v4 motifs, incl. 
 Demo assets → `/fixtures/demo-brand/`: 1 fictional brand + 1–2 rival brands (habit/saturation exhibits need rivals), ~6 products with IN_CATEGORY and latent-quality table, 3–4 creatives, 2 page variants, 1 promo schedule, goal-scenario config (per-segment×category arrival rates + Maya's scripted schedule), social config (P1).
 
 **Checkpoints**
-- [ ] CONTRACT.md merged; each of you can explain every DecisionContext field, every motif, and every registry row.
-- [ ] Contract tests green on both stand-ins; twin fixture committed.
-- [ ] The four enums + evidence.py live in single shared files imported by both sides.
-- [ ] Demo assets committed, incl. latent-quality table and goal config.
+- [ ] CONTRACT.md merged; each of you can explain every DecisionContext field, every motif, and every registry row. *(merged ✓; the "can explain" half is the joint ritual)*
+- [x] Contract tests green on both stand-ins; twin fixture committed. *(2026-08-16: ScriptedMind/ScriptedConsolidate landed; 37 passed, 2 skipped — only the Phase-2 registry tests)*
+- [x] The four enums + evidence.py live in single shared files imported by both sides. *(minds side now imports evidence.py too)*
+- [x] Demo assets committed, incl. latent-quality table and goal config.
 
 ---
 
@@ -114,7 +114,7 @@ Why: divergence between shelves one and three IS the track — overwrite trackin
 
 **Build items:**
 
-- **1.1 — Hour-one probe** (now three measurements): (a) does algo.SPpaths accept a heterogeneous relTypes list and both directions? (b) per-context latency, Route A vs Route B, on a seeded story graph; (c) batched Route B throughput — UNWIND all exposed shopper ids per single-hop query, one round trip per edge type per stimulus per tick. Decide routing per motif; record in CONTRACT.md.
+- **1.1 — Hour-one probe** (now three measurements): (a) ~~does algo.SPpaths accept a heterogeneous relTypes list~~ **partially answered in 0.2** — SPpaths exists, bare-CALL form with integer ids works, relTypes list accepted (see decision 7); remaining: heterogeneous multi-type lists + both directions; (b) per-context latency, Route A vs Route B, on a seeded story graph; (c) batched Route B throughput — **caution from 0.2: UNWIND batch reads return adjacency only (`row.field` + `destination.id`), no edge props**, so props like (w, E, t, valid_to) need per-shopper singles or restructuring; measure both. Decide routing per motif; record in CONTRACT.md.
 - **1.2 — Schema v3 + ID allocator + Cypher templates**: objective layer incl. Category/IN_CATEGORY and PRICED_AT{valid_to} history; subjective layer per §0.1 (Belief nodes carry denormalized about_id/that_id scalar props so the hot path reads props while the UI walks ABOUT/THAT/DERIVED_FROM edges); episodic taxonomy v2; NEEDS, TRUSTS_PERSON (P1), HABIT (P1). EXPLAIN every template once.
 - **1.3 — Write path**: `ingest_catalog(csv)` (products, categories, attributes, latent table — latent props flagged unretrievable); `record_events(batch)` UNWIND per edge type; `supersede(...)` helper (works on subjective and objective edges and NEEDS); belief version supersession (SET old valid_to → CREATE new node id → re-link HOLDS/ABOUT/THAT → carry-forward + increment DERIVED_FROM; client-sequenced per constraint 3); preference supersession with {cause_kind, cause_id, t}; the EvidenceDelta applier: batch-read current (w, E) per delta key, apply the blend from evidence.py in Python, write supersessions in canonical order (shopper_id, t, event_rank); JSONL event log + run manifest (five hashes).
 - **1.4 — Read path**: `get_decision_context(shopper, stimulus)`. Stimulus-side subgraph cached once per (stimulus, tick): CLAIMS→concepts, PROMOTES→brand, OFFERS→products+claimed_pct, IN_CATEGORY, current PRICED_AT, SHOWS (pages). Shopper-side, batchable via UNWIND across exposed shoppers: recent SAW (window ≈ 14 ticks) → past creative ids + t · live PREFERS · live NEEDS · trust Belief for stimulus brand (live HOLDS, filter about_id — one query thanks to denormalization) · live EXPECTS for brand · REFERENCE_PRICE for stimulus product · HABIT (P1) · TRUSTS_PERSON neighbors → peers' BOUGHT / EXPERIENCED on stimulus product, t < tick_start (P1) · UNWIND past-creative ids → their CLAIMS and their PROMOTES. Python then: adstock + 72h frequency from timestamps; preference_fit = live PREFERS ∩ stimulus claims; goal_fit = live NEEDS ∩ stimulus category (urgency from deadline); brand_semantic_fatigue = past creatives sharing BOTH a claimed concept AND the brand with the stimulus (recency-weighted); concept_saturation (P1) = concept overlap, different brand; expectation_violation = EXPECTS(about=brand) minus SHOWS at page decisions; social valence (P1). Strength thresholds + maxLen ≤ 4 + relType whitelists kill hub noise. Retrieval whitelist excludes latent props (Law 15).
@@ -397,6 +397,13 @@ Humane error states throughout. 8.4 Grade-3 recommendations if time (P2): auto-b
 The first nine scalar fields are byte-compatible with the v3 MemoryPacket — ScriptedMind and all early code read them unchanged. `trust_belief: null` for an unknown brand is the abstention story, structurally. `active_need.budget_cap` is consumed by decide() only; the need's strength×urgency is consumed by appraise() only via the goal_fit motif (ScriptedMind, test-only, may read the scalars).
 
 ## Appendix C — Cypher templates (subset-safe; only inside HydraMem; additions to v3's set)
+
+> **⚠ 0.2 amendment (2026-08-16, tested live — see /infra/README.md):** these templates predate the probing and several are invalid as written. Transform before use:
+> 1. No `MATCH … CREATE/MERGE` compounds and no `MERGE … SET` — every write is one self-contained statement. The goal-activate template below is doubly invalid (compound + UNWIND CREATE cannot carry edge props): activation = per-row `CREATE (s {id: row.sid})-[:NEEDS {…}]->(c {id: row.cat})` singles with inline props.
+> 2. No bare-node CREATE: belief-version creation (`CREATE (nb {id: $new_id, …})`) becomes implicit-node + `MATCH (nb {id: $new_id}) SET nb.value = $v, …`; re-linking (`MATCH (s),(nb) CREATE (s)-[:HOLDS]->(nb)`) becomes `CREATE (s {id: $sid})-[:HOLDS]->(nb {id: $new_id})`.
+> 3. The supersede templates (`MATCH (s)-[n:X]->(c) WHERE n.valid_to > $now SET n.valid_to = $now`) are **verified working as written**, including live-edge filtering and history reads — the flagship mechanic round-trips.
+> 4. Batched single-hop reads must be exactly `UNWIND $rows AS row MATCH (s {id: row.sid})-[e:TYPE]->(x) RETURN row.sid, x.id` — adjacency only; the Route-B examples below that RETURN edge props run as per-shopper singles instead.
+> 5. One transient `mutation engine` 50N42 was observed once right after a restart and did not reproduce — retry a spuriously failing write once before digging.
 
 ```cypher
 -- goal: activate (goal step, batched)
