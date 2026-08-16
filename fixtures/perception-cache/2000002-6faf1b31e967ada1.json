@@ -1,0 +1,37 @@
+{
+  "creative_id": 2000002,
+  "descriptor": {
+    "body": "CloudLoft Daily: plush comfort that goes with everything, and straight into the washing machine.",
+    "brand_id": 6001,
+    "creative_id": 2000002,
+    "headline": "Like walking on clouds. All day.",
+    "name": "Cloud Comfort",
+    "offer_product_ids": [
+      3000003
+    ]
+  },
+  "hash": "6faf1b31e967ada1fd7379fadf68d0420872e3eb655ab078e1f6f40299a19fdd",
+  "model": "gpt-4o-mini",
+  "output": {
+    "claimed_discounts": [],
+    "claims": [
+      {
+        "concept": "CUSHIONING",
+        "strength": 0.8
+      },
+      {
+        "concept": "COMFORT",
+        "strength": 0.9
+      },
+      {
+        "concept": "MACHINE_WASHABLE",
+        "strength": 0.7
+      },
+      {
+        "concept": "STYLE",
+        "strength": 0.6
+      }
+    ]
+  },
+  "prompt_version": "p1"
+}

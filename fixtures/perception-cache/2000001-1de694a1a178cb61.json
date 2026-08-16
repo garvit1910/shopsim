@@ -1,0 +1,33 @@
+{
+  "creative_id": 2000001,
+  "descriptor": {
+    "body": "The EcoStride Runner is built from 90% recycled ocean plastic. Every stride gives back.",
+    "brand_id": 6001,
+    "creative_id": 2000001,
+    "headline": "Run lighter on the planet.",
+    "name": "Planet-First Run",
+    "offer_product_ids": [
+      3000001
+    ]
+  },
+  "hash": "1de694a1a178cb61b8345cbf95ada8922c6000e6f9680afd9fb24be92e01b3b9",
+  "model": "gpt-4o-mini",
+  "output": {
+    "claimed_discounts": [],
+    "claims": [
+      {
+        "concept": "ECO_FRIENDLY",
+        "strength": 0.9
+      },
+      {
+        "concept": "RECYCLED_MATERIALS",
+        "strength": 0.9
+      },
+      {
+        "concept": "OTHER",
+        "strength": 0.5
+      }
+    ]
+  },
+  "prompt_version": "p1"
+}

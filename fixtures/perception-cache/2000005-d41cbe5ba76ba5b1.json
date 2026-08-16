@@ -1,0 +1,34 @@
+{
+  "creative_id": 2000005,
+  "descriptor": {
+    "body": "Flex Street by UrbanStride: everyday style that doesn't empty your wallet.",
+    "brand_id": 6003,
+    "creative_id": 2000005,
+    "headline": "Great shoes. Honest prices.",
+    "name": "Everyday Value",
+    "offer_product_ids": [
+      3000006
+    ]
+  },
+  "hash": "d41cbe5ba76ba5b1fa6eec5fe30865f68f359e5124f60975cc9bf95d8cecb88f",
+  "model": "gpt-4o-mini",
+  "output": {
+    "claimed_discounts": [
+      {
+        "claimed_pct": 0.0,
+        "product_id": 3000006
+      }
+    ],
+    "claims": [
+      {
+        "concept": "VALUE_PRICED",
+        "strength": 0.8
+      },
+      {
+        "concept": "STYLE",
+        "strength": 0.6
+      }
+    ]
+  },
+  "prompt_version": "p1"
+}
