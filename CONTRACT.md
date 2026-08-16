@@ -286,14 +286,32 @@ Signals deliberately scalars, not motifs (Law 16): reference price, price gap,
 budget, need budget cap, trust/quality belief values, habit strengths,
 adstock/wearout.
 
-**Routing (Phase 1.1 probe — Atishay records the decision here):**
+**Routing (Phase 1.1 probe, 2026-08-16, measured live — see `engine/bench/probe11.py`):**
+
+**Route B everywhere.** `algo.SPpaths` accepts heterogeneous relTypes lists but is
+strictly direction-following — every motif path traverses at least one edge against
+its stored direction (e.g. `PREFERS→concept←CLAIMS`), and those calls return 0 paths.
+SPpaths also cannot return edge props (w, E, t), which the motifs need anyway.
+Route B = per-shopper single-hop reads (~0.3ms each) joined in Python against the
+per-tick stimulus/objective cache. Full contexts: one ≈ 9ms warm; 200 shoppers × 1
+stimulus batched ≈ 0.6s.
 
 | Motif | Route (A = SPpaths / B = single-hop + Python) | Measured latency |
 |---|---|---|
-| preference_fit | *TBD after hour-one probe* | |
-| goal_fit | *TBD* | |
-| brand_semantic_fatigue | *TBD* | |
-| expectation_violation | *TBD* | |
+| preference_fit | B (`PREFERS` single + cached stimulus `CLAIMS`) | 0.35ms med / 0.46ms p95 per shopper statement |
+| goal_fit | B (`NEEDS` single + cached `IN_CATEGORY`/`OFFERS`) | 0.32ms med / 0.35ms p95 |
+| brand_semantic_fatigue | B (windowed `SAW` single + cached claims, Python join) | 0.31ms med / 0.34ms p95 |
+| expectation_violation | B (`EXPECTS` single + cached `SHOWS` diff) | 0.31ms med / 0.35ms p95 |
+
+Probe by-catch (now load-bearing in `hydramem/cypher.py`): multi-assignment `SET`,
+compound `WHERE … AND …`, `WHERE` on destination-node props, destination-node props
+in one-hop RETURNs, and `ORDER BY … LIMIT` all work; aggregates (`count()`) do NOT —
+all counting stays in Python. Batched UNWIND DELETE requires both endpoints anchored.
+Prop-carrying writes are server-serialized at ~200–230 stmts/s (single-writer
+commit path; parallel sessions don't help; the slatedb env override proved inert —
+see /infra/README.md "Write throughput"). The 10k-batch perf target is amended in
+PLAN.md accordingly; real per-tick load fits the Phase-3/S1 wall-clock budgets,
+with write-behind overlap as the pre-agreed escalation.
 
 ## Evidence table (Appendix F) — source of truth: `engine/shopsim/contracts/evidence.py`
 
@@ -354,3 +372,12 @@ props), consolidate purity (skips until a Mind implementation exists).
   Appendix F transcribed from the authoritative copy (Garvit); signed
   EXPERIENCED weight encoding fixed as magnitude+target (see Evidence table).
   Routing table left TBD for Atishay's Phase 1.1 probe.
+- **3.1** (2026-08-16, Atishay): routing table filled from the Phase 1.1 probe —
+  Route B for all four P0 motifs (SPpaths is direction-following; heterogeneous
+  reversed-hop paths return nothing). Real HydraMem landed
+  (`engine/shopsim/hydramem/real.py`); the full contract suite passes on it via
+  `SHOPSIM_HYDRAMEM=real uv run pytest` against the seeded story graph. New
+  EvidenceDelta kind conventions documented in `hydramem/writes.py` (kind strings
+  "expects"/"ref_price"/"need_satisfy"/"habit"/"belief:quality" beside the C2
+  "edge"/"belief"): additive, no signature change — flagging to Garvit whose
+  consolidate() will emit them.

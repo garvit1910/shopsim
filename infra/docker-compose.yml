@@ -25,3 +25,8 @@ services:
       GRAPH_AUTH_TOKEN_FILE: /data/auth-token
       GRAPH_ALLOW_PLAINTEXT: "true"
       RUST_MIN_STACK: "33554432"
+      # NOTE (Phase 1.1): SLATEDB_AWAIT_DURABLE_WRITES=false was tried here and
+      # is INERT — await_durable_writes is a per-write WriteOptions flag chosen
+      # by graph-node, not a slatedb Settings field (flush_interval is already
+      # 1ms). The ~230 writes/s single-statement ceiling is architectural in
+      # this pinned build; see /infra/README.md "Write throughput".

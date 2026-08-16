@@ -1,0 +1,240 @@
+"""HydraMem v3 — the real worldview store over HydraDB (Phase 1).
+
+Facade over client/cypher/writes/reads. C1 freezes only
+get_decision_context(shopper_id, stimulus_id); everything else here is
+engine-internal (PLAN.md Phase 1). The C1 signature carries no clock, so the
+engine drives time via set_tick() each tick (retrieval needs `now` for
+liveness/windows and `tick_start` for as-of-previous-tick social reads).
+
+The single admitted writer (constraint 8) is the engine process holding this
+object: minds return EvidenceDeltas, the applier writes; the dashboard reads
+only through these APIs.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Iterable, Mapping
+
+from ..contracts.enums import EventType
+from ..contracts.ids import IdAllocator
+from ..contracts.types import DecisionContext, Event, WorldviewSnapshot
+from ..eventlog import JsonlEventLog
+from . import cypher, reads, schema, writes
+from .client import HydraClient
+from .config import HydraConfig
+
+_ASPECT_NAMES = {schema.ASPECT_TRUST_ID: "trust", schema.ASPECT_QUALITY_ID: "quality"}
+
+_KIND_NOUNS = {
+    "SAW": ("exposure", "exposures"),
+    "CLICKED": ("click", "clicks"),
+    "VISITED": ("visit", "visits"),
+    "BROWSED": ("browse", "browses"),
+    "CARTED": ("cart add", "cart adds"),
+    "BOUGHT": ("purchase", "purchases"),
+    "EXPERIENCED": ("delivery", "deliveries"),
+}
+
+
+def _provenance_sentence(rows: list[dict]) -> str:
+    parts = []
+    for r in sorted(rows, key=lambda r: r["first_t"]):
+        one, many = _KIND_NOUNS.get(r["kind"], (r["kind"].lower(), r["kind"].lower() + "s"))
+        n = r["count"]
+        parts.append(f"{n} {one if n == 1 else many}")
+    if not parts:
+        return "no recorded evidence"
+    if len(parts) == 1:
+        return "from " + parts[0]
+    return "from " + ", ".join(parts[:-1]) + " and " + parts[-1]
+
+
+class HydraMem:
+    def __init__(
+        self,
+        client: HydraClient | None = None,
+        *,
+        run_index: int = 0,
+        allocator: IdAllocator | None = None,
+        event_log: JsonlEventLog | None = None,
+        params: schema.RetrievalParams | None = None,
+        validate: bool = True,
+    ):
+        self.client = client or HydraClient(HydraConfig.from_env())
+        self.run_index = run_index
+        self.allocator = allocator or IdAllocator(run_index)
+        self.event_log = event_log
+        self.params = params or schema.DEFAULT_PARAMS
+        self.validate = validate
+        self.cache = reads.ObjectiveCache(self.client)
+        self._tick = 0
+        self._now = 0
+        self._tick_start = 0
+        self._peer_cache: dict[int, dict[str, list[dict]]] = {}
+
+    # -- clock --------------------------------------------------------------
+
+    def set_tick(self, *, tick: int, now: int, tick_start: int | None = None) -> None:
+        self._tick = tick
+        self._now = now
+        self._tick_start = tick_start if tick_start is not None else now
+        self._peer_cache = {}
+        self.cache._built_at = None  # rebuild lazily (PRICED_AT may have moved)
+
+    # -- C1 read path -------------------------------------------------------
+
+    def get_decision_context(self, shopper_id: int, stimulus_id: int) -> DecisionContext:
+        return self.get_decision_contexts([shopper_id], stimulus_id)[shopper_id]
+
+    def get_decision_contexts(
+        self, shopper_ids: Iterable[int], stimulus_id: int
+    ) -> dict[int, DecisionContext]:
+        """Batched: stimulus/objective cache built once, per-shopper single
+        sequences fanned across worker sessions, peers shared per tick."""
+        shopper_ids = list(shopper_ids)
+        self.cache.build(self._now)
+        stim = self.cache.stimulus_view(stimulus_id)
+
+        plans = {sid: reads.shopper_read_plan(sid, self._now, self.params, stim)
+                 for sid in shopper_ids}
+        results = self.client.run_grouped(
+            {sid: [stmt for _, stmt in plan] for sid, plan in plans.items()})
+        rows_by_shopper = {
+            sid: {name: rows for (name, _), rows in zip(plans[sid], results[sid])}
+            for sid in shopper_ids}
+
+        peers = self._read_peers(
+            {r["dst"] for rows in rows_by_shopper.values() for r in rows.get("trusts", ())})
+
+        out: dict[int, DecisionContext] = {}
+        for sid in shopper_ids:
+            payload = reads.assemble_context(
+                sid, rows_by_shopper[sid], stim, self.cache, peers,
+                self._now, self._tick_start, self.params)
+            # from_dict runs validate_context (C1 schema + Law-15 scan) on the
+            # way out — every real context is checked at the boundary.
+            out[sid] = DecisionContext.from_dict(payload)
+        return out
+
+    def _read_peers(self, peer_ids: set[int]) -> dict[int, dict[str, list[dict]]]:
+        missing = [p for p in peer_ids if p not in self._peer_cache]
+        if missing:
+            plans = {p: reads.peer_read_plan(p) for p in missing}
+            results = self.client.run_grouped(
+                {p: [stmt for _, stmt in plan] for p, plan in plans.items()})
+            for p in missing:
+                self._peer_cache[p] = {
+                    name: rows for (name, _), rows in zip(plans[p], results[p])}
+        return self._peer_cache
+
+    # -- trace + inspector (1.5) --------------------------------------------
+
+    def get_trace(self, shopper_id: int, stimulus_id: int) -> dict:
+        """All candidate paths (thresholds relaxed) + explanatory motifs."""
+        self.cache.build(self._now)
+        stim = self.cache.stimulus_view(stimulus_id)
+        plan = reads.shopper_read_plan(shopper_id, self._now, self.params, stim)
+        plan.append(("experienced_self",
+                     cypher.all_edges("EXPERIENCED", shopper_id, ("t", "sat"))))
+        results = self.client.run_seq([stmt for _, stmt in plan])
+        rows = {name: r for (name, _), r in zip(plan, results)}
+        peers = self._read_peers({r["dst"] for r in rows.get("trusts", ())})
+        payload = reads.assemble_context(
+            shopper_id, rows, stim, self.cache, peers,
+            self._now, self._tick_start, self.params, trace=True)
+        return {"shopper_id": shopper_id, "stimulus_id": stimulus_id,
+                "scalars": payload["scalars"], "motifs": payload["motifs"]}
+
+    def get_shopper_worldview(self, shopper_id: int) -> dict:
+        c, now = self.client, self._now
+        beliefs = []
+        for row in c.run_stmt(cypher.live_holds(shopper_id, now)):
+            derived = [
+                {"kind": r["kind"], "target": r["dst"], "count": r["count"],
+                 "first_t": r["first_t"], "last_t": r["last_t"], "weight": r["weight"]}
+                for r in c.run_stmt(cypher.all_edges(
+                    "DERIVED_FROM", row["dst"],
+                    ("kind", "count", "first_t", "last_t", "weight")))]
+            from ..contracts.evidence import confidence
+            beliefs.append({
+                "belief_id": row["dst"], "about_id": row["about_id"],
+                "aspect": _ASPECT_NAMES.get(row["that_id"], str(row["that_id"])),
+                "value": row["value"], "evidence": row["evidence"],
+                "confidence": confidence(row["evidence"]),
+                "provenance": derived,
+                "provenance_sentence": _provenance_sentence(derived)})
+        prefs = [
+            {"concept": r["dst"], "w": r["w"], "evidence": r["evidence"],
+             "source": r["source"], "cause_kind": r["cause_kind"],
+             "cause_id": r["cause_id"], "t": r["t"]}
+            for r in c.run_stmt(cypher.live_edges(
+                "PREFERS", shopper_id, now,
+                ("w", "evidence", "source", "cause_kind", "cause_id", "t")))]
+        needs = [
+            {"category": r["dst"], "strength": r["strength"],
+             "budget_cap": r["budget_cap"], "deadline_t": r["deadline_t"],
+             "source": r["source"]}
+            for r in c.run_stmt(cypher.live_edges(
+                "NEEDS", shopper_id, now,
+                ("strength", "budget_cap", "deadline_t", "source")))]
+        habits = [
+            {"brand": r["dst"], "evidence": r["evidence"]}
+            for r in c.run_stmt(cypher.live_edges("HABIT", shopper_id, now, ("evidence",)))]
+        expects = [
+            {"concept": r["dst"], "about": r["about"], "strength": r["strength"]}
+            for r in c.run_stmt(cypher.live_edges(
+                "EXPECTS", shopper_id, now, ("about", "strength")))]
+        return {"shopper_id": shopper_id, "beliefs": beliefs, "preferences": prefs,
+                "active_needs": needs, "habits": habits, "expects": expects}
+
+    def get_preference_history(self, shopper_id: int, concept_id: int) -> list[dict]:
+        """The full supersession chain with receipts — the UI timeline."""
+        rows = self.client.run_stmt(cypher.edge_history(
+            "PREFERS", shopper_id, concept_id,
+            ("w", "evidence", "source", "cause_kind", "cause_id", "t", "valid_to")))
+        rows.sort(key=lambda r: (r["t"], r["valid_to"]))
+        return rows
+
+    def get_belief_history(self, shopper_id: int) -> list[dict]:
+        """All belief versions ever held (as-of-T reads filter client-side)."""
+        rows = self.client.run_stmt(cypher.holds_history(shopper_id))
+        rows.sort(key=lambda r: r["t"])
+        return rows
+
+    # -- write path ---------------------------------------------------------
+
+    def ingest_catalog(self, demo_brand_dir: Path | str, now: int = 0) -> int:
+        n = writes.ingest_catalog(self.client, demo_brand_dir, now)
+        self.cache._built_at = None
+        return n
+
+    def record_events(self, events: list[Event]) -> int:
+        return writes.record_events(self.client, events, self.event_log)
+
+    def apply_deltas(
+        self, per_shopper: dict[int, list[writes.OrderedDelta]],
+        promotes: Mapping[int, int] | None = None,
+    ) -> writes.ApplyReport:
+        self.cache.build(self._now)
+        return writes.apply_deltas(
+            self.client, self.allocator, per_shopper, self._now,
+            promotes if promotes is not None else self.cache.promotes)
+
+    def snapshot_worldview(self, shopper_id: int) -> WorldviewSnapshot:
+        return writes.snapshot_worldview(self.client, shopper_id, self._now)
+
+    def supersede(self, rel: str, a: int, b: int, *,
+                  cause_kind: str | EventType | None = None,
+                  cause_id: int | None = None) -> None:
+        ck = cause_kind.value if isinstance(cause_kind, EventType) else cause_kind
+        writes.supersede(self.client, rel, a, b, self._now,
+                         cause_kind=ck, cause_id=cause_id)
+
+    def seed_preference(self, shopper_id: int, concept_id: int, w: float,
+                        t: int | None = None) -> None:
+        writes.seed_preference(self.client, shopper_id, concept_id, w,
+                               self._now if t is None else t)
+
+    def close(self) -> None:
+        self.client.close()

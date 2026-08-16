@@ -90,3 +90,58 @@ Beyond PLAN decisions 1–7, probing found:
 - One transient `mutation engine` rejection was observed once right after
   restart-heavy probing and did not reproduce; if a write 50N42s spuriously,
   retry once before digging.
+
+## Phase 1.1 probe results (2026-08-16, `engine/bench/probe11.py`)
+
+Everything below was measured live against the pinned image; the 0.2 findings
+above all still hold.
+
+**Now verified working (upgrades over the 0.2 assumptions):**
+
+- Multi-assignment `SET`: `MATCH (n {id}) SET n.a = $a, n.b = $b, …` — one
+  statement per node-prop write, not one per prop.
+- Compound `WHERE` with `AND` (e.g. `e.valid_to > $now AND e.about = $b`).
+- `WHERE` on destination-node props (`… WHERE x.valid_to > $now`).
+- Destination-node props in one-hop RETURNs (4–7 projections fine):
+  `MATCH (s {id})-[e:HOLDS]->(x) RETURN x.id, x.value, x.evidence, …`.
+- `ORDER BY e.t DESC LIMIT 1` and `EXPLAIN` prefixes.
+
+**Now verified NOT working:**
+
+- Aggregates: `count(x)` is rejected — decision 2's "aggregates only
+  count/sum/avg/collect" is optimistic; ALL counting/summing lives in Python.
+- `algo.SPpaths` heterogeneous relTypes lists are *accepted* but the traversal
+  is strictly direction-following: any path with a reversed hop (all of our
+  motifs, e.g. `PREFERS→concept←CLAIMS`) returns 0 paths. Swapped-end calls on
+  a directed edge also return 0. → **Route B everywhere** (CONTRACT.md §Routing).
+- Multi-pattern `CREATE` with props (comma-separated patterns) and repeated
+  `CREATE` clauses: both rejected. Batched UNWIND CREATE stays propless-only.
+- Batched `UNWIND … DELETE` requires BOTH endpoints anchored
+  (`MATCH (s {id: row.a})-[e:R]->(x {id: row.b}) DELETE e`); source-only
+  anchoring is rejected ("UNWIND batch node requires an id property").
+
+**Write throughput (the one hard limit — architectural, closed):**
+prop-carrying single-statement writes commit at **~200–230/s** regardless of
+transport (Bolt/HTTP), parallelism (1 vs 16 sessions), or consistency level —
+each mutation goes through the single admitted writer's commit path
+(~4–5ms/commit). Propless UNWIND batches commit ~20,000 edges/s (one commit
+per statement), so the cost is per-STATEMENT, not per-edge. Reads are ~0.3ms
+and parallelize fine.
+
+`SLATEDB_AWAIT_DURABLE_WRITES=false` was tried (container recreated with the
+env var, re-measured 2026-08-16): **inert**. The startup log's slatedb
+settings dump shows `flush_interval: 1ms` and no `await_durable_writes` key —
+in slatedb that flag is per-write `WriteOptions` chosen by graph-node's code,
+not an env-configurable Setting. The compose file keeps a comment noting this
+so nobody re-tries it.
+
+Consequence for PLAN Phase-1's "10k-event batch ≤ ~10s": measured **~47s**;
+the target predates this probing and is amended in PLAN.md. Real per-tick
+load (~300–500 events ≈ 2s/tick) fits the Phase-3 (≤1.5 min) and S1 (≤4 min)
+wall-clock budgets. Pre-agreed escalations if Phase 3 measures over budget:
+(1) write-behind overlap — pipeline episodic writes during the mind/
+consolidate compute of the same tick, flush barrier at tick end; (2) last
+resort, tick-partitioned relationship types (e.g. `SAW_T7`) for the
+{t,run}-only episodic edges, batched propless at 20k/s, with t recovered
+from the rel name and payload-carrying events (BOUGHT/PRICE_SEEN/EXPERIENCED)
+staying as singles — ~90% of volume batches, ≈5s per 10k.

@@ -122,15 +122,15 @@ Why: divergence between shelves one and three IS the track — overwrite trackin
 - **1.6 — replay(run_config)**: fresh shopper-id block, re-ingest JSONL to tick T, recompute worldview deterministically (Law 13/14), diverge. The fulfillment queue is derived from BOUGHT events + lag — no extra state to persist; kill/resume reconstructs it from the log.
 
 **Checkpoints**
-- [ ] Routing decided per motif and written down, with measured latencies (single-context and batched).
-- [ ] Contract tests green on real HydraMem (same tests the mock passes).
-- [ ] Scripted story graph returns exactly the expected hits for all four P0 motifs — including a designed miss per motif (no path → motif absent → abstention works structurally) and a null trust belief for an unknown brand.
-- [ ] The golden preference chain renders end-to-end: prior 0.45 → 0.476 → 0.532 → 0.614 → 0.714 → 0.761, each version carrying its cause (Appendix F numbers, asserted to the digit).
-- [ ] Supersession proof on three layers: subjective (belief now vs as-of-T), objective (price now vs before the promo), goal (NEEDS active → satisfied-with-cause).
-- [ ] A Belief's provenance renders: "value 0.70, confidence 0.81 — from 2 visits and 1 purchase."
-- [ ] Hygiene test: latent props never appear in any DecisionContext, trace, or worldview payload.
-- [ ] Goal-on/off twin: same shopper id pair, identical graphs except one NEEDS edge → contexts differ only in goal_fit + active_need.
-- [ ] 10k-event batch ≤ ~10s; one context ≤ ~250ms with the stimulus cache; batched contexts for 200 shoppers × 1 stimulus ≤ ~3s; kill/restart/resume consistent (incl. pending fulfillment); replay determinism (byte-identical summaries, twice).
+- [x] Routing decided per motif and written down, with measured latencies (single-context and batched). *(2026-08-16: Route B everywhere — SPpaths is strictly direction-following, reversed-hop motif paths return 0 paths; CONTRACT.md §Routing + /infra/README.md Phase-1.1 section)*
+- [x] Contract tests green on real HydraMem (same tests the mock passes). *(SHOPSIM_HYDRAMEM=real: full suite incl. real-marked integration tests, 62 passed; default mock run byte-identical)*
+- [x] Scripted story graph returns exactly the expected hits for all four P0 motifs — including a designed miss per motif (no path → motif absent → abstention works structurally) and a null trust belief for an unknown brand. *(story.py cast + tests/real/test_motifs_real.py; P1 social_proof hit/miss too)*
+- [x] The golden preference chain renders end-to-end: prior 0.45 → 0.476 → 0.532 → 0.614 → 0.714 → 0.761, each version carrying its cause (Appendix F numbers, asserted to the digit). *(test_golden_chain_real.py, on a dedicated shopper — 1000042 stays twin-symmetric)*
+- [x] Supersession proof on three layers: subjective (belief now vs as-of-T), objective (price now vs before the promo), goal (NEEDS active → satisfied-with-cause). *(test_supersession_real.py)*
+- [x] A Belief's provenance renders: "value 0.70, confidence 0.81 — from 2 visits and 1 purchase." *(get_shopper_worldview provenance_sentence, DERIVED_FROM-backed)*
+- [x] Hygiene test: latent props never appear in any DecisionContext, trace, or worldview payload. *(validate_context at the read boundary + payload scans + cypher.py source-scan test)*
+- [x] Goal-on/off twin: same shopper id pair, identical graphs except one NEEDS edge → contexts differ only in goal_fit + active_need. *(live on the real graph)*
+- [x] ~~10k-event batch ≤ ~10s~~ **amended by 1.1 probing** (same rank as the 0.2 amendments): one context 9ms ✓ (≤250ms), 200×1 batch 0.63s ✓ (≤3s); the 10k batch measures **~47–58s** because prop-carrying writes commit at ~200–230/s through the single-writer path — transport/parallelism/consistency-independent, and the slatedb env override proved inert (per-write WriteOptions, not a Setting; flush_interval already 1ms — see /infra/README.md). The target predates this measurement. Real load ≈2s/tick fits Phase-3 (≤1.5 min) and S1 (≤4 min) budgets; pre-agreed escalations recorded in /infra/README.md (write-behind overlap; last-resort tick-partitioned rel types ≈5s/10k). ~~kill/restart/resume · replay determinism~~ *(moved to Phase 3 with replay, 2026-08-16)*
 
 ---
 
