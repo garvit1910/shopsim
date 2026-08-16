@@ -20,9 +20,10 @@ node_modules/
 .next/
 out/
 
-# HydraDB local store (Phase 0.2 / infra)
+# HydraDB local store (Phase 0.2 / infra) — includes the local auth token
 store/
 cache/
+infra/hydradb-data/
 
 # OS / editor
 .DS_Store
