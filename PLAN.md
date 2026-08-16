@@ -147,15 +147,17 @@ Why: divergence between shelves one and three IS the track — overwrite trackin
 - **2.5 — Worldview update rules = consolidate()**: pure function per Law 14 and Appendix F. SAW → awareness + EXPECTS(brand, claimed concepts) at weight 0.2 — nothing else. PRICE_SEEN → reference-price smoothing (α = 0.3). CLICK/BROWSE/CART/BUY → preference evidence on stimulus-claimed concepts at 0.10/0.25/0.50/1.00; BUY additionally satisfies the matching NEEDS, adds trust evidence 1.5 (target 0.65), habit +1 (P1). EXPERIENCED → trust evidence 2.0 with target = satisfaction (P1: disconfirmation multiplier ×(1 + 0.5·max(0, expectation − sat)) — overpromising ads poison trust harder); preference evidence ±0.75·(2·sat−1) only on concepts the product actually HAS_ATTR — ads teach expectations, experience teaches truth. Emits EvidenceDeltas; the engine applies them.
 
 **Checkpoints**
-- [ ] Golden perception files for the creatives + pages: schema-valid, every claim ∈ Concept enum, claimed_pct captured, rerun-stable.
-- [ ] Motif-level monotonicity: +preference_fit ↑relevance · +goal_fit ↑relevance more at BUY stage than CLICK stage · +brand_semantic_fatigue ↑brand_message_fatigue · +violation ↓expectation_alignment · no paths + no awareness + no belief ⇒ engagement ≈ 0.
-- [ ] No-learning-from-SAW unit: a shopper bombarded with exposures shows Δw = 0 on every learned preference while awareness/EXPECTS rise.
-- [ ] Hierarchy monotonicity unit: equal counts of CLICK vs BROWSE vs CART vs BUY produce strictly ordered Δw.
-- [ ] Registry-completeness + import-graph tests green; decide() signature contains no traits.
-- [ ] Maya golden chain reproduced from evidence.py to the digit.
-- [ ] Formula choice model produces plausible base rates (CTR ~0.5–5%).
-- [ ] Same seed → identical action sequence on the mock, twice.
-- [ ] LLM appraisal (if reached): calls == distinct bucket keys; real variance across buckets; spend guard + cache hit-rate logging.
+- [x] Golden perception files for the creatives + pages: schema-valid, every claim ∈ Concept enum, claimed_pct captured, rerun-stable. *(2026-08-17: fixtures/perception-cache/, gpt-4o-mini structured outputs, 5 calls = 5 unique stimuli; claimed_pct exact on all five; authored claims ⊆ perceived — the copy asserts more than the authored minimum (e.g. Apex's own "10% off"), recorded in tests/test_perception.py)*
+- [x] Motif-level monotonicity: +preference_fit ↑relevance · +goal_fit ↑relevance more at BUY stage than CLICK stage · +brand_semantic_fatigue ↑brand_message_fatigue · +violation ↓expectation_alignment · no paths + no awareness + no belief ⇒ engagement ≈ 0. *(tests/test_appraise.py + F9-shape funnel test in test_decide.py)*
+- [x] No-learning-from-SAW unit: a shopper bombarded with exposures shows Δw = 0 on every learned preference while awareness/EXPECTS rise. *(test_consolidate.py)*
+- [x] Hierarchy monotonicity unit: equal counts of CLICK vs BROWSE vs CART vs BUY produce strictly ordered Δw. *(test_consolidate.py)*
+- [x] Registry-completeness + import-graph tests green; decide() signature contains no traits. *(both Phase-2 registry tests live: signature + Law-12 source-scan — traits stay in contracts/types.py per the v3.2 note)*
+- [x] Maya golden chain reproduced from evidence.py to the digit. *(unit: test_consolidate.py from events; real: tests/real/test_minds_real.py — events → consolidate() → applier → cause-stamped history on the live store)*
+- [x] Formula choice model produces plausible base rates (CTR ~0.5–5%). *(bench/calibrate_choice.py: mean P(click|exposure) 0.79%, browse 0.47, cart|browse 0.13, buy|cart 0.20 — all inside the researched bands in /eval/market-research.md)*
+- [x] Same seed → identical action sequence on the mock, twice. *(test_decide.py)*
+- [ ] LLM appraisal (if reached): calls == distinct bucket keys; real variance across buckets; spend guard + cache hit-rate logging. *(P1 — not pulled; strict-P0 decision 2026-08-17)*
+
+> *Phase-2 deltas vs the prose above (2026-08-17, agreed with Garvit): 13 authored segments instead of 6–8 (personas.json; population size + segment count are pure config, architecture validated at 50 segments / 5,000 shoppers); stimulus facts reach the mind via a bound ObjectiveView; perception owns stimulus-edge writes in engine runs (`ingest_catalog(include_stimuli=False)`); every new constant grounded in /eval/market-research.md. Full list in CONTRACT.md v3.2-draft, pending Atishay's ack.*
 
 ---
 

@@ -1,6 +1,7 @@
 # CONTRACT.md — the three inter-lane contracts
 
-**Version: 3.0** (matches "v3" contract naming in PLAN.md §0)
+**Version: 3.2-draft** (v3.2 entries are additive conventions from Garvit's
+Phase 2, **pending Atishay's ack** per the change rule — see change log)
 **Change rule:** any contract or registry change = 5-minute call + version bump here, with a line in the change log at the bottom. `context.scalars` keeps the old v3 MemoryPacket byte-for-byte (first nine fields) — that back-compat is why ScriptedMind and the Phase-3 runner survive every architecture change.
 
 Code is the enforcement layer: everything in this file has a single importable
@@ -381,3 +382,43 @@ props), consolidate purity (skips until a Mind implementation exists).
   "expects"/"ref_price"/"need_satisfy"/"habit"/"belief:quality" beside the C2
   "edge"/"belief"): additive, no signature change — flagging to Garvit whose
   consolidate() will emit them.
+- **3.2-draft** (2026-08-17, Garvit — Phase 2; **additive conventions only, no
+  C1/C2/C3 signature, enum, taxonomy, ENTRY_POINTS-row or evidence.py change;
+  pending Atishay's ack at the next sync**):
+  1. **Mind-bound ObjectiveView** (`minds/objective_view.py`): stimulus-side
+     objective facts (claims, claimed_pct, SHOWS) + catalog truth (HAS_ATTR,
+     SOLD_BY, IN_CATEGORY) reach the mind at construction —
+     `FormulaMind(view).for_stimulus(id)` — never through C1 scalars. This is
+     how registry row 9 (`stimulus:claimed_pct`) is fed, and what
+     `consolidate()` uses for concept attribution. The view is frozen and
+     hashable (manifest input).
+  2. **Funnel semantics (two-phase, deepest-action)**: a creative decision
+     returns IGNORE|CLICK; a page decision walks BOUNCE|BROWSE → CART →
+     BUY|ABANDON with one rng draw per gate and returns the deepest stage
+     reached (fail the cart gate after browsing ⇒ BROWSE — ABANDONED is
+     reserved for a resumed cart failing BUY, since the episodic ABANDONED
+     edge targets a carted product). The runner expands the returned Action
+     into episodic events.
+  3. **Sanctioned price derivation in decide()**: current price =
+     `reference_price × (1 + current_price_gap)`; with no reference price the
+     budget guards (rows 4/16) cannot fire. No new Scalars field.
+  4. **EXPECTS delta target = perceived claim strength** (SAW and the CLICKED
+     reinforcement, weight from evidence.py); the applier α-smooths toward it
+     and resolves the brand from the causing creative's PROMOTES.
+  5. **Perception owns stimulus edges in engine runs**:
+     `ingest_catalog(..., include_stimuli=False)` (default True keeps every
+     Phase-0/1 path byte-identical) + `perception.writer.write_stimuli()`
+     writing CLAIMS{strength}/PROMOTES/OFFERS{claimed_pct}/SHOWS/PAGE_FOR from
+     the committed perception cache (`fixtures/perception-cache/`, one OpenAI
+     structured-output call per unique stimulus, Concept-enum enforced,
+     unknown → OTHER). HAS_ATTR/IN_CATEGORY/prices stay catalog-only.
+  6. **`cause_creative` event prop** (Event.props, JSONL-only — not a graph
+     edge prop): the runner stamps page/product funnel events with the
+     originating creative id so `consolidate()` attributes preference evidence
+     to the ad's claimed concepts; without it, attribution falls back to
+     catalog truth (HAS_ATTR ∩ SHOWS for pages, HAS_ATTR for products).
+  7. **Segments 1007–1013** added to `fixtures/demo-brand/goal_config.json`
+     (additive rows) + the new `fixtures/demo-brand/personas.json` consumed by
+     `population/factory.py`; population size and segment count are config
+     (validated to 50 segments / 5,000 shoppers). Law-12 import isolation is
+     enforced as source-scans (traits stay in `contracts/types.py`).
