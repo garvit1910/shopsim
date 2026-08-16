@@ -80,7 +80,7 @@ Monorepo: `/engine /web /infra /eval /fixtures CONTRACT.md PLAN.md`. Both regist
 
 **Checkpoints**
 - [x] git log clean (nothing pre-hackathon; both authors). LICENSE + README skeleton in. *(both authors committing as of 2026-08-16)*
-- [ ] Both can push. *(Garvit ✓; Atishay added as collaborator, first push pending `gh auth login`)*
+- [x] Both can push. *(Garvit ✓; Atishay ✓ 2026-08-16 — gh device-flow auth as Atishay6571, pushed 483da20..aa466bc)*
 
 ### 0.2 HydraDB up and proven [Atishay drives]
 
