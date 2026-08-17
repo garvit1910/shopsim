@@ -22,6 +22,7 @@ from __future__ import annotations
 import os
 import time
 from dataclasses import dataclass, field
+from functools import partial
 from pathlib import Path
 
 from ..contracts.enums import Action, EventType
@@ -68,7 +69,10 @@ class RunnerState:
     fulfil: FulfillmentQueue = field(default_factory=FulfillmentQueue)
 
     def rebuild_from_records(self, records: list[dict], t0: int, tick_seconds: int,
-                             pages_by_creative: dict[int, int]) -> None:
+                             page_of) -> None:
+        """page_of(offset, creative) -> page|None — the same pure resolver the
+        live loop uses (steps.page_for), so seeded A/B assignments re-derive
+        identically on resume (CONTRACT v3.4-draft)."""
         for rec in records:
             rtype = rec.get("type")
             if rtype == "TICK_COMPLETE":
@@ -83,7 +87,7 @@ class RunnerState:
                 self.saw.record(offset, tick, rec["subject"])
             elif rtype == EventType.CARTED.value:
                 cause = rec.get("cause_creative", 0)
-                page = pages_by_creative.get(cause, 0)
+                page = page_of(offset, cause) or 0
                 self.carts[offset] = (rec["subject"], page, cause, tick)
             elif rtype == EventType.BOUGHT.value:
                 self.carts.pop(offset, None)
@@ -114,10 +118,14 @@ class SimRunner:
 
     def prepare(self, *, seed_graph: bool = True) -> None:
         cfg = self.cfg
+        # calibration block (CONTRACT v3.4-draft): absent => the module
+        # DEFAULT objects, so populations and minds are byte-identical
+        appraisal_params, choice_params, stage_bases = cfg.calibration()
         specs = load_segment_specs(cfg.personas_path)
         self.shoppers = generate_population(PopulationConfig(
             seed=cfg.seed, population_size=cfg.population_size,
-            segments=specs, run_index=self.run_index))
+            segments=specs, run_index=self.run_index,
+            stage_bases=stage_bases))
         self.by_offset = {shopper_offset(s.shopper_id): s for s in self.shoppers}
         self.segment_by_offset = {o: s.segment_id for o, s in self.by_offset.items()}
 
@@ -127,11 +135,27 @@ class SimRunner:
         self._perceived = perceived
         claims, offers = perceived_maps(perceived)
         self.view = ObjectiveView.from_catalog(cfg.catalog_dir, claims, offers)
-        self.pages = cfg.resolve_pages(self.view)
+        # per-arm schedule + page resolution (CONTRACT v3.4-draft; no
+        # overrides => the shared Phase-3 objects, byte-identical behavior)
+        self.schedule = cfg.schedule_for(self.arm)
+        self.pages = cfg.resolve_pages(self.view, schedule=self.schedule)
+        self.splits = cfg.page_splits(self.schedule)
+        for cid, variants in sorted(self.splits.items()):
+            for pgid in variants:
+                f = self.view.facts(pgid)
+                if f is None or f.kind != "page":
+                    raise ValueError(
+                        f"schedule {cid}: page_ids entry {pgid} is not a known page")
+        self.page_of = partial(steps.page_for, cfg.seed, self.splits, self.pages)
 
         self.goal_cfg = GoalConfig.load(cfg.goal_config_path)
-        self.promo = (PromoSchedule.load(cfg.promo_path)
-                      if cfg.promos_enabled and cfg.promo_path else None)
+        promo_on, promo_path, promo_inline = cfg.promos_for(self.arm)
+        if not promo_on:
+            self.promo = None
+        elif promo_inline is not None:
+            self.promo = PromoSchedule.from_raw(promo_inline)
+        else:
+            self.promo = PromoSchedule.load(promo_path) if promo_path else None
         self.latent = steps.load_latent_quality(cfg.catalog_dir)
         self.list_prices = self._load_list_prices()
         self.manifest = build_manifest(cfg, self.arm.name, self.run_index,
@@ -147,14 +171,18 @@ class SimRunner:
             self.mem.cache._built_at = None
         write_json_atomic(self.run_dir / "manifest.json", self.manifest)
 
-        decide_cls = {"scripted": ScriptedMind, "formula": FormulaMind}[cfg.mind_decide]
-        self.decide_mind = decide_cls(self.view)
-        cons_cls = {"scripted": ScriptedMind, "formula": FormulaMind}[cfg.mind_consolidate]
-        self.consolidator = cons_cls(self.view)
+        def make_mind(kind: str):
+            if kind == "formula":
+                return FormulaMind(self.view, appraisal_params=appraisal_params,
+                                   choice_params=choice_params)
+            return ScriptedMind(self.view)
+
+        self.decide_mind = make_mind(cfg.mind_decide)
+        self.consolidator = make_mind(cfg.mind_consolidate)
 
         hero = min(self.promo.windows) if self.promo else None
         drift_concepts = sorted({
-            c for row in cfg.schedule
+            c for row in self.schedule
             for c in (self.view.facts(row.creative_id).claims if self.view.facts(row.creative_id) else ())})
         self.results = ResultsAccumulator(
             arm=self.arm.name, segment_by_offset=self.segment_by_offset,
@@ -230,9 +258,10 @@ class SimRunner:
 
         # 2. exposure draws
         exposures = steps.exposure_step(
-            seed=cfg.seed, tick=tick, schedule=cfg.schedule,
+            seed=cfg.seed, tick=tick, schedule=self.schedule,
             offsets=list(self.segment_by_offset), cap_per_tick=cfg.frequency_cap_per_tick,
-            cap_72h=cfg.frequency_cap_72h, saw=state.saw)
+            cap_72h=cfg.frequency_cap_72h, saw=state.saw,
+            segment_by_offset=self.segment_by_offset)
         lap("exposure")
 
         # 3+4. creative phase — batched retrieval per scheduled creative
@@ -255,7 +284,7 @@ class SimRunner:
                 events_by_offset.setdefault(o, []).extend(
                     expand_creative(act, sid, creative, now, run))
                 if act is Action.CLICK:
-                    page = self.pages.get(creative)
+                    page = self.page_of(o, creative)
                     if page is None:
                         continue  # page-less product: funnel ends at CLICK
                     facts = self.view.facts(page)

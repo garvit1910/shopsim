@@ -1,0 +1,14 @@
+{
+  "comment": "Phase 4 example: N-creative ad test - one arm per creative on a shared seed (paired populations). Researched default calibration: population CTR lands in the 0.5-2% band, so give small funnels a real population. Run: python -m shopsim.experiments run --spec fixtures/run-configs/exp-ad-mini.json",
+  "type": "ad_test",
+  "name": "exp-ad-mini",
+  "seed": 411,
+  "ticks": 10,
+  "t0": 1770000000,
+  "population": {"size": 200},
+  "creatives": [
+    {"creative_id": 2000001, "reach_prob": 0.35},
+    {"creative_id": 2000002, "reach_prob": 0.35},
+    {"creative_id": 2000003, "reach_prob": 0.35}
+  ]
+}

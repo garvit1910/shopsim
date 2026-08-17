@@ -17,6 +17,8 @@ comes from the environment or <repo>/.env.local (gitignored).
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -26,6 +28,19 @@ from .schema import CONCEPT_NAMES, OUTPUT_JSON_SCHEMA, PerceivedCreative, parse_
 
 DEFAULT_MODEL = "gpt-4o-mini"
 PROMPT_VERSION = "p1"
+# Image ads (Phase 4, CONTRACT v3.4-draft): a separate prompt version so
+# future addendum edits invalidate only image cache entries — text-creative
+# descriptors, prompt, and therefore committed cache hashes stay untouched.
+IMAGE_PROMPT_VERSION = "p1-img1"
+
+IMAGE_PROMPT_ADDENDUM = (
+    "This advertisement is an IMAGE. Read the claims from what the image "
+    "shows and says: headline text, overlaid copy, badges (e.g. sale/discount "
+    "flashes), and unambiguous visual assertions (a shoe mid-race asserts "
+    "performance; leaves/earth imagery asserts eco-friendliness). Do not "
+    "infer product facts the image does not itself assert, and do not "
+    "describe the image — only record its claims on the concept vocabulary."
+)
 
 _CONCEPT_GLOSSES = {
     "PERFORMANCE": "athletic/race performance",
@@ -80,17 +95,22 @@ SYSTEM_PROMPT = (
 )
 
 
-def descriptor_for(creative: dict) -> dict:
+def descriptor_for(creative: dict, *, image_sha256: str | None = None) -> dict:
     """What a shopper (and therefore the LLM) sees — never the authored
-    ground-truth claims or claimed_pct."""
-    return {
+    ground-truth claims or claimed_pct. The image hash is added ONLY for
+    image creatives, so text-creative descriptors (and their committed cache
+    hashes) are byte-identical to Phase 2 (v3.4-draft)."""
+    d = {
         "creative_id": creative["creative_id"],
         "brand_id": creative["brand_id"],
         "name": creative.get("name", ""),
-        "headline": creative["headline"],
-        "body": creative["body"],
+        "headline": creative.get("headline", ""),
+        "body": creative.get("body", ""),
         "offer_product_ids": sorted(o["product_id"] for o in creative["offers"]),
     }
+    if image_sha256 is not None:
+        d["image_sha256"] = image_sha256
+    return d
 
 
 def _load_env_key() -> None:
@@ -106,7 +126,20 @@ def _load_env_key() -> None:
                     return
 
 
-def _call_openai(descriptor: dict, model: str) -> dict:
+def _image_mime(image_bytes: bytes) -> str:
+    """Sniff from magic bytes — the cache never stores a filename."""
+    if image_bytes[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    if image_bytes[:2] == b"\xff\xd8":
+        return "image/jpeg"
+    if image_bytes[:4] == b"RIFF" and image_bytes[8:12] == b"WEBP":
+        return "image/webp"
+    if image_bytes[:6] in (b"GIF87a", b"GIF89a"):
+        return "image/gif"
+    raise ValueError("unsupported image format (need png/jpeg/webp/gif)")
+
+
+def _call_openai(descriptor: dict, model: str, *, image_bytes: bytes | None = None) -> dict:
     _load_env_key()
     from openai import OpenAI  # optional dependency (perception extra)
 
@@ -119,13 +152,25 @@ def _call_openai(descriptor: dict, model: str) -> dict:
         },
         "offer_product_ids": descriptor["offer_product_ids"],
     }
+    if image_bytes is None:
+        system = SYSTEM_PROMPT
+        content = json.dumps(user, sort_keys=True)
+    else:
+        system = SYSTEM_PROMPT + "\n\n" + IMAGE_PROMPT_ADDENDUM
+        mime = _image_mime(image_bytes)
+        b64 = base64.b64encode(image_bytes).decode()
+        content = [
+            {"type": "text", "text": json.dumps(user, sort_keys=True)},
+            {"type": "image_url",
+             "image_url": {"url": f"data:{mime};base64,{b64}"}},
+        ]
     resp = client.chat.completions.create(
         model=model,
         temperature=0,
         response_format={"type": "json_schema", "json_schema": OUTPUT_JSON_SCHEMA},
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": json.dumps(user, sort_keys=True)},
+            {"role": "system", "content": system},
+            {"role": "user", "content": content},
         ],
     )
     return json.loads(resp.choices[0].message.content)
@@ -136,19 +181,34 @@ def perceive_creative(
     cache_dir: Path | None = None,
     model: str = DEFAULT_MODEL,
     call=None,
+    *,
+    image_bytes: bytes | None = None,
 ) -> tuple[PerceivedCreative, bool]:
     """Returns (perceived, was_llm_called). `call` overrides the LLM invoker
-    (tests inject a counting stub); cache hits never invoke anything."""
+    (tests inject a counting stub); cache hits never invoke anything. Image
+    creatives (image_bytes) key on the image sha256 + IMAGE_PROMPT_VERSION;
+    the text path is byte-identical to Phase 2 — including how `call` is
+    invoked, so existing (descriptor, model) stubs keep working."""
     cache_dir = cache_dir or default_cache_dir()
-    descriptor = descriptor_for(creative)
-    key = stimulus_hash(descriptor, PROMPT_VERSION, model)
+    if image_bytes is None:
+        descriptor = descriptor_for(creative)
+        prompt_version = PROMPT_VERSION
+    else:
+        descriptor = descriptor_for(
+            creative, image_sha256=hashlib.sha256(image_bytes).hexdigest())
+        prompt_version = IMAGE_PROMPT_VERSION
+    key = stimulus_hash(descriptor, prompt_version, model)
     entry = load(cache_dir, descriptor["creative_id"], key)
     called = False
     if entry is None:
-        output = (call or _call_openai)(descriptor, model)
+        if image_bytes is None:
+            output = (call or _call_openai)(descriptor, model)
+        else:
+            output = (call or _call_openai)(descriptor, model,
+                                            image_bytes=image_bytes)
         called = True
         store(cache_dir, descriptor["creative_id"], key, descriptor,
-              PROMPT_VERSION, model, output)
+              prompt_version, model, output)
     else:
         output = entry["output"]
     perceived = parse_output(
@@ -164,13 +224,20 @@ def perceive_catalog(
     call=None,
 ) -> tuple[dict[int, PerceivedCreative], int]:
     """Perceive every creative in the demo catalog. Returns (by creative id,
-    number of LLM calls made) — calls == unique uncached stimuli."""
+    number of LLM calls made) — calls == unique uncached stimuli. Creative
+    rows carrying "image" (a path relative to the catalog dir, v3.4-draft)
+    are read and perceived through the multimodal path."""
+    demo_brand_dir = Path(demo_brand_dir)
     creatives = json.loads(
-        (Path(demo_brand_dir) / "creatives.json").read_text())["creatives"]
+        (demo_brand_dir / "creatives.json").read_text())["creatives"]
     out: dict[int, PerceivedCreative] = {}
     calls = 0
     for cr in creatives:
-        perceived, called = perceive_creative(cr, cache_dir, model, call)
+        image_bytes = None
+        if cr.get("image"):
+            image_bytes = (demo_brand_dir / cr["image"]).read_bytes()
+        perceived, called = perceive_creative(cr, cache_dir, model, call,
+                                              image_bytes=image_bytes)
         out[perceived.creative_id] = perceived
         calls += int(called)
     return out, calls

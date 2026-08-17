@@ -1,0 +1,27 @@
+{
+  "experiment": "image-ads-demo",
+  "catalog": "/Users/garvit/shopsim/fixtures/experiments/image-ads-demo/catalog",
+  "perception_cache": "/Users/garvit/shopsim/fixtures/experiments/image-ads-demo/perception-cache",
+  "ingested": [
+    {
+      "creative_id": 2000006,
+      "name": "Planet Run (image)",
+      "image": "images/388d9d06028e5c45.png"
+    },
+    {
+      "creative_id": 2000007,
+      "name": "Flash Sale (image)",
+      "image": "images/59ed0d58a865151c.png"
+    }
+  ],
+  "perception_calls": 2,
+  "all_creative_ids": [
+    2000001,
+    2000002,
+    2000003,
+    2000004,
+    2000005,
+    2000006,
+    2000007
+  ]
+}

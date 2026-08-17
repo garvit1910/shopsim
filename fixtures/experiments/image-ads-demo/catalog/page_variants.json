@@ -1,0 +1,17 @@
+{
+  "comment": "Page A/B descriptors -> SHOWS edges. 4000002 deliberately hides the DISCOUNT (5011) claimed by creative 2000003: EXPECTS minus SHOWS = expectation_violation at the page decision (matches the Appendix-B motif path).",
+  "page_variants": [
+    {
+      "page_id": 4000001,
+      "product_id": 3000001,
+      "variant": "consistent",
+      "shows_concept_ids": [5003, 5004, 5005, 5001, 5011]
+    },
+    {
+      "page_id": 4000002,
+      "product_id": 3000001,
+      "variant": "violating",
+      "shows_concept_ids": [5003, 5004, 5005, 5001]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "comment": "Phase 4 example: the three-cycle promo-addiction experiment (F4 pre-stage). promo_off runs the same hook with zeroed discounts (the shared PRICED_AT shelf stays aligned) and runs FIRST; promo_on carries the real 15/15/20% cycles. Reference-price drift per arm in comparison.json. Run: python -m shopsim.experiments run --spec fixtures/run-configs/exp-promo-mini.json",
+  "type": "pricing",
+  "name": "exp-promo-mini",
+  "seed": 413,
+  "ticks": 15,
+  "t0": 1772000000,
+  "population": {"size": 150},
+  "promo": {"schedule": "fixtures/demo-brand/promo_schedule.json"},
+  "exposure": {"schedule": [
+    {"creative_id": 2000003, "start_tick": 0, "end_tick": 14, "reach_prob": 0.5}
+  ]}
+}

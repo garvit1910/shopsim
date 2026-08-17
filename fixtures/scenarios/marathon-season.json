@@ -1,0 +1,10 @@
+{
+  "comment": "P0 scenario pack (PLAN.md 4.5): the demo lever. The marathon_season wave itself ships in goal_config.json (running shoes 5504, ticks 6-9, x4 arrivals); this pack supplies the on/off arm pair that exhibits it, and the overlay knobs (extra_waves / wave_scale) are available here for custom windows without touching goal_config.json — pack contents merge into goals.overrides, so only config_hash changes and arms stay branch-compatible.",
+  "name": "marathon-season",
+  "status": "P0",
+  "goals_overrides": {},
+  "arm_pair": {
+    "on": {},
+    "off": {"waves_enabled": false}
+  }
+}

@@ -66,9 +66,9 @@ class SegmentSpec:
     budget_sd: float
     theta_adjust: tuple[tuple[str, float], ...] = ()
 
-    def theta(self, stage: str) -> float:
-        base = dict(DEFAULT_STAGE_BASES)[stage]
-        return base + dict(self.theta_adjust).get(stage, 0.0)
+    def theta(self, stage: str, base: dict[str, float] | None = None) -> float:
+        b = dict(DEFAULT_STAGE_BASES) if base is None else base
+        return b[stage] + dict(self.theta_adjust).get(stage, 0.0)
 
 
 @dataclass(frozen=True)
@@ -82,8 +82,15 @@ class PopulationConfig:
     impulsivity_sd: float = 0.15
     price_sensitivity_sd: float = 0.10
     theta_jitter_sd: float = 0.15
+    # CONTRACT v3.4-draft: Phase-4 calibration override; the default is the
+    # module object, so untouched configs draw byte-identical populations
+    stage_bases: tuple[tuple[str, float], ...] = DEFAULT_STAGE_BASES
 
     def __post_init__(self):
+        if tuple(n for n, _ in self.stage_bases) != STAGE_ORDER:
+            raise ValueError(
+                f"stage_bases stages must be {STAGE_ORDER} in order, "
+                f"got {tuple(n for n, _ in self.stage_bases)}")
         if not 0 < self.population_size <= SHOPPER_RUN_BLOCK:
             raise ValueError(
                 f"population_size {self.population_size} outside (0, {SHOPPER_RUN_BLOCK}]")
@@ -169,9 +176,10 @@ def _draw_shopper(config: PopulationConfig, offset: int) -> Shopper:
         PRICE_SENS_MIN, PRICE_SENS_MAX)
     budget = float(max(BUDGET_MIN, rng.normal(spec.budget_mean, spec.budget_sd)))
 
-    # 5. per-stage θ = calibration default + segment shift + shopper jitter
+    # 5. per-stage θ = calibration base + segment shift + shopper jitter
+    theta_base = dict(config.stage_bases)
     stage_bases = tuple(
-        (stage, spec.theta(stage) + float(rng.normal(0.0, config.theta_jitter_sd)))
+        (stage, spec.theta(stage, theta_base) + float(rng.normal(0.0, config.theta_jitter_sd)))
         for stage in STAGE_ORDER
     )
     coeffs = ChoiceCoeffs(

@@ -1,0 +1,6 @@
+{
+  "comment": "P1 stub (PLAN.md 4.5 / F15): claims >> latent quality for one brand — the 'clicks aren't the business' exhibit. Requires an ALTERNATE latent_quality.csv, which changes a SHARED manifest hash (latent_quality_hash): such arms can never be branches, only fresh runs, and the builder refuses this pack until that fresh-run-only flow ships.",
+  "name": "overpromise",
+  "status": "P1-stub",
+  "reason": "overpromise needs an alternate latent_quality.csv (shared manifest hash -> fresh-run-only, never a branch); P1 scope"
+}

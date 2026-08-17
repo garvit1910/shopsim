@@ -1,0 +1,13 @@
+{
+  "comment": "Promo-addiction config: 3 discount cycles on the hero product over a 14-tick run. Each window = PRICED_AT supersessions + PRICE_SEEN events; F4 expects promo-window purchase share +>=15pp cycle 1->3 with full-price conversion trending down, and a downward reference-price drift across cycles.",
+  "product_promos": [
+    {
+      "product_id": 3000001,
+      "cycles": [
+        {"cycle": 1, "start_tick": 3, "end_tick": 5, "discount_pct": 0.15},
+        {"cycle": 2, "start_tick": 8, "end_tick": 10, "discount_pct": 0.15},
+        {"cycle": 3, "start_tick": 12, "end_tick": 14, "discount_pct": 0.20}
+      ]
+    }
+  ]
+}
