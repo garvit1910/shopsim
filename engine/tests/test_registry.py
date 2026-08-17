@@ -3,8 +3,6 @@
 from collections import Counter
 from dataclasses import fields
 
-import pytest
-
 from shopsim.contracts.enums import BEHAVIORAL_MOTIFS, EXPLANATORY_MOTIFS
 from shopsim.contracts.registry import (
     ENTRY_POINTS,
@@ -62,11 +60,31 @@ def test_explanatory_motifs_never_enter():
     assert not set(consumed("motif")) & {m.value for m in EXPLANATORY_MOTIFS}
 
 
-@pytest.mark.skip(reason="Phase-2 checkpoint (Garvit): asserted against the real mind implementation, not the Protocol")
 def test_decide_signature_has_no_traits():
-    """decide(a, s, coeffs, rng) — no AppraisalTraits parameter, by signature."""
+    """decide(a, s, coeffs, rng) — no AppraisalTraits parameter, by signature
+    (Phase-2 checkpoint, asserted against the real FormulaMind)."""
+    import inspect
+
+    from shopsim.minds import choice
+    from shopsim.minds.formula import FormulaMind
+
+    for fn in (choice.decide, FormulaMind.decide):
+        params = inspect.signature(fn).parameters
+        assert "traits" not in params, fn
+        assert all("Traits" not in str(p.annotation) for p in params.values()), fn
 
 
-@pytest.mark.skip(reason="Phase-2 checkpoint (Garvit): traits module importable only by the appraisal module")
 def test_import_graph_traits_isolation():
-    pass
+    """Law-12 separation, source-scanned (agreed 2026-08-17: AppraisalTraits
+    stays in contracts/types.py — the shared contract — so isolation is
+    enforced on the implementation modules' sources instead of import paths):
+    the choice module never names the traits type, the appraisal module never
+    names the coeffs type, and consolidation names neither."""
+    import inspect
+
+    from shopsim.minds import appraisal, choice, consolidation
+
+    assert "AppraisalTraits" not in inspect.getsource(choice)
+    assert "ChoiceCoeffs" not in inspect.getsource(appraisal)
+    src = inspect.getsource(consolidation)
+    assert "AppraisalTraits" not in src and "ChoiceCoeffs" not in src

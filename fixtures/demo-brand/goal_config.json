@@ -6,7 +6,14 @@
     {"segment_id": 1003, "name": "bargain_hunter"},
     {"segment_id": 1004, "name": "comfort_seeker"},
     {"segment_id": 1005, "name": "style_conscious"},
-    {"segment_id": 1006, "name": "casual_browser"}
+    {"segment_id": 1006, "name": "casual_browser"},
+    {"segment_id": 1007, "name": "trail_adventurer"},
+    {"segment_id": 1008, "name": "marathon_trainer"},
+    {"segment_id": 1009, "name": "ortho_comfort"},
+    {"segment_id": 1010, "name": "fashion_forward"},
+    {"segment_id": 1011, "name": "brand_skeptic"},
+    {"segment_id": 1012, "name": "deal_stacker"},
+    {"segment_id": 1013, "name": "quality_investor"}
   ],
   "arrival_rates_per_tick": {
     "1001": {"5504": 0.03, "5501": 0.01, "5505": 0.01},
@@ -14,7 +21,14 @@
     "1003": {"5500": 0.02, "5504": 0.02, "5506": 0.01},
     "1004": {"5500": 0.03, "5508": 0.02},
     "1005": {"5500": 0.03, "5505": 0.02, "5506": 0.02},
-    "1006": {"5500": 0.01, "5504": 0.01}
+    "1006": {"5500": 0.01, "5504": 0.01},
+    "1007": {"5501": 0.04, "5509": 0.02, "5504": 0.01},
+    "1008": {"5504": 0.06, "5503": 0.02, "5507": 0.01},
+    "1009": {"5500": 0.03, "5508": 0.02, "5504": 0.01},
+    "1010": {"5500": 0.03, "5505": 0.03, "5506": 0.02},
+    "1011": {"5500": 0.02, "5504": 0.01},
+    "1012": {"5500": 0.02, "5504": 0.02, "5505": 0.01, "5506": 0.01},
+    "1013": {"5504": 0.02, "5501": 0.02, "5500": 0.01}
   },
   "need_defaults": {
     "strength_range": [0.5, 0.9],

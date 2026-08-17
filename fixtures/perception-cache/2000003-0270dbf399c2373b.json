@@ -1,0 +1,38 @@
+{
+  "creative_id": 2000003,
+  "descriptor": {
+    "body": "Featherlight, earth-first, and on sale this week only. The EcoStride Runner.",
+    "brand_id": 6001,
+    "creative_id": 2000003,
+    "headline": "The planet-friendly runner. Now 15% off.",
+    "name": "EcoStride Sale",
+    "offer_product_ids": [
+      3000001
+    ]
+  },
+  "hash": "0270dbf399c2373b5904f8cc843382d87ce7eae13ec50fd72b4db94d30af5af5",
+  "model": "gpt-4o-mini",
+  "output": {
+    "claimed_discounts": [
+      {
+        "claimed_pct": 0.15,
+        "product_id": 3000001
+      }
+    ],
+    "claims": [
+      {
+        "concept": "LIGHTWEIGHT",
+        "strength": 0.8
+      },
+      {
+        "concept": "ECO_FRIENDLY",
+        "strength": 0.8
+      },
+      {
+        "concept": "DISCOUNT",
+        "strength": 0.9
+      }
+    ]
+  },
+  "prompt_version": "p1"
+}

@@ -60,10 +60,19 @@ _ASPECT_FOR_KIND = {"belief": schema.ASPECT_TRUST_ID, "belief:quality": schema.A
 # ---------------------------------------------------------------------------
 
 
-def ingest_catalog(client: HydraClient, demo_brand_dir: Path | str, now: int = 0) -> int:
+def ingest_catalog(
+    client: HydraClient, demo_brand_dir: Path | str, now: int = 0,
+    include_stimuli: bool = True,
+) -> int:
     """Products, categories, attributes, creatives, pages + the latent table
     (latent props written by the single sanctioned template, Law 15).
-    Idempotent: MERGE for edges, SET for node props. Returns statement count."""
+    Idempotent: MERGE for edges, SET for node props. Returns statement count.
+
+    include_stimuli=False (Phase 2.2, CONTRACT v3.2 note): skip the authored
+    creative/page stimulus edges (CLAIMS/PROMOTES/OFFERS/SHOWS/PAGE_FOR) —
+    engine runs write those from the perception cache instead
+    (shopsim.perception.writer.write_stimuli); catalog truth (products,
+    categories, HAS_ATTR, prices, latent) always comes from here."""
     d = Path(demo_brand_dir)
     stmts: list[Statement] = []
 
@@ -89,29 +98,30 @@ def ingest_catalog(client: HydraClient, demo_brand_dir: Path | str, now: int = 0
                 int(row["product_id"]), float(row["latent_quality"]),
                 float(row["ship_reliability"])))
 
-    creatives = json.loads((d / "creatives.json").read_text())["creatives"]
-    for cr in creatives:
-        cid = cr["creative_id"]
-        stmts.append(cypher.set_node_props("creative", cid, {"brand_id": cr["brand_id"]}))
-        stmts.append(cypher.create_edge("LISTS", schema.CATALOG_ID, cid, merge=True))
-        stmts.append(cypher.create_edge("PROMOTES", cid, cr["brand_id"], merge=True))
-        for claim in cr["claims"]:
-            stmts.append(cypher.create_edge("CLAIMS", cid, claim["concept_id"],
-                                            {"strength": claim["strength"]}, merge=True))
-        for offer in cr["offers"]:
-            stmts.append(cypher.create_edge("OFFERS", cid, offer["product_id"],
-                                            {"claimed_pct": offer["claimed_pct"]}, merge=True))
+    if include_stimuli:
+        creatives = json.loads((d / "creatives.json").read_text())["creatives"]
+        for cr in creatives:
+            cid = cr["creative_id"]
+            stmts.append(cypher.set_node_props("creative", cid, {"brand_id": cr["brand_id"]}))
+            stmts.append(cypher.create_edge("LISTS", schema.CATALOG_ID, cid, merge=True))
+            stmts.append(cypher.create_edge("PROMOTES", cid, cr["brand_id"], merge=True))
+            for claim in cr["claims"]:
+                stmts.append(cypher.create_edge("CLAIMS", cid, claim["concept_id"],
+                                                {"strength": claim["strength"]}, merge=True))
+            for offer in cr["offers"]:
+                stmts.append(cypher.create_edge("OFFERS", cid, offer["product_id"],
+                                                {"claimed_pct": offer["claimed_pct"]}, merge=True))
 
-    pages = json.loads((d / "page_variants.json").read_text())["page_variants"]
-    for pg in pages:
-        pgid = pg["page_id"]
-        prod = pg["product_id"]
-        stmts.append(cypher.set_node_props("page", pgid, {
-            "brand_id": product_brand.get(prod, 0), "product_id": prod}))
-        stmts.append(cypher.create_edge("LISTS", schema.CATALOG_ID, pgid, merge=True))
-        stmts.append(cypher.create_edge("PAGE_FOR", pgid, prod, merge=True))
-        for cid in pg["shows_concept_ids"]:
-            stmts.append(cypher.create_edge("SHOWS", pgid, cid, merge=True))
+        pages = json.loads((d / "page_variants.json").read_text())["page_variants"]
+        for pg in pages:
+            pgid = pg["page_id"]
+            prod = pg["product_id"]
+            stmts.append(cypher.set_node_props("page", pgid, {
+                "brand_id": product_brand.get(prod, 0), "product_id": prod}))
+            stmts.append(cypher.create_edge("LISTS", schema.CATALOG_ID, pgid, merge=True))
+            stmts.append(cypher.create_edge("PAGE_FOR", pgid, prod, merge=True))
+            for cid in pg["shows_concept_ids"]:
+                stmts.append(cypher.create_edge("SHOWS", pgid, cid, merge=True))
 
     client.run_seq(stmts)
     return len(stmts)
