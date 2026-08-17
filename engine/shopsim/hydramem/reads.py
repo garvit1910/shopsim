@@ -81,9 +81,14 @@ class ObjectiveCache:
             self.product_category[pid] = cat[0]["dst"] if cat else 0
             brand = c.run_stmt(cypher.all_edges("SOLD_BY", pid))
             self.product_brand[pid] = brand[0]["dst"] if brand else 0
-            price = c.run_stmt(cypher.live_edges("PRICED_AT", pid, now, ("price",)))
+            # as-of-now selection (not bare liveness): a completed branch arm
+            # or a prior run leaves future/parallel PRICED_AT versions live;
+            # the price *at* now is the newest version opened at or before now.
+            price = [r for r in c.run_stmt(cypher.all_edges(
+                "PRICED_AT", pid, ("price", "t", "valid_to")))
+                if r["t"] <= now < r["valid_to"]]
             if price:
-                self.prices[pid] = price[0]["price"]
+                self.prices[pid] = max(price, key=lambda r: r["t"])["price"]
 
         for cid in creative_ids:
             claims = {r["dst"]: r["strength"] for r in c.run_stmt(

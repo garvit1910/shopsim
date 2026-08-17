@@ -28,3 +28,6 @@ infra/hydradb-data/
 # OS / editor
 .DS_Store
 .idea/
+
+# Phase-3 run artifacts (fixtures/scripted-run-1 is the committed export)
+runs/

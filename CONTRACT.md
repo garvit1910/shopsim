@@ -1,7 +1,8 @@
 # CONTRACT.md — the three inter-lane contracts
 
-**Version: 3.2-draft** (v3.2 entries are additive conventions from Garvit's
-Phase 2, **pending Atishay's ack** per the change rule — see change log)
+**Version: 3.3** (3.2 acked by Atishay 2026-08-17 — the Phase-3 runner builds
+on all seven conventions; 3.3 adds the runner's own additive conventions — see
+change log)
 **Change rule:** any contract or registry change = 5-minute call + version bump here, with a line in the change log at the bottom. `context.scalars` keeps the old v3 MemoryPacket byte-for-byte (first nine fields) — that back-compat is why ScriptedMind and the Phase-3 runner survive every architecture change.
 
 Code is the enforcement layer: everything in this file has a single importable
@@ -349,14 +350,29 @@ Golden chain (contract-tested to the digit): eco prior 0.45 (E=2) → CLICK
   supersessions are **recomputed on replay** from events + evidence.py — never
   logged (keeps the log lean and the math the single source).
 - Run manifest carries **five hashes**: perception cache, appraisal cache,
-  evidence.py, goal config, latent-quality table (+ social config, P1). Replays
-  refuse to run if any changed.
-- Seeded substreams keyed by stable tuples: goals `(seed,"goal",shopper,tick)`,
-  fulfillment `(seed,"fulfil",shopper,product,purchase_t)`, social graph
-  `(seed,"social",population)`.
+  evidence.py, goal config, latent-quality table (+ social config, P1) — plus,
+  v3.3: `config_hash` (sha256 of the canonical run_config JSON + arm name) and
+  `view_hash` (the frozen ObjectiveView). **Resume** refuses if ANY hash
+  changed; **branch** allows exactly `config_hash` to differ (the config delta
+  IS the branch) and refuses on the rest.
+- Seeded substreams keyed by stable tuples: goals `(seed,"goal",offset,tick)`,
+  fulfillment `(seed,"fulfil",offset,product,purchase_t)`, social graph
+  `(seed,"social",population)`; v3.3 adds exposure `(seed,"expose",offset,tick)`
+  and decisions `(seed,"decide",offset,tick,stimulus_id)`. All "shopper" keys
+  are block OFFSETS, never absolute ids, so the same seed reproduces the same
+  trajectory in any run block.
 - Consolidation applies in canonical order `(shopper_id, t, event_rank)`;
   `consolidate()` is pure; the fulfillment queue is derived from BOUGHT events
   + lag, never persisted separately.
+- **Tick markers & resume (v3.3):** the runner appends a raw
+  `{"type":"TICK_COMPLETE", tick, t, run, n_events, belief_counter}` record
+  (fsync'd) after each fully-consolidated tick — a log record, deliberately
+  NOT an EventType member (the closed taxonomy is untouched; replay treats it
+  as tick metadata). All events of tick k carry `t = t0 + k·tick_seconds`,
+  ordered within a shopper by event_rank. Resume = roll the partial tick back
+  by timestamp (every graph write of tick k has `t == now_k` on creates or
+  `valid_to == now_k` on supersessions), truncate the JSONL to the last
+  marker, rebuild in-memory state from the log, re-run the tick.
 
 ## Shared contract tests (run on both stand-ins AND both real implementations)
 
@@ -422,3 +438,55 @@ props), consolidate purity (skips until a Mind implementation exists).
      `population/factory.py`; population size and segment count are config
      (validated to 50 segments / 5,000 shoppers). Law-12 import isolation is
      enforced as source-scans (traits stay in `contracts/types.py`).
+- **3.3** (2026-08-17, Atishay — Phase 3, the runner; additive conventions
+  only, no C1/C2/C3 signature, enum, taxonomy, ENTRY_POINTS-row or evidence.py
+  change; flagging to Garvit at the next sync):
+  1. **Run registry + fresh blocks**: every run allocates a fresh `run_index`
+     from `<repo>/runs/registry.json` (blocks 0–9 reserved for the story graph
+     and integration tests). Shopper ids inside configs (goal_config `scripted`
+     rows, run_config) are block-0-anchored and remapped by offset into the
+     active block: 1000042 means offset 42 in whatever block the run gets.
+  2. **run_config.json** (`fixtures/run-configs/scripted-run-1.json` is the
+     reference): seed, ticks, t0, tick_seconds, mind {decide, consolidate},
+     population {size, personas}, exposure {schedule rows
+     {creative_id, start_tick, end_tick, reach_prob, page_id?}, per-tick +
+     72h frequency caps}, goals {config, overrides {scripted_enabled,
+     waves_enabled}}, fulfillment {lag_ticks=2, sat_noise_sd=0.08 — sat =
+     clamp01(latent_quality + N(0, sd))}, promos {schedule, enabled}, arms
+     [{name, goal_overrides, branch_from?, divergence_tick?}].
+  3. **Action→event expansion table** (`runner/expansion.py`, the v3.2 item-2
+     "runner expands" made concrete): creative IGNORE→SAW, CLICK→SAW+CLICKED;
+     page BOUNCE→BOUNCED **only** (no VISITED/PRICE_SEEN — a bounce must not
+     teach taste, and PRICE_SEEN requires engaging past the bounce);
+     fresh BROWSE→VISITED+PRICE_SEEN+BROWSED, CART→…+CARTED,
+     BUY→…+CARTED+BOUGHT; resumed-cart BUY→VISITED+PRICE_SEEN+BOUGHT,
+     ABANDON→VISITED+PRICE_SEEN+ABANDONED. Every page/product funnel event
+     carries `cause_creative` (v3.2 item 6). Click→page happens in the SAME
+     tick (second batched retrieval); consolidation runs once at tick end.
+  4. **Page resolution**: a scheduled creative lands on the lowest page_id
+     whose PAGE_FOR product it offers (the "consistent" variant by fixture
+     convention), overridable per schedule row; a creative whose products
+     have no page ends its funnel at CLICK.
+  5. **NEED_SATISFIED emission**: `consolidate()` emits the `need_satisfy`
+     delta, the applier supersedes-with-cause, and the runner then writes the
+     NEED_SATISFIED JSONL record from `ApplyReport.satisfied_needs` — so the
+     record reflects what was actually applied. Replay asserts recomputed
+     satisfactions equal the logged set, per tick.
+  6. **Applier fold rule** (Law-14 clarification, engine-side): same-key
+     deltas within one tick — (kind, object), EXPECTS keyed with its resolved
+     brand — fold into ONE supersession recording the tick's final blended
+     state; the blend still applies per delta in canonical order and belief
+     DERIVED_FROM accumulates every folded cause. The ≤6-writes cap counts
+     distinct state changes, not event volume. `ref_price` ranks above
+     `expects` in the cap priority (the Law-14 list orders only need-satisfy >
+     trust > preferences > expects; ref price is load-bearing for the budget
+     guards and F3/F4).
+  7. **C3 concretes**: `results.json` carries the full C3 key skeleton —
+     real values for run_manifest/funnel/ctr_by_day/preference_drift/
+     goal_stats/reference_price_trajectory/motif_stats/violations.count,
+     typed-but-empty placeholders for the Phase-6 analytics keys
+     (fatigue_split, belief metrics, bounce_delta, ci). Validator:
+     `runner/results.py::validate_results`. `progress.json` (per tick, atomic)
+     + a read-only FastAPI (`GET /runs`, `/runs/{id}/progress`,
+     `/runs/{id}/results`) serve the dashboard. No wall-clock value enters
+     results.json or manifest.json: same seed ⇒ byte-identical results.

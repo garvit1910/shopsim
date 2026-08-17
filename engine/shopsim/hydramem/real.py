@@ -204,8 +204,10 @@ class HydraMem:
 
     # -- write path ---------------------------------------------------------
 
-    def ingest_catalog(self, demo_brand_dir: Path | str, now: int = 0) -> int:
-        n = writes.ingest_catalog(self.client, demo_brand_dir, now)
+    def ingest_catalog(self, demo_brand_dir: Path | str, now: int = 0,
+                       include_stimuli: bool = True) -> int:
+        n = writes.ingest_catalog(self.client, demo_brand_dir, now,
+                                  include_stimuli=include_stimuli)
         self.cache._built_at = None
         return n
 

@@ -1,0 +1,23 @@
+{
+ "arm": "need_off",
+ "label": "scripted-run-1",
+ "phase_s": {
+  "consolidation": 62.459,
+  "creative": 2.637,
+  "episodic": 25.084,
+  "exposure": 0.038,
+  "fulfillment": 0.0,
+  "goal": 2.433,
+  "marker": 0.001,
+  "page": 1.131,
+  "promo": 0.017,
+  "results": 1.964,
+  "satisfied": 0.004
+ },
+ "run_id": "r016-scripted-run-1-need_off",
+ "status": "complete",
+ "tick": 13,
+ "ticks": 14,
+ "total_wall_s": 95.776,
+ "updated_at": 1786987870.2437382
+}

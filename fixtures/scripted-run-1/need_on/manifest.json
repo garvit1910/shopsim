@@ -1,0 +1,20 @@
+{
+ "appraisal_cache_hash": null,
+ "arm": "need_on",
+ "config_hash": "04b34c7eb202eecdcc68d39fc166bd8a6de51815ebd76e50783c40097716218f",
+ "evidence_hash": "aff80fef5490946a35161e5dc07eac980936825e70f5da6e4c65076555cb4707",
+ "goal_config_hash": "f566a1a283d077f62b489b61563729d78da1716a7bc798773c2e21a799d31419",
+ "label": "scripted-run-1",
+ "latent_quality_hash": "89cbcfbaf2543b95a66f3554cc005f824f24315cac65b2f7b18e9f166158f55f",
+ "mind": {
+  "consolidate": "formula",
+  "decide": "scripted"
+ },
+ "perception_cache_hash": "c3628b7038844161025014e72fa77fc93dc7c35d0a45fd347f5bd0694f35ea9a",
+ "run_index": 15,
+ "seed": 57,
+ "t0": 1755000000,
+ "tick_seconds": 86400,
+ "ticks": 14,
+ "view_hash": "8270ec3fa5c57874e187d84631274c624762d44e59e34563d1512d2fe385dfbf"
+}

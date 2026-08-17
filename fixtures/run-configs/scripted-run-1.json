@@ -1,0 +1,29 @@
+{
+  "comment": "Phase 3.3 fixture run: 200 shoppers x 14 sim-days, ScriptedMind v2 decides + real consolidate() digests (hybrid, agreed 2026-08-17). Arm need_on runs live; arm need_off branches from its log at tick 6 with the marathon wave and Maya's scripted need turned off — the Maya twin at population scale. Seed 57 puts offsets 41 and 42 (the twin pair) in eco_enthusiast.",
+  "label": "scripted-run-1",
+  "seed": 57,
+  "mind": {"decide": "scripted", "consolidate": "formula"},
+  "ticks": 14,
+  "t0": 1755000000,
+  "tick_seconds": 86400,
+  "population": {"size": 200, "personas": "fixtures/demo-brand/personas.json"},
+  "catalog_dir": "fixtures/demo-brand",
+  "perception_cache": "fixtures/perception-cache",
+  "exposure": {
+    "frequency_cap_per_tick": 1,
+    "frequency_cap_72h": 4,
+    "schedule": [
+      {"creative_id": 2000001, "start_tick": 0, "end_tick": 5, "reach_prob": 0.25},
+      {"creative_id": 2000003, "start_tick": 5, "end_tick": 13, "reach_prob": 0.3}
+    ]
+  },
+  "goals": {"config": "fixtures/demo-brand/goal_config.json", "overrides": {}},
+  "fulfillment": {"lag_ticks": 2, "sat_noise_sd": 0.08},
+  "promos": {"schedule": "fixtures/demo-brand/promo_schedule.json", "enabled": true},
+  "arms": [
+    {"name": "need_on"},
+    {"name": "need_off",
+     "goal_overrides": {"scripted_enabled": false, "waves_enabled": false},
+     "branch_from": "need_on", "divergence_tick": 6}
+  ]
+}

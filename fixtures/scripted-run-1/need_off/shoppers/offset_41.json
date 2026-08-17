@@ -1,0 +1,276 @@
+{
+ "offset": 41,
+ "preference_history_eco": [
+  {
+   "cause_id": 0,
+   "cause_kind": "SEED",
+   "evidence": 2.0,
+   "source": "prior",
+   "t": 1754913600,
+   "valid_to": 1755086400,
+   "w": 0.583164730913338
+  },
+  {
+   "cause_id": 4000001,
+   "cause_kind": "BROWSED",
+   "evidence": 2.6,
+   "source": "learned",
+   "t": 1755086400,
+   "valid_to": 1755259200,
+   "w": 0.6793574853179523
+  },
+  {
+   "cause_id": 4000001,
+   "cause_kind": "BROWSED",
+   "evidence": 3.2,
+   "source": "learned",
+   "t": 1755259200,
+   "valid_to": 1755432000,
+   "w": 0.7394779568208362
+  },
+  {
+   "cause_id": 4000001,
+   "cause_kind": "BROWSED",
+   "evidence": 3.8000000000000003,
+   "source": "learned",
+   "t": 1755432000,
+   "valid_to": 1756036800,
+   "w": 0.7806130162701779
+  },
+  {
+   "cause_id": 3000001,
+   "cause_kind": "BOUGHT",
+   "evidence": 5.9,
+   "source": "learned",
+   "t": 1756036800,
+   "valid_to": 9007199254740991,
+   "w": 0.8586999087841823
+  }
+ ],
+ "shopper_id": 2600041,
+ "trace_ecostride_sale": {
+  "motifs": [
+   {
+    "evidence": 2.1,
+    "path": [
+     2600041,
+     "PREFERS",
+     5011,
+     "CLAIMS",
+     2000003
+    ],
+    "recency": 0.7937005259840997,
+    "strength": 1.0,
+    "type": "preference_fit"
+   },
+   {
+    "evidence": 2.1,
+    "path": [
+     2600041,
+     "PREFERS",
+     5005,
+     "CLAIMS",
+     2000003
+    ],
+    "recency": 0.7937005259840997,
+    "strength": 1.0,
+    "type": "preference_fit"
+   },
+   {
+    "evidence": 5.9,
+    "path": [
+     2600041,
+     "PREFERS",
+     5003,
+     "CLAIMS",
+     2000003
+    ],
+    "recency": 0.7937005259840997,
+    "strength": 0.8586999087841823,
+    "type": "preference_fit"
+   },
+   {
+    "brand": 6001,
+    "path": [
+     2600041,
+     "SAW",
+     2000001,
+     "CLAIMS",
+     5003,
+     "CLAIMS",
+     2000003
+    ],
+    "recency": 0.15749013123685912,
+    "strength": 0.12293632661962596,
+    "type": "brand_semantic_fatigue"
+   },
+   {
+    "path": [
+     2600041,
+     "BOUGHT",
+     3000001,
+     "SOLD_BY",
+     6001
+    ],
+    "type": "habit_path"
+   }
+  ],
+  "scalars": {
+   "active_need": null,
+   "adstock": 1.0775303246425874,
+   "aware_of_brand": true,
+   "budget_left": 149.40399131147157,
+   "cart": [],
+   "current_price_gap": -0.09752383101133724,
+   "exposures_72h": 1,
+   "habit": null,
+   "last_seen_t": 1756036800,
+   "quality_belief": null,
+   "reference_price": {
+    "3000001": 34.571549999999995
+   },
+   "shopper_id": 2600041,
+   "trust_belief": {
+    "confidence": 0.8653846153846153,
+    "evidence": 4.5,
+    "value": 0.6166666666666667
+   }
+  },
+  "shopper_id": 2600041,
+  "stimulus_id": 2000003
+ },
+ "worldview": {
+  "active_needs": [],
+  "beliefs": [
+   {
+    "about_id": 6001,
+    "aspect": "trust",
+    "belief_id": 24000360,
+    "confidence": 0.8653846153846153,
+    "evidence": 4.5,
+    "provenance": [
+     {
+      "count": 1,
+      "first_t": 1756036800,
+      "kind": "BOUGHT",
+      "last_t": 1756036800,
+      "target": 3000001,
+      "weight": 1.5
+     },
+     {
+      "count": 2,
+      "first_t": 1755086400,
+      "kind": "VISITED",
+      "last_t": 1756036800,
+      "target": 4000001,
+      "weight": 1.5
+     },
+     {
+      "count": 2,
+      "first_t": 1755086400,
+      "kind": "BROWSED",
+      "last_t": 1756036800,
+      "target": 4000001,
+      "weight": 1.5
+     }
+    ],
+    "provenance_sentence": "from 2 visits, 2 browses and 1 purchase",
+    "value": 0.6166666666666667
+   }
+  ],
+  "expects": [
+   {
+    "about": 6001,
+    "concept": 5003,
+    "strength": 0.7290050560000002
+   },
+   {
+    "about": 6001,
+    "concept": 5004,
+    "strength": 0.6050880000000001
+   },
+   {
+    "about": 6001,
+    "concept": 5005,
+    "strength": 0.16000000000000003
+   },
+   {
+    "about": 6001,
+    "concept": 5011,
+    "strength": 0.18000000000000002
+   },
+   {
+    "about": 6001,
+    "concept": 5029,
+    "strength": 0.33616
+   }
+  ],
+  "habits": [],
+  "preferences": [
+   {
+    "cause_id": 3000001,
+    "cause_kind": "BOUGHT",
+    "concept": 5003,
+    "evidence": 5.9,
+    "source": "learned",
+    "t": 1756036800,
+    "w": 0.8586999087841823
+   },
+   {
+    "cause_id": 4000001,
+    "cause_kind": "BROWSED",
+    "concept": 5004,
+    "evidence": 3.8000000000000003,
+    "source": "learned",
+    "t": 1755432000,
+    "w": 0.7440642535938652
+   },
+   {
+    "cause_id": 3000001,
+    "cause_kind": "BOUGHT",
+    "concept": 5005,
+    "evidence": 2.1,
+    "source": "learned",
+    "t": 1756036800,
+    "w": 1.0
+   },
+   {
+    "cause_id": 0,
+    "cause_kind": "SEED",
+    "concept": 5009,
+    "evidence": 2.0,
+    "source": "prior",
+    "t": 1754913600,
+    "w": 0.4486151136621475
+   },
+   {
+    "cause_id": 3000001,
+    "cause_kind": "BOUGHT",
+    "concept": 5011,
+    "evidence": 2.1,
+    "source": "learned",
+    "t": 1756036800,
+    "w": 1.0
+   },
+   {
+    "cause_id": 0,
+    "cause_kind": "SEED",
+    "concept": 5019,
+    "evidence": 2.0,
+    "source": "prior",
+    "t": 1754913600,
+    "w": 0.3859457599210034
+   },
+   {
+    "cause_id": 4000001,
+    "cause_kind": "BROWSED",
+    "concept": 5029,
+    "evidence": 0.6,
+    "source": "learned",
+    "t": 1755086400,
+    "w": 1.0
+   }
+  ],
+  "shopper_id": 2600041
+ }
+}

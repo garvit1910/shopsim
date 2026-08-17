@@ -1,0 +1,1727 @@
+{
+ "belief_confidence_dist": [],
+ "belief_drift": [],
+ "ci": {},
+ "ctr_by_day": [
+  {
+   "clicks": 0,
+   "ctr": 0.0,
+   "exposures": 53,
+   "tick": 0
+  },
+  {
+   "clicks": 17,
+   "ctr": 0.31481,
+   "exposures": 54,
+   "tick": 1
+  },
+  {
+   "clicks": 16,
+   "ctr": 0.33333,
+   "exposures": 48,
+   "tick": 2
+  },
+  {
+   "clicks": 14,
+   "ctr": 0.27451,
+   "exposures": 51,
+   "tick": 3
+  },
+  {
+   "clicks": 26,
+   "ctr": 0.47273,
+   "exposures": 55,
+   "tick": 4
+  },
+  {
+   "clicks": 49,
+   "ctr": 0.48515,
+   "exposures": 101,
+   "tick": 5
+  },
+  {
+   "clicks": 44,
+   "ctr": 0.65672,
+   "exposures": 67,
+   "tick": 6
+  },
+  {
+   "clicks": 43,
+   "ctr": 0.70492,
+   "exposures": 61,
+   "tick": 7
+  },
+  {
+   "clicks": 30,
+   "ctr": 0.57692,
+   "exposures": 52,
+   "tick": 8
+  },
+  {
+   "clicks": 38,
+   "ctr": 0.62295,
+   "exposures": 61,
+   "tick": 9
+  },
+  {
+   "clicks": 38,
+   "ctr": 0.59375,
+   "exposures": 64,
+   "tick": 10
+  },
+  {
+   "clicks": 29,
+   "ctr": 0.56863,
+   "exposures": 51,
+   "tick": 11
+  },
+  {
+   "clicks": 42,
+   "ctr": 0.65625,
+   "exposures": 64,
+   "tick": 12
+  },
+  {
+   "clicks": 42,
+   "ctr": 0.61765,
+   "exposures": 68,
+   "tick": 13
+  }
+ ],
+ "fatigue_split": {
+  "asset": [],
+  "brand_msg": []
+ },
+ "funnel": {
+  "need_off": {
+   "1001": {
+    "ABANDONED": 0,
+    "BOUGHT": 3,
+    "BOUNCED": 0,
+    "BROWSED": 31,
+    "CARTED": 3,
+    "CLICKED": 31,
+    "EXPERIENCED": 2,
+    "SAW": 58,
+    "VISITED": 31
+   },
+   "1002": {
+    "ABANDONED": 0,
+    "BOUGHT": 10,
+    "BOUNCED": 0,
+    "BROWSED": 57,
+    "CARTED": 10,
+    "CLICKED": 57,
+    "EXPERIENCED": 9,
+    "SAW": 94,
+    "VISITED": 57
+   },
+   "1003": {
+    "ABANDONED": 0,
+    "BOUGHT": 3,
+    "BOUNCED": 0,
+    "BROWSED": 44,
+    "CARTED": 3,
+    "CLICKED": 44,
+    "EXPERIENCED": 3,
+    "SAW": 90,
+    "VISITED": 44
+   },
+   "1004": {
+    "ABANDONED": 0,
+    "BOUGHT": 0,
+    "BOUNCED": 0,
+    "BROWSED": 38,
+    "CARTED": 0,
+    "CLICKED": 38,
+    "EXPERIENCED": 0,
+    "SAW": 90,
+    "VISITED": 38
+   },
+   "1005": {
+    "ABANDONED": 0,
+    "BOUGHT": 0,
+    "BOUNCED": 0,
+    "BROWSED": 52,
+    "CARTED": 0,
+    "CLICKED": 52,
+    "EXPERIENCED": 0,
+    "SAW": 99,
+    "VISITED": 52
+   },
+   "1006": {
+    "ABANDONED": 0,
+    "BOUGHT": 2,
+    "BOUNCED": 0,
+    "BROWSED": 36,
+    "CARTED": 2,
+    "CLICKED": 36,
+    "EXPERIENCED": 1,
+    "SAW": 75,
+    "VISITED": 36
+   },
+   "1007": {
+    "ABANDONED": 0,
+    "BOUGHT": 4,
+    "BOUNCED": 0,
+    "BROWSED": 37,
+    "CARTED": 4,
+    "CLICKED": 37,
+    "EXPERIENCED": 2,
+    "SAW": 73,
+    "VISITED": 37
+   },
+   "1008": {
+    "ABANDONED": 0,
+    "BOUGHT": 5,
+    "BOUNCED": 0,
+    "BROWSED": 24,
+    "CARTED": 5,
+    "CLICKED": 24,
+    "EXPERIENCED": 4,
+    "SAW": 49,
+    "VISITED": 24
+   },
+   "1009": {
+    "ABANDONED": 0,
+    "BOUGHT": 2,
+    "BOUNCED": 0,
+    "BROWSED": 11,
+    "CARTED": 2,
+    "CLICKED": 11,
+    "EXPERIENCED": 0,
+    "SAW": 22,
+    "VISITED": 11
+   },
+   "1010": {
+    "ABANDONED": 0,
+    "BOUGHT": 0,
+    "BOUNCED": 0,
+    "BROWSED": 18,
+    "CARTED": 0,
+    "CLICKED": 18,
+    "EXPERIENCED": 0,
+    "SAW": 50,
+    "VISITED": 18
+   },
+   "1011": {
+    "ABANDONED": 0,
+    "BOUGHT": 0,
+    "BOUNCED": 0,
+    "BROWSED": 22,
+    "CARTED": 0,
+    "CLICKED": 22,
+    "EXPERIENCED": 0,
+    "SAW": 36,
+    "VISITED": 22
+   },
+   "1012": {
+    "ABANDONED": 0,
+    "BOUGHT": 2,
+    "BOUNCED": 0,
+    "BROWSED": 27,
+    "CARTED": 2,
+    "CLICKED": 27,
+    "EXPERIENCED": 2,
+    "SAW": 54,
+    "VISITED": 27
+   },
+   "1013": {
+    "ABANDONED": 0,
+    "BOUGHT": 1,
+    "BOUNCED": 0,
+    "BROWSED": 31,
+    "CARTED": 1,
+    "CLICKED": 31,
+    "EXPERIENCED": 1,
+    "SAW": 60,
+    "VISITED": 31
+   }
+  }
+ },
+ "goal_stats": {
+  "decisions_from_tick": 6,
+  "decisions_need_off": 264,
+  "decisions_need_on": 42,
+  "p_buy_need_off": 0.0,
+  "p_buy_need_on": 0.64286,
+  "time_to_satisfaction": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   2,
+   2,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   4,
+   4,
+   4,
+   5,
+   5,
+   6
+  ]
+ },
+ "motif_stats": {
+  "brand_semantic_fatigue": {
+   "mean_strength": 0.16075,
+   "prevalence_by_outcome": {
+    "CLICK": 265,
+    "IGNORE": 137
+   }
+  },
+  "expectation_violation": {
+   "mean_strength": 0.16276,
+   "prevalence_by_outcome": {
+    "BROWSE": 236,
+    "BUY": 20
+   }
+  },
+  "goal_fit": {
+   "mean_strength": 0.71968,
+   "prevalence_by_outcome": {
+    "BROWSE": 15,
+    "BUY": 27,
+    "CLICK": 42
+   }
+  },
+  "preference_fit": {
+   "mean_strength": 0.93829,
+   "prevalence_by_outcome": {
+    "CLICK": 261,
+    "IGNORE": 88
+   }
+  }
+ },
+ "preference_drift": [
+  {
+   "concept": 5003,
+   "segment": 1001,
+   "series": [
+    0.68163,
+    0.68903,
+    0.68903,
+    0.69365,
+    0.70634,
+    0.72221,
+    0.73901,
+    0.76381,
+    0.76707,
+    0.7736,
+    0.78768,
+    0.79198,
+    0.79975,
+    0.80375
+   ]
+  },
+  {
+   "concept": 5003,
+   "segment": 1002,
+   "series": [
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5003,
+   "segment": 1003,
+   "series": [
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5003,
+   "segment": 1004,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5003,
+   "segment": 1005,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5003,
+   "segment": 1006,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5003,
+   "segment": 1007,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5003,
+   "segment": 1008,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5003,
+   "segment": 1009,
+   "series": [
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5003,
+   "segment": 1010,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5003,
+   "segment": 1011,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5003,
+   "segment": 1012,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5003,
+   "segment": 1013,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5004,
+   "segment": 1001,
+   "series": [
+    0.59857,
+    0.60721,
+    0.60721,
+    0.6126,
+    0.62748,
+    0.65273,
+    0.65273,
+    0.65273,
+    0.65675,
+    0.66211,
+    0.66211,
+    0.66211,
+    0.66211,
+    0.66211
+   ]
+  },
+  {
+   "concept": 5004,
+   "segment": 1002,
+   "series": [
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5004,
+   "segment": 1003,
+   "series": [
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5004,
+   "segment": 1004,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5004,
+   "segment": 1005,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5004,
+   "segment": 1006,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5004,
+   "segment": 1007,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5004,
+   "segment": 1008,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5004,
+   "segment": 1009,
+   "series": [
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5004,
+   "segment": 1010,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5004,
+   "segment": 1011,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5004,
+   "segment": 1012,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5004,
+   "segment": 1013,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5005,
+   "segment": 1001,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5005,
+   "segment": 1002,
+   "series": [
+    0.53755,
+    0.53755,
+    0.53755,
+    0.53755,
+    0.53755,
+    0.56113,
+    0.60143,
+    0.62811,
+    0.63846,
+    0.65325,
+    0.68175,
+    0.69781,
+    0.71368,
+    0.72751
+   ]
+  },
+  {
+   "concept": 5005,
+   "segment": 1003,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5005,
+   "segment": 1004,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5005,
+   "segment": 1005,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5005,
+   "segment": 1006,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5005,
+   "segment": 1007,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5005,
+   "segment": 1008,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5005,
+   "segment": 1009,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5005,
+   "segment": 1010,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5005,
+   "segment": 1011,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5005,
+   "segment": 1012,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5005,
+   "segment": 1013,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5011,
+   "segment": 1001,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5011,
+   "segment": 1002,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5011,
+   "segment": 1003,
+   "series": [
+    0.70744,
+    0.70744,
+    0.70744,
+    0.70744,
+    0.70744,
+    0.72114,
+    0.74213,
+    0.75373,
+    0.75696,
+    0.76576,
+    0.77512,
+    0.78143,
+    0.78854,
+    0.79499
+   ]
+  },
+  {
+   "concept": 5011,
+   "segment": 1004,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5011,
+   "segment": 1005,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5011,
+   "segment": 1006,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5011,
+   "segment": 1007,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5011,
+   "segment": 1008,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5011,
+   "segment": 1009,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5011,
+   "segment": 1010,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5011,
+   "segment": 1011,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5011,
+   "segment": 1012,
+   "series": [
+    0.73996,
+    0.73996,
+    0.73996,
+    0.73996,
+    0.73996,
+    0.74555,
+    0.76054,
+    0.76496,
+    0.77113,
+    0.79287,
+    0.79791,
+    0.80149,
+    0.81283,
+    0.8145
+   ]
+  },
+  {
+   "concept": 5011,
+   "segment": 1013,
+   "series": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5029,
+   "segment": 1001,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5029,
+   "segment": 1002,
+   "series": [
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5029,
+   "segment": 1003,
+   "series": [
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5029,
+   "segment": 1004,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5029,
+   "segment": 1005,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5029,
+   "segment": 1006,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5029,
+   "segment": 1007,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5029,
+   "segment": 1008,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5029,
+   "segment": 1009,
+   "series": [
+    null,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5029,
+   "segment": 1010,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5029,
+   "segment": 1011,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5029,
+   "segment": 1012,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "concept": 5029,
+   "segment": 1013,
+   "series": [
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  }
+ ],
+ "provenance_coverage": null,
+ "reference_price_trajectory": [
+  {
+   "current_price": 39.0,
+   "mean_reference_price": null,
+   "n_holders": 0,
+   "tick": 0
+  },
+  {
+   "current_price": 39.0,
+   "mean_reference_price": 39.0,
+   "n_holders": 17,
+   "tick": 1
+  },
+  {
+   "current_price": 39.0,
+   "mean_reference_price": 39.0,
+   "n_holders": 28,
+   "tick": 2
+  },
+  {
+   "current_price": 33.15,
+   "mean_reference_price": 37.5547,
+   "n_holders": 34,
+   "tick": 3
+  },
+  {
+   "current_price": 33.15,
+   "mean_reference_price": 35.82,
+   "n_holders": 53,
+   "tick": 4
+  },
+  {
+   "current_price": 33.15,
+   "mean_reference_price": 34.7442,
+   "n_holders": 77,
+   "tick": 5
+  },
+  {
+   "current_price": 39.0,
+   "mean_reference_price": 35.9693,
+   "n_holders": 96,
+   "tick": 6
+  },
+  {
+   "current_price": 39.0,
+   "mean_reference_price": 36.5557,
+   "n_holders": 108,
+   "tick": 7
+  },
+  {
+   "current_price": 33.15,
+   "mean_reference_price": 36.1878,
+   "n_holders": 113,
+   "tick": 8
+  },
+  {
+   "current_price": 33.15,
+   "mean_reference_price": 35.7964,
+   "n_holders": 119,
+   "tick": 9
+  },
+  {
+   "current_price": 33.15,
+   "mean_reference_price": 35.3721,
+   "n_holders": 132,
+   "tick": 10
+  },
+  {
+   "current_price": 39.0,
+   "mean_reference_price": 35.6916,
+   "n_holders": 136,
+   "tick": 11
+  },
+  {
+   "current_price": 31.2,
+   "mean_reference_price": 35.177,
+   "n_holders": 143,
+   "tick": 12
+  },
+  {
+   "current_price": 31.2,
+   "mean_reference_price": 34.7513,
+   "n_holders": 149,
+   "tick": 13
+  }
+ ],
+ "run_manifest": {
+  "appraisal_cache_hash": null,
+  "arm": "need_off",
+  "config_hash": "9ed1320b18a89b4cf04b64f214a33a39d1593a1ce45cf5b549e6c258240b4f44",
+  "evidence_hash": "aff80fef5490946a35161e5dc07eac980936825e70f5da6e4c65076555cb4707",
+  "goal_config_hash": "f566a1a283d077f62b489b61563729d78da1716a7bc798773c2e21a799d31419",
+  "label": "scripted-run-1",
+  "latent_quality_hash": "89cbcfbaf2543b95a66f3554cc005f824f24315cac65b2f7b18e9f166158f55f",
+  "mind": {
+   "consolidate": "formula",
+   "decide": "scripted"
+  },
+  "perception_cache_hash": "c3628b7038844161025014e72fa77fc93dc7c35d0a45fd347f5bd0694f35ea9a",
+  "run_index": 16,
+  "seed": 57,
+  "t0": 1755000000,
+  "tick_seconds": 86400,
+  "ticks": 14,
+  "view_hash": "8270ec3fa5c57874e187d84631274c624762d44e59e34563d1512d2fe385dfbf"
+ },
+ "violations": {
+  "bounce_delta": null,
+  "count": 256
+ }
+}

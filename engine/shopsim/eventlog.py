@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 from typing import Any, IO
 
@@ -45,6 +46,12 @@ class JsonlEventLog:
 
     def flush(self) -> None:
         self._fh.flush()
+
+    def sync(self) -> None:
+        """flush + fsync — the Phase-3 TICK_COMPLETE marker must be durable
+        before the tick counts as done (resume finds the last marker)."""
+        self._fh.flush()
+        os.fsync(self._fh.fileno())
 
     def close(self) -> None:
         self._fh.flush()

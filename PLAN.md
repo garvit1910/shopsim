@@ -123,7 +123,7 @@ Why: divergence between shelves one and three IS the track — overwrite trackin
 
 **Checkpoints**
 - [x] Routing decided per motif and written down, with measured latencies (single-context and batched). *(2026-08-16: Route B everywhere — SPpaths is strictly direction-following, reversed-hop motif paths return 0 paths; CONTRACT.md §Routing + /infra/README.md Phase-1.1 section)*
-- [x] Contract tests green on real HydraMem (same tests the mock passes). *(SHOPSIM_HYDRAMEM=real: full suite incl. real-marked integration tests, 62 passed; default mock run byte-identical)*
+- [x] Contract tests green on real HydraMem (same tests the mock passes). *(SHOPSIM_HYDRAMEM=real: full suite incl. real-marked integration tests, 62 passed at Phase-1 close — 155 as of Phase 3; default mock run byte-identical)*
 - [x] Scripted story graph returns exactly the expected hits for all four P0 motifs — including a designed miss per motif (no path → motif absent → abstention works structurally) and a null trust belief for an unknown brand. *(story.py cast + tests/real/test_motifs_real.py; P1 social_proof hit/miss too)*
 - [x] The golden preference chain renders end-to-end: prior 0.45 → 0.476 → 0.532 → 0.614 → 0.714 → 0.761, each version carrying its cause (Appendix F numbers, asserted to the digit). *(test_golden_chain_real.py, on a dedicated shopper — 1000042 stays twin-symmetric)*
 - [x] Supersession proof on three layers: subjective (belief now vs as-of-T), objective (price now vs before the promo), goal (NEEDS active → satisfied-with-cause). *(test_supersession_real.py)*
@@ -179,14 +179,14 @@ Why: divergence between shelves one and three IS the track — overwrite trackin
 8. progress, results accumulation, checkpoint
 ```
 
-**Build items:** 3.1 the loop above + progress endpoint + results.json. 3.2 replay/branch wired end-to-end (paired arms from one log; worldview recomputed, never replayed from stored deltas). 3.3 commit `/fixtures/scripted-run-1/` — ScriptedMind v2 reacts to active_need scalars (BUY only when a need is live and price ≤ cap) and ScriptedConsolidate produces a visible drift series, so the fixtures exercise goal + drift pipelines before S1.
+**Build items:** 3.1 the loop above + progress endpoint + results.json. 3.2 replay/branch wired end-to-end (paired arms from one log; worldview recomputed, never replayed from stored deltas). 3.3 commit `/fixtures/scripted-run-1/` — ScriptedMind v2 reacts to active_need scalars (BUY only when a need is live and price ≤ cap) and ~~ScriptedConsolidate produces a visible drift series~~ **amended 2026-08-17 (hybrid, CONTRACT v3.3)**: the fixture run digests events through the REAL `minds.consolidation.consolidate()` (ScriptedMind decides, formula consolidates) so the fixtures carry real belief/EXPECTS/ref-price series; ScriptedConsolidate stays as the C2 purity stand-in only. ScriptedMind v2 is stimulus-kind-aware per the v3.2 two-phase funnel.
 
 **Checkpoints**
-- [ ] 200 shoppers × 14 sim-days with ScriptedMind ≤ ~1.5 min against real HydraDB.
-- [ ] Paired branch run: two arms, identical populations, per-arm funnels.
-- [ ] Kill at tick 7 → resume → totals consistent, including a fulfillment delivery pending across the kill.
-- [ ] Goal lifecycle visible in fixtures: NEEDS activated → satisfied-by-purchase with cause.
-- [ ] Fixtures committed and C3-valid (drift + goal stats populated).
+- [ ] 200 shoppers × 14 sim-days with ScriptedMind ≤ ~1.5 min against real HydraDB. *(2026-08-17: functionally complete at 2:22 wall — but the dev store had grown to 417MB and the measured write ceiling degraded 220/s → 82/s (store-size-dependent, container-restart-independent). A fresh store — what a judge's compose-up sees — projects ~65s. Pending: wipe `infra/hydradb-data/store` (archive it), restart, re-measure. Per-phase wall-clocks live in progress.json; write-behind escalations still pre-agreed if a fresh store misses.)*
+- [x] Paired branch run: two arms, identical populations, per-arm funnels. *(need_off branched from need_on's log at tick 6 into a fresh block, worldview recomputed; prefix byte-identical (offset-normalized), 56 vs 32 buys; per-arm funnels in fixtures/scripted-run-1/results.json)*
+- [x] Kill at tick 7 → resume → totals consistent, including a fulfillment delivery pending across the kill. *(--crash-after consolidation:7 → resume: rollback-by-timestamp of the partial tick (episodic deletes + subjective/belief reopens), JSONL truncated to the TICK_COMPLETE marker, re-run — results.json AND event log byte-identical to an uninterrupted same-seed run; EXPERIENCED delivered across the kill; also unit-scale in tests/real/test_runner_real.py)*
+- [x] Goal lifecycle visible in fixtures: NEEDS activated → satisfied-by-purchase with cause. *(Maya offset 42: scripted NEED_ACTIVATED t8 → BOUGHT t10 → NEED_SATISFIED{cause BOUGHT 3000001} → EXPERIENCED t12; closed NEEDS edge carries closed_cause_kind/id on the live graph)*
+- [x] Fixtures committed and C3-valid (drift + goal stats populated). *(fixtures/scripted-run-1/: merged results.json validates (runner/results.py), 65 drift series, p_buy_need_on 0.59 vs need_off 0.0, ref-price trajectory shows all 3 promo cycles; drill-down worldview/trace/history samples for the Maya twin + busiest buyers)*
 
 ---
 

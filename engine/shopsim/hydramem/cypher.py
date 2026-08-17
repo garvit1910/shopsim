@@ -148,6 +148,31 @@ def delete_edges_batch(rel: str, pairs: list[tuple[int, int]]) -> Statement:
     )
 
 
+def delete_edges_at_t(rel: str, a: int, b: int, t: int) -> Statement:
+    """Phase-3 partial-tick rollback: delete every (a)-[rel]->(b) version
+    stamped t (episodic edges and subjective re-creates of the incomplete
+    tick). Probed live 2026-08-17: edge-prop WHERE + DELETE works with both
+    endpoints anchored."""
+    _check_rel(rel)
+    return (
+        f"MATCH (a {{id: $__a}})-[e:{rel}]->(b {{id: $__b}}) WHERE e.t = $__t DELETE e",
+        {"__a": a, "__b": b, "__t": t},
+    )
+
+
+def reopen_edges(rel: str, a: int, b: int, t: int) -> Statement:
+    """Phase-3 partial-tick rollback: reverse a supersession made at t
+    (valid_to == t -> sentinel). Same verified WHERE+SET shape as
+    supersede_edge; probed live 2026-08-17."""
+    if rel not in schema.BITEMPORAL_EDGES:
+        raise CypherTemplateError(f":{rel} is not bitemporal; nothing to reopen")
+    return (
+        f"MATCH (a {{id: $__a}})-[e:{rel}]->(b {{id: $__b}}) "
+        f"WHERE e.valid_to = $__t SET e.valid_to = $__sent",
+        {"__a": a, "__b": b, "__t": t, "__sent": schema.VALID_TO_SENTINEL},
+    )
+
+
 # ---------------------------------------------------------------------------
 # reads (edge props => per-source singles)
 # ---------------------------------------------------------------------------

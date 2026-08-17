@@ -1,0 +1,231 @@
+{
+ "offset": 42,
+ "preference_history_eco": [
+  {
+   "cause_id": 0,
+   "cause_kind": "SEED",
+   "evidence": 2.0,
+   "source": "prior",
+   "t": 1754913600,
+   "valid_to": 1755864000,
+   "w": 0.6990570180284184
+  },
+  {
+   "cause_id": 4000001,
+   "cause_kind": "BROWSED",
+   "evidence": 2.6,
+   "source": "learned",
+   "t": 1755864000,
+   "valid_to": 1755950400,
+   "w": 0.7685053984833987
+  },
+  {
+   "cause_id": 4000001,
+   "cause_kind": "BROWSED",
+   "evidence": 3.2,
+   "source": "learned",
+   "t": 1755950400,
+   "valid_to": 9007199254740991,
+   "w": 0.8119106362677615
+  }
+ ],
+ "shopper_id": 2600042,
+ "trace_ecostride_sale": {
+  "motifs": [
+   {
+    "evidence": 0.6,
+    "path": [
+     2600042,
+     "PREFERS",
+     5011,
+     "CLAIMS",
+     2000003
+    ],
+    "recency": 0.5,
+    "strength": 1.0,
+    "type": "preference_fit"
+   },
+   {
+    "evidence": 0.6,
+    "path": [
+     2600042,
+     "PREFERS",
+     5005,
+     "CLAIMS",
+     2000003
+    ],
+    "recency": 0.5,
+    "strength": 1.0,
+    "type": "preference_fit"
+   },
+   {
+    "evidence": 3.2,
+    "path": [
+     2600042,
+     "PREFERS",
+     5003,
+     "CLAIMS",
+     2000003
+    ],
+    "recency": 0.6299605249474366,
+    "strength": 0.8119106362677615,
+    "type": "preference_fit"
+   },
+   {
+    "brand": 6001,
+    "path": [
+     2600042,
+     "SAW",
+     2000001,
+     "CLAIMS",
+     5003,
+     "CLAIMS",
+     2000003
+    ],
+    "recency": 0.12500000000000003,
+    "strength": 0.04166666666666668,
+    "type": "brand_semantic_fatigue"
+   }
+  ],
+  "scalars": {
+   "active_need": null,
+   "adstock": 1.2361359120657514,
+   "aware_of_brand": true,
+   "budget_left": 141.67961146963862,
+   "cart": [],
+   "current_price_gap": -0.1061452513966481,
+   "exposures_72h": 2,
+   "habit": null,
+   "last_seen_t": 1755950400,
+   "quality_belief": null,
+   "reference_price": {
+    "3000001": 34.905
+   },
+   "shopper_id": 2600042,
+   "trust_belief": {
+    "confidence": 0.6818181818181818,
+    "evidence": 1.5,
+    "value": 0.6
+   }
+  },
+  "shopper_id": 2600042,
+  "stimulus_id": 2000003
+ },
+ "worldview": {
+  "active_needs": [],
+  "beliefs": [
+   {
+    "about_id": 6001,
+    "aspect": "trust",
+    "belief_id": 24000287,
+    "confidence": 0.6818181818181818,
+    "evidence": 1.5,
+    "provenance": [
+     {
+      "count": 1,
+      "first_t": 1755864000,
+      "kind": "VISITED",
+      "last_t": 1755864000,
+      "target": 4000001,
+      "weight": 0.75
+     },
+     {
+      "count": 1,
+      "first_t": 1755864000,
+      "kind": "BROWSED",
+      "last_t": 1755864000,
+      "target": 4000001,
+      "weight": 0.75
+     }
+    ],
+    "provenance_sentence": "from 1 visit and 1 browse",
+    "value": 0.6
+   }
+  ],
+  "expects": [
+   {
+    "about": 6001,
+    "concept": 5003,
+    "strength": 0.6374707200000003
+   },
+   {
+    "about": 6001,
+    "concept": 5004,
+    "strength": 0.18000000000000002
+   },
+   {
+    "about": 6001,
+    "concept": 5005,
+    "strength": 0.47232000000000013
+   },
+   {
+    "about": 6001,
+    "concept": 5011,
+    "strength": 0.53136
+   },
+   {
+    "about": 6001,
+    "concept": 5029,
+    "strength": 0.1
+   }
+  ],
+  "habits": [],
+  "preferences": [
+   {
+    "cause_id": 4000001,
+    "cause_kind": "BROWSED",
+    "concept": 5003,
+    "evidence": 3.2,
+    "source": "learned",
+    "t": 1755950400,
+    "w": 0.8119106362677615
+   },
+   {
+    "cause_id": 0,
+    "cause_kind": "SEED",
+    "concept": 5004,
+    "evidence": 2.0,
+    "source": "prior",
+    "t": 1754913600,
+    "w": 0.6816363572053864
+   },
+   {
+    "cause_id": 4000001,
+    "cause_kind": "BROWSED",
+    "concept": 5005,
+    "evidence": 0.6,
+    "source": "learned",
+    "t": 1755864000,
+    "w": 1.0
+   },
+   {
+    "cause_id": 0,
+    "cause_kind": "SEED",
+    "concept": 5009,
+    "evidence": 2.0,
+    "source": "prior",
+    "t": 1754913600,
+    "w": 0.5744445914283314
+   },
+   {
+    "cause_id": 4000001,
+    "cause_kind": "BROWSED",
+    "concept": 5011,
+    "evidence": 0.6,
+    "source": "learned",
+    "t": 1755864000,
+    "w": 1.0
+   },
+   {
+    "cause_id": 0,
+    "cause_kind": "SEED",
+    "concept": 5019,
+    "evidence": 2.0,
+    "source": "prior",
+    "t": 1754913600,
+    "w": 0.47905945184560456
+   }
+  ],
+  "shopper_id": 2600042
+ }
+}
