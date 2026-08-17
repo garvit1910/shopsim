@@ -1,8 +1,10 @@
 # CONTRACT.md — the three inter-lane contracts
 
-**Version: 3.3** (3.2 acked by Atishay 2026-08-17 — the Phase-3 runner builds
-on all seven conventions; 3.3 adds the runner's own additive conventions — see
-change log)
+**Version: 3.4-draft** (3.3 flagged to Garvit 2026-08-17 and built on by
+Phase 4; 3.4-draft adds the experiment-adapter conventions — additive only,
+no C1/C2/C3 signature, enum, taxonomy, ENTRY_POINTS-row or evidence.py
+change, plus one C1 scalar bug-fix (cart re-derivation) — see change log;
+pending Atishay's ack at the next sync)
 **Change rule:** any contract or registry change = 5-minute call + version bump here, with a line in the change log at the bottom. `context.scalars` keeps the old v3 MemoryPacket byte-for-byte (first nine fields) — that back-compat is why ScriptedMind and the Phase-3 runner survive every architecture change.
 
 Code is the enforcement layer: everything in this file has a single importable
@@ -490,3 +492,81 @@ props), consolidate purity (skips until a Mind implementation exists).
      + a read-only FastAPI (`GET /runs`, `/runs/{id}/progress`,
      `/runs/{id}/results`) serve the dashboard. No wall-clock value enters
      results.json or manifest.json: same seed ⇒ byte-identical results.
+
+- **3.4-draft** (2026-08-18, Garvit — Phase 4, experiment adapters; additive
+  conventions + one C1 scalar bug-fix; no C1/C2/C3 signature, enum, taxonomy,
+  ENTRY_POINTS-row or evidence.py change; every default is a no-op — the
+  committed scripted-run-1 fixtures replay byte-identical and their
+  config_hash is pinned by a golden test; pending Atishay's ack at the next
+  sync):
+  1. **run_config additive fields** (all inside `raw` ⇒ covered by
+     `config_hash`; branch/resume semantics unchanged): schedule rows gain
+     `audience_segments?` (targeting) and `page_ids?` (seeded A/B split, ≥ 2
+     distinct pages); arms gain `exposure_overrides?`
+     ({`schedule` replace | `add` append — never both}) and `promo_overrides?`
+     ({`enabled`, `schedule_inline` — an inline `product_promos` payload, so
+     promo CONTENT is config_hash-covered; the promo file path never was});
+     goal overrides gain `extra_waves` (wave rows) and `wave_scale`
+     (m ⇒ 1 + (rm−1)·scale; 0.0 neutralizes, absent key = the exact Phase-3
+     arithmetic); top-level `calibration {appraisal, choice{...,
+     stage_weights}, stage_bases}` → `minds/calibration.py` params for the
+     formula mind + population θ (evidence.py stays frozen; parser:
+     `runner/config.py::parse_calibration`, unknown keys refused).
+  2. **New substream** `(seed, "page", offset, creative_id)` — the seeded
+     50/50 page assignment for `page_ids` rows. Drawn ONCE per (offset,
+     creative), tick-free, never logged; re-derived by the same pure resolver
+     (`steps.page_for`) at click time, state rebuild, and replay. Non-split
+     rows take the static map with zero draws (`RunnerState.
+     rebuild_from_records` now takes that resolver instead of a pages dict).
+  3. **Audience filter position**: AFTER the per-row reach draw, before the
+     cap checks — the exposure stream shape stays state- and audience-
+     independent (the goal step's skip-if-live discipline); filtered
+     exposures consume no caps and emit no SAW.
+  4. **results.json additive keys** (validated only when present — pre-4
+     fixtures keep validating): `funnel_by_creative` (SAW/CLICKED by subject,
+     deeper funnel by `cause_creative`; EXPERIENCED unattributed),
+     `funnel_by_page` (VISITED/BROWSED/BOUNCED + `bounce_rate` =
+     BOUNCED/(VISITED+BOUNCED)), `ctr_by_creative_by_day`. results_state
+     round-trips them; `from_state` tolerates pre-4 snapshots.
+     `violations.bounce_delta` REMAINS the Phase-6 placeholder: cross-arm
+     deltas live in the experiment `comparison.json`, never in a single
+     run's results.json.
+  5. **Pricing convention**: a promo-"off" arm runs the SAME promo hook with
+     a zero-discount schedule over the same products — PRICED_AT is global
+     objective state served by as-of reads, so an off arm that skipped the
+     hook would read the on arm's discounts. Experiment arms run in declared
+     order (shelf-aligning zeroed arms first, promo-heavy last, branches
+     right after their sources), and each experiment uses its own t0 window.
+  6. **Perception image path**: creative rows may carry `image` (path
+     relative to the catalog dir). The descriptor gains `image_sha256` ONLY
+     then — text descriptors, `PROMPT_VERSION "p1"`, and the five committed
+     cache entries stay byte-identical (golden test recomputes their keys).
+     Image entries key on `IMAGE_PROMPT_VERSION "p1-img1"`; the call is
+     multimodal (data-URI content block, mime sniffed from magic bytes) with
+     an image addendum on the system prompt. Ingestion
+     (`shopsim.experiments.ingest`) materializes
+     `fixtures/experiments/<name>/{catalog/, perception-cache/}` (demo-brand
+     copied; base cache entries copied byte-identical; new ids =
+     max_existing + 1, NEVER `IdAllocator.next_creative()` which restarts at
+     2000001), perceives once live (loud `OPENAI_API_KEY` refusal at ingest,
+     never at run time), and is idempotent. Shared fixtures' hashes never
+     move.
+  7. **`shopsim.experiments`**: spec types `ad_test` (one arm per creative,
+     shared seed = paired populations) / `pricing` / `page_ab` (within-run
+     seeded 50/50) / `scenario` (+ `fixtures/scenarios/` packs:
+     `marathon-season` P0; `overpromise`, `social-on-off` P1 stubs that
+     refuse with named reasons — overpromise changes `latent_quality.csv`, a
+     SHARED hash ⇒ fresh-run-only, never a branch). Builders emit ordinary
+     run_configs (the spec rides under an `experiment` key, hash-covered)
+     and materialize the FULL effective calibration block so `config_hash`
+     pins every mind constant. CLI: `python -m shopsim.experiments
+     {run, compare, ingest-ads}`; cross-arm report = `comparison.json`.
+     Phase 5's launcher drives this surface.
+  8. **C1 bug-fix — cart re-derivation** (`hydramem/reads.py`): a BOUGHT
+     resolves only carts made at or before it (symmetric with ABANDONED) —
+     previously ANY historical purchase excluded the product from
+     `scalars.cart` forever, desyncing the mind from the runner's cart state
+     and crashing resumed-cart expansion on a repeat purchase (exactly the
+     promo-addiction scenario). ScriptedMind never CARTs, so every committed
+     fixture is bit-for-bit unaffected; pinned by
+     `tests/test_cart_rederivation.py`.

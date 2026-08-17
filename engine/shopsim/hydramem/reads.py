@@ -224,9 +224,13 @@ def assemble_context(
     budget = params.budget_default if budget is None else budget
     budget_left = budget - sum(p for _, _, p in bought)
 
-    resolved: set[int] = {pid for pid, _, _ in bought}
+    # A purchase or abandonment resolves only carts made AT OR BEFORE it —
+    # a later re-cart of a previously bought product is live again (repeat
+    # purchases, e.g. across promo cycles; v3.4-draft bug-fix: the old
+    # any-historical-BOUGHT exclusion desynced from the runner's cart state
+    # and crashed resumed-cart expansion on the second cycle).
     cart = sorted({pid for pid, t in carted
-                   if pid not in resolved
+                   if not any(b_pid == pid and b_t >= t for b_pid, b_t, _ in bought)
                    and not any(a_pid == pid and a_t >= t for a_pid, a_t in abandoned)})
 
     def belief_scalar(aspect: int):

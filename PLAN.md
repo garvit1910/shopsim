@@ -190,17 +190,17 @@ Why: divergence between shelves one and three IS the track — overwrite trackin
 
 ---
 
-## Phase 4 — Garvit: Experiment Adapters v3 (uses: MockHydraMem + 20-line mini-driver)
+## Phase 4 — Garvit: Experiment Adapters v3 (uses: ~~MockHydraMem + 20-line mini-driver~~ **amended 2026-08-18**: Phase 3 shipped first, so Phase 4 rides the REAL runner via its programmatic API (`RunConfig`/`RunStore`/`SimRunner`/`replay.branch`) — the "mini-driver" is `python -m shopsim.experiments run` on mini-configs against the live store; MockHydraMem retained for unit tests only)
 
 *Plain words: three experiment types = three stimulus feeds into one engine — and every adapter keeps the objective shelf honest: pricing writes real PRICED_AT supersessions, pages write SHOWS, and now scenario packs schedule the market itself: when needs surge and how good the products secretly are.*
 
-**Build items:** 4.1 ad test (N creatives × audience × T days). 4.2 pricing/promo: schedule → PRICED_AT supersessions + PRICE_SEEN; promo-addiction config = 3 discount cycles. 4.3 page A/B: variant descriptors → SHOWS; seeded 50/50; violation motif live. 4.4 tuning of the calibration layer only (choice weights/thresholds, smoothing α, fatigue thresholds) — evidence.py constants are frozen by hash, not tuned here. 4.5 — scenario packs: need-wave config ("marathon season": a scheduled arrival burst in one category — the demo lever); latent-quality/overpromise table (P1: claims ≫ latent quality for one brand); social on/off (P1).
+**Build items:** 4.1 ad test (N creatives × audience × T days) — *shipped as one arm per creative on a shared seed (paired populations, no cap competition), per-row `audience_segments` targeting, per-creative funnels/CTR in results, and **image-ad upload** (`ingest-ads`: per-experiment catalog + frozen multimodal perception cache; text-creative cache hashes untouched)*. 4.2 pricing/promo: schedule → PRICED_AT supersessions + PRICE_SEEN; promo-addiction config = 3 discount cycles — *shipped over the Phase-3 promo hook; promo-off arms run a zeroed schedule (shared shelf), inline schedules are config_hash-covered*. 4.3 page A/B: variant descriptors → SHOWS; seeded 50/50; violation motif live — *shipped within-run via the `(seed,"page",offset,creative)` substream + per-variant bounce rates*. 4.4 tuning of the calibration layer only (choice weights/thresholds, smoothing α, fatigue thresholds) — evidence.py constants are frozen by hash, not tuned here — *shipped as the run_config `calibration` block (config_hash pins it); default retuning deferred, gated on bench/calibrate_choice.py*. 4.5 — scenario packs: need-wave config ("marathon season": a scheduled arrival burst in one category — the demo lever); latent-quality/overpromise table (P1: claims ≫ latent quality for one brand); social on/off (P1) — *shipped as `fixtures/scenarios/` overlays (+ `extra_waves`/`wave_scale`); P1 packs are refusing stubs*. All conventions in CONTRACT.md v3.4-draft, pending Atishay's ack.
 
 **Checkpoints**
-- [ ] Mini-driver runs all three experiment types on the mock.
-- [ ] Violation arm bounces measurably more than the consistent arm (mini-run).
-- [ ] Promo mini-run shows downward reference-price drift across cycles.
-- [ ] Objective layer stays truthful: PRICED_AT history reconstructs the schedule exactly, and NEEDS history reconstructs the configured wave exactly.
+- [x] ~~Mini-driver runs all three experiment types on the mock~~ **amended 2026-08-18**: the experiments CLI runs all three types against the real store. *(tests/real/test_experiments_real.py: ad/pricing/page_ab through the orchestrator + the CLI subprocess end-to-end; unit suite covers the adapters on mocks)*
+- [x] Violation arm bounces measurably more than the consistent arm (mini-run). *(within-run 50/50 on creative 2000003: identical exposure stream, only the landing page differs; bounce_rate(4000002) > bounce_rate(4000001), bounce_delta > 0 in comparison.json — test_page_ab_violation_bounce)*
+- [x] Promo mini-run shows downward reference-price drift across cycles. *(promo_on arm: mean reference price falls cycle 1 → 3 and ends below list; promo_off shelf flat at 39.00 — test_pricing_promo_mini. Also surfaced+fixed a latent repeat-purchase cart bug that crashed cycle-2 resumed carts, v3.4-draft item 8)*
+- [x] Objective layer stays truthful: PRICED_AT history reconstructs the schedule exactly, and NEEDS history reconstructs the configured wave exactly. *(as-of reads over PRICED_AT history reproduce round(39·(1−pct),2) at every tick; the graph's NEEDS set equals the pure goal_step recomputation for wave_on AND wave_off, arrivals outside the window identical across arms — test_pricing_promo_mini + test_needs_wave_reconstruction)*
 
 ---
 
