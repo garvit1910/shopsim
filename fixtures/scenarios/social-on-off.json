@@ -1,0 +1,6 @@
+{
+  "comment": "P1 stub (PLAN.md 4.5): the social layer toggle. social_config.json ships disabled; the TRUSTS_PERSON graph, social_proof motif and peer-report evidence are P1 across the whole plan (F14).",
+  "name": "social-on-off",
+  "status": "P1-stub",
+  "reason": "the social layer (TRUSTS_PERSON, social_proof, peer reports) is P1 across the plan; social_config.json stays disabled at P0"
+}

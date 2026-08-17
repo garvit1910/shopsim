@@ -275,61 +275,7 @@ class RunConfig:
         ChoiceParams, stage_bases). Absent block returns the module DEFAULT
         objects — the byte-identical Phase-3 path. The block rides in raw, so
         config_hash pins every tuned constant (Law 13, CONTRACT v3.4-draft)."""
-        from dataclasses import fields, replace
-
-        from ..minds.calibration import (
-            APPRAISAL_DIMS,
-            DEFAULT_APPRAISAL_PARAMS,
-            DEFAULT_CHOICE_PARAMS,
-            DEFAULT_STAGE_BASES,
-            STAGES,
-        )
-
-        block = self.raw.get("calibration")
-        if not block:
-            return DEFAULT_APPRAISAL_PARAMS, DEFAULT_CHOICE_PARAMS, DEFAULT_STAGE_BASES
-        bad = set(block) - {"appraisal", "choice", "stage_bases"}
-        if bad:
-            raise ValueError(f"calibration: unknown keys {sorted(bad)}")
-
-        def override(default_obj, given: dict, *, skip=()):
-            known = {f.name for f in fields(default_obj)} - set(skip)
-            bad = set(given) - known
-            if bad:
-                raise ValueError(
-                    f"calibration: unknown {type(default_obj).__name__} keys {sorted(bad)}")
-            return replace(default_obj, **{k: type(getattr(default_obj, k))(v)
-                                           for k, v in given.items()})
-
-        ap = override(DEFAULT_APPRAISAL_PARAMS, dict(block.get("appraisal", {})))
-
-        choice_given = dict(block.get("choice", {}))
-        weights_given = choice_given.pop("stage_weights", None)
-        cp = override(DEFAULT_CHOICE_PARAMS, choice_given, skip=("stage_weights",))
-        if weights_given is not None:
-            bad = set(weights_given) - set(STAGES)
-            if bad:
-                raise ValueError(f"calibration: unknown stage_weights stages {sorted(bad)}")
-            merged = []
-            for stage in STAGES:
-                dims = cp.weights(stage)
-                given = dict(weights_given.get(stage, {}))
-                bad = set(given) - set(APPRAISAL_DIMS)
-                if bad:
-                    raise ValueError(
-                        f"calibration: unknown stage_weights dims for {stage}: {sorted(bad)}")
-                dims.update({k: float(v) for k, v in given.items()})
-                merged.append((stage, tuple((d, dims[d]) for d in APPRAISAL_DIMS)))
-            cp = replace(cp, stage_weights=tuple(merged))
-
-        bases_given = dict(block.get("stage_bases", {}))
-        bad = set(bases_given) - set(STAGES)
-        if bad:
-            raise ValueError(f"calibration: unknown stage_bases stages {sorted(bad)}")
-        bases = dict(DEFAULT_STAGE_BASES)
-        bases.update({k: float(v) for k, v in bases_given.items()})
-        sb = tuple((stage, bases[stage]) for stage, _ in DEFAULT_STAGE_BASES)
-        return ap, cp, sb
+        return parse_calibration(self.raw.get("calibration"))
 
     def config_hash(self, arm_name: str) -> str:
         blob = canonical_json(self.raw) + "\n" + arm_name
@@ -367,3 +313,62 @@ class RunConfig:
             if pages:
                 out[row.creative_id] = pages[0]
         return out
+
+
+def parse_calibration(block: dict | None):
+    """The one calibration-block parser (RunConfig.calibration + the Phase-4
+    experiment builders). None/empty -> the module DEFAULT objects."""
+    from dataclasses import fields, replace
+
+    from ..minds.calibration import (
+        APPRAISAL_DIMS,
+        DEFAULT_APPRAISAL_PARAMS,
+        DEFAULT_CHOICE_PARAMS,
+        DEFAULT_STAGE_BASES,
+        STAGES,
+    )
+
+    if not block:
+        return DEFAULT_APPRAISAL_PARAMS, DEFAULT_CHOICE_PARAMS, DEFAULT_STAGE_BASES
+    bad = set(block) - {"appraisal", "choice", "stage_bases"}
+    if bad:
+        raise ValueError(f"calibration: unknown keys {sorted(bad)}")
+
+    def override(default_obj, given: dict, *, skip=()):
+        known = {f.name for f in fields(default_obj)} - set(skip)
+        bad = set(given) - known
+        if bad:
+            raise ValueError(
+                f"calibration: unknown {type(default_obj).__name__} keys {sorted(bad)}")
+        return replace(default_obj, **{k: type(getattr(default_obj, k))(v)
+                                       for k, v in given.items()})
+
+    ap = override(DEFAULT_APPRAISAL_PARAMS, dict(block.get("appraisal", {})))
+
+    choice_given = dict(block.get("choice", {}))
+    weights_given = choice_given.pop("stage_weights", None)
+    cp = override(DEFAULT_CHOICE_PARAMS, choice_given, skip=("stage_weights",))
+    if weights_given is not None:
+        bad = set(weights_given) - set(STAGES)
+        if bad:
+            raise ValueError(f"calibration: unknown stage_weights stages {sorted(bad)}")
+        merged = []
+        for stage in STAGES:
+            dims = cp.weights(stage)
+            given = dict(weights_given.get(stage, {}))
+            bad = set(given) - set(APPRAISAL_DIMS)
+            if bad:
+                raise ValueError(
+                    f"calibration: unknown stage_weights dims for {stage}: {sorted(bad)}")
+            dims.update({k: float(v) for k, v in given.items()})
+            merged.append((stage, tuple((d, dims[d]) for d in APPRAISAL_DIMS)))
+        cp = replace(cp, stage_weights=tuple(merged))
+
+    bases_given = dict(block.get("stage_bases", {}))
+    bad = set(bases_given) - set(STAGES)
+    if bad:
+        raise ValueError(f"calibration: unknown stage_bases stages {sorted(bad)}")
+    bases = dict(DEFAULT_STAGE_BASES)
+    bases.update({k: float(v) for k, v in bases_given.items()})
+    sb = tuple((stage, bases[stage]) for stage, _ in DEFAULT_STAGE_BASES)
+    return ap, cp, sb
