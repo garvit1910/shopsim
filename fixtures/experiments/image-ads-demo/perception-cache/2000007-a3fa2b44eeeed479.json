@@ -1,0 +1,35 @@
+{
+  "creative_id": 2000007,
+  "descriptor": {
+    "body": "",
+    "brand_id": 6001,
+    "creative_id": 2000007,
+    "headline": "",
+    "image_sha256": "59ed0d58a865151c3a03b8a7bb98125cbfa8aae76ba6347c614b4bc0936c4563",
+    "name": "Flash Sale (image)",
+    "offer_product_ids": [
+      3000001
+    ]
+  },
+  "hash": "a3fa2b44eeeed479ed486894b37b9b9132664b2aefdfa8b36e9cd2506281a436",
+  "model": "gpt-4o-mini",
+  "output": {
+    "claimed_discounts": [
+      {
+        "claimed_pct": 0.2,
+        "product_id": 3000001
+      }
+    ],
+    "claims": [
+      {
+        "concept": "DISCOUNT",
+        "strength": 0.9
+      },
+      {
+        "concept": "FREE_SHIPPING",
+        "strength": 0.8
+      }
+    ]
+  },
+  "prompt_version": "p1-img1"
+}

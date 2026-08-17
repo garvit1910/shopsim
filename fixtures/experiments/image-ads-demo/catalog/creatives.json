@@ -1,0 +1,157 @@
+{
+  "comment": "Authored stimulus descriptors. headline/body are what Phase-2 perception reads; 'claims' here are the pre-authored ground truth used to seed fixtures and as golden perception targets (perception output must map onto these Concept ids or OTHER). claimed_pct feeds offer_attractiveness (perceived deal) \u2014 distinct from the realized price gap.",
+  "creatives": [
+    {
+      "creative_id": 2000001,
+      "brand_id": 6001,
+      "name": "Planet-First Run",
+      "headline": "Run lighter on the planet.",
+      "body": "The EcoStride Runner is built from 90% recycled ocean plastic. Every stride gives back.",
+      "claims": [
+        {
+          "concept_id": 5003,
+          "strength": 0.9
+        },
+        {
+          "concept_id": 5004,
+          "strength": 0.8
+        }
+      ],
+      "offers": [
+        {
+          "product_id": 3000001,
+          "claimed_pct": 0.0
+        }
+      ]
+    },
+    {
+      "creative_id": 2000002,
+      "brand_id": 6001,
+      "name": "Cloud Comfort",
+      "headline": "Like walking on clouds. All day.",
+      "body": "CloudLoft Daily: plush comfort that goes with everything, and straight into the washing machine.",
+      "claims": [
+        {
+          "concept_id": 5001,
+          "strength": 0.8
+        },
+        {
+          "concept_id": 5017,
+          "strength": 0.6
+        }
+      ],
+      "offers": [
+        {
+          "product_id": 3000003,
+          "claimed_pct": 0.0
+        }
+      ],
+      "note": "ShoeCo concept-rotation arm for F12 (different story, same brand)"
+    },
+    {
+      "creative_id": 2000003,
+      "brand_id": 6001,
+      "name": "EcoStride Sale",
+      "headline": "The planet-friendly runner. Now 15% off.",
+      "body": "Featherlight, earth-first, and on sale this week only. The EcoStride Runner.",
+      "claims": [
+        {
+          "concept_id": 5003,
+          "strength": 0.9
+        },
+        {
+          "concept_id": 5005,
+          "strength": 0.6
+        },
+        {
+          "concept_id": 5011,
+          "strength": 0.8
+        }
+      ],
+      "offers": [
+        {
+          "product_id": 3000001,
+          "claimed_pct": 0.15
+        }
+      ],
+      "note": "The Appendix-B stimulus: same eco story as 2000001 (fatigue driver); its DISCOUNT claim (5011) is what page 4000002 hides (expectation_violation)."
+    },
+    {
+      "creative_id": 2000004,
+      "brand_id": 6002,
+      "name": "Apex Performance",
+      "headline": "Built for the podium.",
+      "body": "The Apex Racer: race-tuned cushioning and support trusted by champions. 10% off for race season.",
+      "claims": [
+        {
+          "concept_id": 5000,
+          "strength": 0.9
+        },
+        {
+          "concept_id": 5006,
+          "strength": 0.7
+        }
+      ],
+      "offers": [
+        {
+          "product_id": 3000004,
+          "claimed_pct": 0.1
+        }
+      ]
+    },
+    {
+      "creative_id": 2000005,
+      "brand_id": 6003,
+      "name": "Everyday Value",
+      "headline": "Great shoes. Honest prices.",
+      "body": "Flex Street by UrbanStride: everyday style that doesn't empty your wallet.",
+      "claims": [
+        {
+          "concept_id": 5012,
+          "strength": 0.9
+        },
+        {
+          "concept_id": 5017,
+          "strength": 0.6
+        }
+      ],
+      "offers": [
+        {
+          "product_id": 3000006,
+          "claimed_pct": 0.0
+        }
+      ],
+      "note": "The unknown-brand stimulus in the abstention fixture."
+    },
+    {
+      "creative_id": 2000006,
+      "brand_id": 6001,
+      "name": "Planet Run (image)",
+      "headline": "",
+      "body": "",
+      "claims": [],
+      "offers": [
+        {
+          "product_id": 3000001,
+          "claimed_pct": 0.0
+        }
+      ],
+      "image": "images/388d9d06028e5c45.png"
+    },
+    {
+      "creative_id": 2000007,
+      "brand_id": 6001,
+      "name": "Flash Sale (image)",
+      "headline": "",
+      "body": "",
+      "claims": [],
+      "offers": [
+        {
+          "product_id": 3000001,
+          "claimed_pct": 0.0
+        }
+      ],
+      "image": "images/59ed0d58a865151c.png"
+    }
+  ]
+}

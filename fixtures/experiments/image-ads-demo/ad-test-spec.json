@@ -1,0 +1,17 @@
+{
+  "comment": "The image-ad comparison demo: two uploaded image ads (perceived live via multimodal gpt-4o-mini, frozen in this experiment's cache) vs the committed text creative 2000003, one arm each on a shared seed. Dense-funnel calibration (4.4) keeps the funnel visible at N=60. Run: python -m shopsim.experiments run --spec fixtures/experiments/image-ads-demo/ad-test-spec.json",
+  "type": "ad_test",
+  "name": "image-ads-demo",
+  "seed": 415,
+  "ticks": 6,
+  "t0": 1774000000,
+  "population": {"size": 60},
+  "catalog": "fixtures/experiments/image-ads-demo/catalog",
+  "perception_cache": "fixtures/experiments/image-ads-demo/perception-cache",
+  "calibration": {"stage_bases": {"CLICK": 2.0}},
+  "creatives": [
+    {"creative_id": 2000003, "reach_prob": 0.5},
+    {"creative_id": 2000006, "reach_prob": 0.5},
+    {"creative_id": 2000007, "reach_prob": 0.5}
+  ]
+}

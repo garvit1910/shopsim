@@ -1,0 +1,50 @@
+{
+  "creative_id": 2000004,
+  "descriptor": {
+    "body": "The Apex Racer: race-tuned cushioning and support trusted by champions. 10% off for race season.",
+    "brand_id": 6002,
+    "creative_id": 2000004,
+    "headline": "Built for the podium.",
+    "name": "Apex Performance",
+    "offer_product_ids": [
+      3000004
+    ]
+  },
+  "hash": "b4fa0a5c5145a71097403239bbe4f2508dacb8a80c9c6a3a80e07d2d8555032d",
+  "model": "gpt-4o-mini",
+  "output": {
+    "claimed_discounts": [
+      {
+        "claimed_pct": 0.1,
+        "product_id": 3000004
+      }
+    ],
+    "claims": [
+      {
+        "concept": "CUSHIONING",
+        "strength": 0.7
+      },
+      {
+        "concept": "ARCH_SUPPORT",
+        "strength": 0.6
+      },
+      {
+        "concept": "EXPERT_ENDORSED",
+        "strength": 0.5
+      },
+      {
+        "concept": "PERFORMANCE",
+        "strength": 0.8
+      },
+      {
+        "concept": "DISCOUNT",
+        "strength": 0.9
+      },
+      {
+        "concept": "STYLE",
+        "strength": 0.4
+      }
+    ]
+  },
+  "prompt_version": "p1"
+}

@@ -1,0 +1,38 @@
+{
+  "creative_id": 2000006,
+  "descriptor": {
+    "body": "",
+    "brand_id": 6001,
+    "creative_id": 2000006,
+    "headline": "",
+    "image_sha256": "388d9d06028e5c45674e14bf3e91db72f9bf4996ef3d480db826242f3ab5ae50",
+    "name": "Planet Run (image)",
+    "offer_product_ids": [
+      3000001
+    ]
+  },
+  "hash": "7a86cc7b3a257b504a8a45ec7ad6dcfe756981e2d19a73542a31a998bfe7e224",
+  "model": "gpt-4o-mini",
+  "output": {
+    "claimed_discounts": [],
+    "claims": [
+      {
+        "concept": "ECO_FRIENDLY",
+        "strength": 0.8
+      },
+      {
+        "concept": "RECYCLED_MATERIALS",
+        "strength": 0.8
+      },
+      {
+        "concept": "VEGAN",
+        "strength": 0.7
+      },
+      {
+        "concept": "SUSTAINABLE_PACKAGING",
+        "strength": 0.6
+      }
+    ]
+  },
+  "prompt_version": "p1-img1"
+}
