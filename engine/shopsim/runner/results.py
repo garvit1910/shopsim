@@ -31,6 +31,19 @@ _FUNNEL_TYPES = tuple(e.value for e in (
     EventType.EXPERIENCED,
 ))
 
+# per-creative attribution (CONTRACT v3.4-draft): SAW/CLICKED carry the
+# creative as subject; page/product funnel events carry cause_creative
+# (v3.2 item 6). EXPERIENCED is fulfillment-side and stays unattributed.
+_CREATIVE_SUBJECT = (EventType.SAW.value, EventType.CLICKED.value)
+_CREATIVE_CAUSED = tuple(e.value for e in (
+    EventType.VISITED, EventType.BROWSED, EventType.BOUNCED,
+    EventType.CARTED, EventType.ABANDONED, EventType.BOUGHT,
+))
+# page-variant funnel: the events whose subject is the page itself
+_PAGE_TYPES = tuple(e.value for e in (
+    EventType.VISITED, EventType.BROWSED, EventType.BOUNCED,
+))
+
 
 class ResultsAccumulator:
     def __init__(self, *, arm: str, segment_by_offset: dict[int, int],
@@ -44,6 +57,11 @@ class ResultsAccumulator:
 
         self.funnel: dict[str, dict[str, int]] = {}  # segment -> type -> n
         self.ctr: dict[str, dict[str, int]] = {}  # tick -> {exposures, clicks}
+        # Phase-4 experiment dimensions (CONTRACT v3.4-draft), all str-keyed
+        # for exact JSON round-trip like funnel/ctr above:
+        self.by_creative: dict[str, dict[str, int]] = {}  # creative -> type -> n
+        self.by_page: dict[str, dict[str, int]] = {}  # page -> type -> n
+        self.ctr_creative: dict[str, dict[str, dict[str, int]]] = {}  # creative -> tick
         self.motifs: dict[str, dict] = {}  # type -> {outcomes, strength_sum, n}
         self.goal_split = {"need_on": {"decisions": 0, "buys": 0},
                            "need_off": {"decisions": 0, "buys": 0}}
@@ -66,6 +84,28 @@ class ResultsAccumulator:
                 c["exposures"] += 1
             elif etype == EventType.CLICKED.value:
                 c["clicks"] += 1
+            # per-creative funnel + CTR (v3.4-draft)
+            if etype in _CREATIVE_SUBJECT:
+                creative = e.subject
+            elif etype in _CREATIVE_CAUSED:
+                creative = e.prop("cause_creative", 0)
+            else:
+                creative = 0
+            if creative:
+                row = self.by_creative.setdefault(
+                    str(creative), {t: 0 for t in _FUNNEL_TYPES})
+                row[etype] += 1
+                cc = self.ctr_creative.setdefault(str(creative), {}).setdefault(
+                    str(tick), {"exposures": 0, "clicks": 0})
+                if etype == EventType.SAW.value:
+                    cc["exposures"] += 1
+                elif etype == EventType.CLICKED.value:
+                    cc["clicks"] += 1
+            # per-page-variant funnel (v3.4-draft)
+            if etype in _PAGE_TYPES:
+                prow = self.by_page.setdefault(
+                    str(e.subject), {t: 0 for t in _PAGE_TYPES})
+                prow[etype] += 1
 
     def observe_decision(self, ctx, action: Action, kind: str) -> None:
         for m in ctx.motifs:
@@ -136,6 +176,8 @@ class ResultsAccumulator:
             "arm": self.arm,
             "decisions_from_tick": self.decisions_from_tick,
             "funnel": self.funnel, "ctr": self.ctr, "motifs": self.motifs,
+            "by_creative": self.by_creative, "by_page": self.by_page,
+            "ctr_creative": self.ctr_creative,
             "goal_split": self.goal_split, "tts": self.tts, "drift": self.drift,
             "ref_traj": self.ref_traj, "violations": self.violations,
         }
@@ -149,6 +191,10 @@ class ResultsAccumulator:
         acc.funnel = state["funnel"]
         acc.ctr = state["ctr"]
         acc.motifs = state["motifs"]
+        # .get: snapshots written before the v3.4 keys existed still resume
+        acc.by_creative = state.get("by_creative", {})
+        acc.by_page = state.get("by_page", {})
+        acc.ctr_creative = state.get("ctr_creative", {})
         acc.goal_split = state["goal_split"]
         acc.tts = state["tts"]
         acc.drift = state["drift"]
@@ -188,11 +234,36 @@ class ResultsAccumulator:
             d = gs[bucket]["decisions"]
             return round(gs[bucket]["buys"] / d, 5) if d else None
 
+        funnel_by_creative = {
+            creative: dict(sorted(counts.items()))
+            for creative, counts in sorted(self.by_creative.items())}
+        funnel_by_page = {}
+        for page, counts in sorted(self.by_page.items()):
+            visits = counts[EventType.VISITED.value] + counts[EventType.BOUNCED.value]
+            funnel_by_page[page] = {
+                **dict(sorted(counts.items())),
+                "bounce_rate": (round(counts[EventType.BOUNCED.value] / visits, 5)
+                                if visits else None),
+            }
+        ctr_by_creative_by_day = []
+        for creative in sorted(self.ctr_creative):
+            for tick in sorted(self.ctr_creative[creative], key=int):
+                row = self.ctr_creative[creative][tick]
+                ctr_by_creative_by_day.append({
+                    "creative": int(creative), "tick": int(tick),
+                    "exposures": row["exposures"], "clicks": row["clicks"],
+                    "ctr": (round(row["clicks"] / row["exposures"], 5)
+                            if row["exposures"] else None),
+                })
+
         return {
             "run_manifest": manifest,
             "funnel": {self.arm: {seg: dict(sorted(counts.items()))
                                   for seg, counts in sorted(self.funnel.items())}},
             "ctr_by_day": ctr_by_day,
+            "funnel_by_creative": funnel_by_creative,  # v3.4-draft
+            "funnel_by_page": funnel_by_page,  # v3.4-draft
+            "ctr_by_creative_by_day": ctr_by_creative_by_day,  # v3.4-draft
             "fatigue_split": {"asset": [], "brand_msg": []},  # Phase 6
             "reference_price_trajectory": self.ref_traj,
             "violations": {"count": self.violations, "bounce_delta": None},  # delta: Phase 6
@@ -257,6 +328,28 @@ def validate_results(results: dict) -> list[str]:
         for row in ctr:
             if not {"tick", "ctr"} <= set(row):
                 problems.append("ctr_by_day rows need tick + ctr")
+                break
+
+    # v3.4-draft experiment keys: validated only when present — results.json
+    # committed before Phase 4 (fixtures/scripted-run-1) must keep validating
+    if "funnel_by_creative" in results:
+        if not isinstance(results["funnel_by_creative"], dict):
+            problems.append("funnel_by_creative must be a dict")
+        else:
+            for creative, counts in results["funnel_by_creative"].items():
+                if not isinstance(counts, dict):
+                    problems.append(f"funnel_by_creative[{creative}] must be a dict")
+    if "funnel_by_page" in results:
+        if not isinstance(results["funnel_by_page"], dict):
+            problems.append("funnel_by_page must be a dict")
+        else:
+            for page, counts in results["funnel_by_page"].items():
+                if not isinstance(counts, dict) or "bounce_rate" not in counts:
+                    problems.append(f"funnel_by_page[{page}] needs counts + bounce_rate")
+    if "ctr_by_creative_by_day" in results:
+        for row in results.get("ctr_by_creative_by_day") or []:
+            if not {"creative", "tick", "ctr"} <= set(row):
+                problems.append("ctr_by_creative_by_day rows need creative/tick/ctr")
                 break
 
     fs = need("fatigue_split", dict)
