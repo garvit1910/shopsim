@@ -108,7 +108,7 @@ def cmd_resume(args) -> int:
             hero_product=runner.results.hero_product)
 
     state = RunnerState()
-    state.rebuild_from_records(clean, cfg.t0, cfg.tick_seconds, runner.pages)
+    state.rebuild_from_records(clean, cfg.t0, cfg.tick_seconds, runner.page_of)
     store.set_status(row["run_id"], "running")
     results = runner.run(from_tick=from_tick, state=state)
     store.set_status(row["run_id"], "complete")

@@ -37,6 +37,30 @@ class ScheduleRow:
     end_tick: int  # inclusive
     reach_prob: float
     page_id: int | None = None  # overrides the default page resolution
+    # CONTRACT v3.4-draft: None = whole population (the Phase-3 behavior)
+    audience_segments: tuple[int, ...] | None = None
+    # CONTRACT v3.4-draft: seeded per-shopper A/B split over these pages
+    # (substream (seed, "page", offset, creative)); excludes the row from the
+    # single-page resolution map
+    page_ids: tuple[int, ...] | None = None
+
+
+def _parse_row(r: dict) -> ScheduleRow:
+    return ScheduleRow(
+        creative_id=int(r["creative_id"]),
+        start_tick=int(r["start_tick"]),
+        end_tick=int(r["end_tick"]),
+        reach_prob=float(r["reach_prob"]),
+        page_id=int(r["page_id"]) if r.get("page_id") is not None else None,
+        audience_segments=(tuple(int(s) for s in r["audience_segments"])
+                           if r.get("audience_segments") is not None else None),
+        page_ids=(tuple(int(p) for p in r["page_ids"])
+                  if r.get("page_ids") is not None else None),
+    )
+
+
+def _sort_rows(rows) -> tuple[ScheduleRow, ...]:
+    return tuple(sorted(rows, key=lambda r: (r.creative_id, r.start_tick)))
 
 
 @dataclass(frozen=True)
@@ -45,6 +69,10 @@ class ArmSpec:
     goal_overrides: dict = field(default_factory=dict)
     branch_from: str | None = None
     divergence_tick: int | None = None
+    # CONTRACT v3.4-draft: per-arm experiment levers, all inside the raw
+    # config (config_hash-covered), so arms stay branch-compatible
+    exposure_overrides: dict = field(default_factory=dict)
+    promo_overrides: dict = field(default_factory=dict)
 
 
 _MINDS = ("scripted", "formula")
@@ -89,15 +117,7 @@ class RunConfig:
 
         mind = raw.get("mind", {})
         exposure = raw.get("exposure", {})
-        rows = tuple(sorted(
-            (ScheduleRow(
-                creative_id=int(r["creative_id"]),
-                start_tick=int(r["start_tick"]),
-                end_tick=int(r["end_tick"]),
-                reach_prob=float(r["reach_prob"]),
-                page_id=int(r["page_id"]) if r.get("page_id") is not None else None,
-            ) for r in exposure.get("schedule", ())),
-            key=lambda r: (r.creative_id, r.start_tick)))
+        rows = _sort_rows(_parse_row(r) for r in exposure.get("schedule", ()))
         goals = raw.get("goals", {})
         fulfillment = raw.get("fulfillment", {})
         promos = raw.get("promos", {})
@@ -108,6 +128,8 @@ class RunConfig:
                 branch_from=a.get("branch_from"),
                 divergence_tick=(int(a["divergence_tick"])
                                  if a.get("divergence_tick") is not None else None),
+                exposure_overrides=dict(a.get("exposure_overrides", {})),
+                promo_overrides=dict(a.get("promo_overrides", {})),
             )
             for a in raw.get("arms", ({"name": "main"},))
         )
@@ -164,11 +186,43 @@ class RunConfig:
                     problems.append(f"arm {a.name}: unknown branch_from {a.branch_from}")
                 if a.divergence_tick is None or not 0 <= a.divergence_tick < self.ticks:
                     problems.append(f"arm {a.name}: divergence_tick outside [0, ticks)")
-        for r in self.schedule:
-            if not 0.0 <= r.reach_prob <= 1.0:
-                problems.append(f"schedule {r.creative_id}: reach_prob outside [0,1]")
-            if r.start_tick > r.end_tick:
-                problems.append(f"schedule {r.creative_id}: start_tick > end_tick")
+            bad = set(a.exposure_overrides) - {"schedule", "add"}
+            if bad:
+                problems.append(f"arm {a.name}: unknown exposure_overrides keys {sorted(bad)}")
+            if "schedule" in a.exposure_overrides and "add" in a.exposure_overrides:
+                problems.append(f"arm {a.name}: exposure_overrides carries both "
+                                "'schedule' (replace) and 'add' (append)")
+            bad = set(a.promo_overrides) - {"enabled", "schedule_inline"}
+            if bad:
+                problems.append(f"arm {a.name}: unknown promo_overrides keys {sorted(bad)}")
+            enabled, path, inline = self.promos_for(a)
+            if enabled and path is None and inline is None:
+                problems.append(f"arm {a.name}: promos enabled with no schedule source")
+        def check_rows(rows, where: str) -> None:
+            for r in rows:
+                if not 0.0 <= r.reach_prob <= 1.0:
+                    problems.append(f"{where} {r.creative_id}: reach_prob outside [0,1]")
+                if r.start_tick > r.end_tick:
+                    problems.append(f"{where} {r.creative_id}: start_tick > end_tick")
+                if r.page_ids is not None and len(r.page_ids) < 2:
+                    problems.append(f"{where} {r.creative_id}: page_ids needs >= 2 pages")
+                if r.page_ids is not None and len(set(r.page_ids)) != len(r.page_ids):
+                    problems.append(f"{where} {r.creative_id}: duplicate page_ids")
+                if r.audience_segments is not None and not r.audience_segments:
+                    problems.append(f"{where} {r.creative_id}: empty audience_segments")
+
+        check_rows(self.schedule, "schedule")
+        for a in self.arms:
+            if not a.exposure_overrides:
+                continue
+            try:
+                check_rows(self.schedule_for(a), f"arm {a.name} schedule")
+            except (KeyError, TypeError, ValueError) as ex:
+                problems.append(f"arm {a.name}: bad exposure_overrides schedule ({ex})")
+        try:
+            self.calibration()
+        except ValueError as ex:
+            problems.append(str(ex))
         if problems:
             raise ValueError("invalid run_config: " + "; ".join(problems))
 
@@ -186,6 +240,97 @@ class RunConfig:
         merged.update(arm.goal_overrides)
         return merged
 
+    def schedule_for(self, arm: ArmSpec) -> tuple[ScheduleRow, ...]:
+        """Per-arm exposure schedule (CONTRACT v3.4-draft). exposure_overrides
+        supports {"schedule": [rows]} (full replacement) or {"add": [rows]}
+        (append). No overrides returns the shared schedule object unchanged."""
+        ov = arm.exposure_overrides
+        if not ov:
+            return self.schedule
+        if "schedule" in ov:
+            return _sort_rows(_parse_row(r) for r in ov["schedule"])
+        return _sort_rows((*self.schedule,
+                           *(_parse_row(r) for r in ov.get("add", ()))))
+
+    def promos_for(self, arm: ArmSpec) -> tuple[bool, Path | None, dict | None]:
+        """(enabled, schedule_path, inline_raw) for this arm (CONTRACT
+        v3.4-draft). promo_overrides supports {"enabled": bool} and
+        {"schedule_inline": {product_promos: [...]}} — inline schedules live in
+        the raw config, so they are config_hash-covered and branch-compatible."""
+        ov = arm.promo_overrides
+        enabled = bool(ov.get("enabled", self.promos_enabled))
+        inline = ov.get("schedule_inline")
+        if inline is not None:
+            return enabled, None, dict(inline)
+        return enabled, self.promo_path, None
+
+    def page_splits(self, schedule: tuple[ScheduleRow, ...] | None = None
+                    ) -> dict[int, tuple[int, ...]]:
+        """creative -> page variants for seeded per-shopper A/B rows."""
+        rows = self.schedule if schedule is None else schedule
+        return {r.creative_id: r.page_ids for r in rows if r.page_ids is not None}
+
+    def calibration(self):
+        """Optional top-level "calibration" block -> (AppraisalParams,
+        ChoiceParams, stage_bases). Absent block returns the module DEFAULT
+        objects — the byte-identical Phase-3 path. The block rides in raw, so
+        config_hash pins every tuned constant (Law 13, CONTRACT v3.4-draft)."""
+        from dataclasses import fields, replace
+
+        from ..minds.calibration import (
+            APPRAISAL_DIMS,
+            DEFAULT_APPRAISAL_PARAMS,
+            DEFAULT_CHOICE_PARAMS,
+            DEFAULT_STAGE_BASES,
+            STAGES,
+        )
+
+        block = self.raw.get("calibration")
+        if not block:
+            return DEFAULT_APPRAISAL_PARAMS, DEFAULT_CHOICE_PARAMS, DEFAULT_STAGE_BASES
+        bad = set(block) - {"appraisal", "choice", "stage_bases"}
+        if bad:
+            raise ValueError(f"calibration: unknown keys {sorted(bad)}")
+
+        def override(default_obj, given: dict, *, skip=()):
+            known = {f.name for f in fields(default_obj)} - set(skip)
+            bad = set(given) - known
+            if bad:
+                raise ValueError(
+                    f"calibration: unknown {type(default_obj).__name__} keys {sorted(bad)}")
+            return replace(default_obj, **{k: type(getattr(default_obj, k))(v)
+                                           for k, v in given.items()})
+
+        ap = override(DEFAULT_APPRAISAL_PARAMS, dict(block.get("appraisal", {})))
+
+        choice_given = dict(block.get("choice", {}))
+        weights_given = choice_given.pop("stage_weights", None)
+        cp = override(DEFAULT_CHOICE_PARAMS, choice_given, skip=("stage_weights",))
+        if weights_given is not None:
+            bad = set(weights_given) - set(STAGES)
+            if bad:
+                raise ValueError(f"calibration: unknown stage_weights stages {sorted(bad)}")
+            merged = []
+            for stage in STAGES:
+                dims = cp.weights(stage)
+                given = dict(weights_given.get(stage, {}))
+                bad = set(given) - set(APPRAISAL_DIMS)
+                if bad:
+                    raise ValueError(
+                        f"calibration: unknown stage_weights dims for {stage}: {sorted(bad)}")
+                dims.update({k: float(v) for k, v in given.items()})
+                merged.append((stage, tuple((d, dims[d]) for d in APPRAISAL_DIMS)))
+            cp = replace(cp, stage_weights=tuple(merged))
+
+        bases_given = dict(block.get("stage_bases", {}))
+        bad = set(bases_given) - set(STAGES)
+        if bad:
+            raise ValueError(f"calibration: unknown stage_bases stages {sorted(bad)}")
+        bases = dict(DEFAULT_STAGE_BASES)
+        bases.update({k: float(v) for k, v in bases_given.items()})
+        sb = tuple((stage, bases[stage]) for stage, _ in DEFAULT_STAGE_BASES)
+        return ap, cp, sb
+
     def config_hash(self, arm_name: str) -> str:
         blob = canonical_json(self.raw) + "\n" + arm_name
         return hashlib.sha256(blob.encode()).hexdigest()
@@ -193,12 +338,15 @@ class RunConfig:
     def now_at(self, tick: int) -> int:
         return self.t0 + tick * self.tick_seconds
 
-    def resolve_pages(self, view) -> dict[int, int]:
+    def resolve_pages(self, view, schedule: tuple[ScheduleRow, ...] | None = None
+                      ) -> dict[int, int]:
         """schedule creative -> landing page id. Default: the lowest page_id
         whose PAGE_FOR product is offered by the creative (the 'consistent'
         variant by fixture convention); per-row page_id overrides. A creative
         whose products have no page resolves to nothing — its funnel ends at
-        CLICK (CONTRACT v3.3)."""
+        CLICK (CONTRACT v3.3). Rows carrying page_ids resolve through the
+        seeded split (steps.page_for), never this map (v3.4-draft)."""
+        rows = self.schedule if schedule is None else schedule
         page_for_product: dict[int, int] = {}
         for pgid in sorted(view.stimuli):
             f = view.stimuli[pgid]
@@ -206,7 +354,9 @@ class RunConfig:
                 for prod in f.products:
                     page_for_product.setdefault(prod, pgid)
         out: dict[int, int] = {}
-        for row in self.schedule:
+        for row in rows:
+            if row.page_ids is not None:
+                continue
             if row.page_id is not None:
                 out[row.creative_id] = row.page_id
                 continue

@@ -175,7 +175,7 @@ def _replay_tick(runner: SimRunner, state: RunnerState, recs: list[dict], tick: 
             state.saw.record(o, etick, e.subject)
         elif e.type is EventType.CARTED:
             cause = e.prop("cause_creative", 0)
-            state.carts[o] = (e.subject, runner.pages.get(cause, 0), cause, etick)
+            state.carts[o] = (e.subject, runner.page_of(o, cause) or 0, cause, etick)
         elif e.type is EventType.BOUGHT:
             state.carts.pop(o, None)
             state.fulfil.record_bought(o, e.subject, e.t, etick)

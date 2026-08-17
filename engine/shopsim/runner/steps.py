@@ -32,6 +32,7 @@ GOAL_STREAM = int.from_bytes(b"goal", "big")
 EXPOSE_STREAM = int.from_bytes(b"expose", "big")
 DECIDE_STREAM = int.from_bytes(b"decide", "big")
 FULFIL_STREAM = int.from_bytes(b"fulfil", "big")
+PAGE_STREAM = int.from_bytes(b"page", "big")  # CONTRACT v3.4-draft: A/B split
 
 SENT = schema.VALID_TO_SENTINEL
 
@@ -105,6 +106,22 @@ class GoalConfig:
         return m
 
 
+def _overlay_multiplier(goal_cfg: "GoalConfig", cat: int, tick: int,
+                        extra_waves: tuple[dict, ...],
+                        wave_scale: float | None) -> float:
+    """Scenario-pack wave arithmetic (CONTRACT v3.4-draft): the configured
+    waves plus overlay waves, each damped/amplified toward baseline by
+    wave_scale (m *= 1 + (rm - 1)·scale; scale 1.0 = as configured, 0.0 =
+    waves neutralized). Called only when an overlay key is present AND waves
+    are enabled — the default path never enters here."""
+    scale = 1.0 if wave_scale is None else float(wave_scale)
+    m = 1.0
+    for w in (*goal_cfg.waves, *extra_waves):
+        if int(w["category_id"]) == cat and w["start_tick"] <= tick <= w["end_tick"]:
+            m *= 1.0 + (float(w["rate_multiplier"]) - 1.0) * scale
+    return m
+
+
 @dataclass
 class GoalState:
     """Live needs in memory: (offset, category) -> (deadline_t, activated_tick).
@@ -169,6 +186,12 @@ def goal_step(
     # 2. seeded Bernoulli arrivals (skip-if-live per category; the arrival
     # draw happens regardless so the stream shape is state-independent)
     waves_on = bool(overrides.get("waves_enabled", True))
+    # scenario overlays (CONTRACT v3.4-draft): with neither key present the
+    # rate arithmetic below is the byte-identical Phase-3 path (no extra
+    # float ops on the default branch)
+    extra_waves = tuple(overrides.get("extra_waves") or ())
+    wave_scale = overrides.get("wave_scale")
+    has_overlay = bool(extra_waves) or wave_scale is not None
     lo_d, hi_d = goal_cfg.deadline_ticks_range
     lo_s, hi_s = goal_cfg.strength_range
     for offset in sorted(segment_by_offset):
@@ -178,7 +201,11 @@ def goal_step(
         rng = substream(seed, GOAL_STREAM, offset, tick)
         for cat in sorted(rates):
             u = rng.random()
-            rate = rates[cat] * goal_cfg.wave_multiplier(cat, tick, waves_on)
+            if has_overlay and waves_on:
+                rate = rates[cat] * _overlay_multiplier(
+                    goal_cfg, cat, tick, extra_waves, wave_scale)
+            else:
+                rate = rates[cat] * goal_cfg.wave_multiplier(cat, tick, waves_on)
             if u >= rate or (offset, cat) in state.live:
                 continue
             strength = round(lo_s + (hi_s - lo_s) * rng.random(), 4)
@@ -230,16 +257,29 @@ def exposure_step(
     cap_per_tick: int,
     cap_72h: int,
     saw: SawHistory,
+    segment_by_offset: dict[int, int] | None = None,
 ) -> dict[int, list[int]]:
     """Seeded Bernoulli reach per (shopper, scheduled creative) with frequency
-    caps. Returns creative_id -> sorted exposed offsets. Records into `saw`."""
+    caps. Returns creative_id -> sorted exposed offsets. Records into `saw`.
+
+    Audience targeting (CONTRACT v3.4-draft): a row's audience_segments filters
+    AFTER the reach draw — the stream shape stays state- and audience-
+    independent, exactly like the goal step's skip-if-live rule. Filtered
+    exposures consume no caps and emit no SAW."""
     active_rows = [r for r in schedule if r.start_tick <= tick <= r.end_tick]
+    # getattr: Phase-3-shaped row objects (no audience field) keep working
+    audiences = [getattr(r, "audience_segments", None) for r in active_rows]
+    if segment_by_offset is None and any(a is not None for a in audiences):
+        raise ValueError("schedule rows carry audience_segments but "
+                         "exposure_step got no segment_by_offset")
     out: dict[int, list[int]] = {r.creative_id: [] for r in active_rows}
     for offset in sorted(offsets):
         rng = substream(seed, EXPOSE_STREAM, offset, tick)
-        for row in active_rows:
-            u = rng.random()  # drawn per active row regardless of caps
+        for row, audience in zip(active_rows, audiences):
+            u = rng.random()  # drawn per active row regardless of caps/audience
             if u >= row.reach_prob:
+                continue
+            if audience is not None and segment_by_offset[offset] not in audience:
                 continue
             if saw.count_tick(offset, tick) >= cap_per_tick:
                 continue
@@ -248,6 +288,21 @@ def exposure_step(
             out[row.creative_id].append(offset)
             saw.record(offset, tick, row.creative_id)
     return out
+
+
+def page_for(seed: int, splits: dict[int, tuple[int, ...]], pages: dict[int, int],
+             offset: int, creative: int) -> int | None:
+    """Landing page for (shopper offset, creative). Split rows (page_ids)
+    draw once from (seed, "page", offset, creative) — tick-free, so a
+    shopper's variant is stable for the whole run and re-derivable at click
+    time, state rebuild, and replay without ever being logged (CONTRACT
+    v3.4-draft). Non-split creatives take the static map with ZERO rng draws
+    — the byte-identical Phase-3 path."""
+    variants = splits.get(creative)
+    if not variants:
+        return pages.get(creative)
+    rng = substream(seed, PAGE_STREAM, offset, creative)
+    return variants[int(rng.integers(len(variants)))]
 
 
 # ---------------------------------------------------------------------------
@@ -314,14 +369,19 @@ class PromoSchedule:
     windows: dict[int, tuple[tuple[int, int, float], ...]]
 
     @classmethod
-    def load(cls, path: Path | str) -> "PromoSchedule":
-        raw = json.loads(Path(path).read_text())
+    def from_raw(cls, raw: dict) -> "PromoSchedule":
+        """Same shape as promo_schedule.json; inline payloads come from a
+        run_config arm's promo_overrides.schedule_inline (CONTRACT v3.4-draft)."""
         return cls(windows={
             int(p["product_id"]): tuple(
                 (int(c["start_tick"]), int(c["end_tick"]), float(c["discount_pct"]))
                 for c in p["cycles"])
             for p in raw.get("product_promos", ())
         })
+
+    @classmethod
+    def load(cls, path: Path | str) -> "PromoSchedule":
+        return cls.from_raw(json.loads(Path(path).read_text()))
 
     def discount_at(self, product: int, tick: int) -> float:
         for start, end, pct in self.windows.get(product, ()):
