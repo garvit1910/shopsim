@@ -1,0 +1,20 @@
+{
+  "type": "pricing",
+  "name": "nisolo-ladder",
+  "seed": 913,
+  "ticks": 8,
+  "t0": 1797000000,
+  "population": {"size": 70, "personas": "fixtures/nisolo/personas.json"},
+  "catalog": "fixtures/nisolo",
+  "perception_cache": "fixtures/nisolo/perception-cache",
+  "goal_config": "fixtures/nisolo/goal_config.json",
+  "calibration": {"stage_bases": {"CLICK": 2.0}},
+  "discount_levels": [0.0, 0.2, 0.4],
+  "promo": {"product_promos": [
+    {"product_id": 3000101, "cycles": [{"cycle": 1, "start_tick": 2, "end_tick": 7, "discount_pct": 0.0}]}
+  ]},
+  "exposure": {"schedule": [
+    {"creative_id": 2000103, "start_tick": 0, "end_tick": 7, "reach_prob": 0.55},
+    {"creative_id": 2000102, "start_tick": 0, "end_tick": 7, "reach_prob": 0.55}
+  ]}
+}

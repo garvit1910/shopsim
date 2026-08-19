@@ -145,3 +145,44 @@ resort, tick-partitioned relationship types (e.g. `SAW_T7`) for the
 {t,run}-only episodic edges, batched propless at 20k/s, with t recovered
 from the rel name and payload-carrying events (BOUGHT/PRICE_SEEN/EXPERIENCED)
 staying as singles — ~90% of volume batches, ≈5s per 10k.
+
+
+## Engine pace and the store-reset ritual (Phase 5.8)
+
+**Per-tick cost grows with the store.** Measured on this repo, from
+`runs/*/progress.json`:
+
+| run | shape | wall | s/tick | consolidation |
+|---|---|---|---|---|
+| r027 market-demo | 200 x 60 | 1 107 s | **18.5** | 76% |
+| r028 market-20260819 | 200 x 60 | 6 734 s | **112.2** | 80% |
+| r033 nisolo-smoke (fresh store) | 60 x 6 | 63 s | **10.6** | 61% |
+
+r027 and r028 are the *same shape*; r028 was 6x slower purely because r027's
+60-day graph was still in the store. Consolidation is 60-80% of every tick, and
+it slows as the graph grows. This is the single most useful operational fact in
+the repo: **"the simulation is slow" is usually "the store is full"**.
+
+Before a demo or a timed run:
+
+```sh
+cd infra
+docker compose down
+STAMP=$(date +%Y%m%d-%H%M)
+mv hydradb-data/store "hydradb-data/store-archive-$STAMP"
+mv hydradb-data/cache "hydradb-data/cache-archive-$STAMP"
+sh up.sh                       # recreates the dirs and starts clean
+```
+
+`mv`, never `rm` — archives are cheap and a wiped graph cannot be recovered
+from the run outputs (`runs/` keeps events and results, but shopper worldviews
+live only in HydraDB, so the Inspector goes blank for archived runs). Delete old
+archives yourself once you are sure.
+
+`GET /engine/pace` reports what recent runs actually did, recency-weighted, and
+the dashboard's ETA reads from it — so estimates track the store's current
+state instead of trusting a constant that goes stale within a day.
+
+**Rule of thumb:** on a fresh store budget ~5.5 s/tick per 100 shoppers. A
+150 x 24 run is a few minutes; a 200 x 60 run on a *loaded* store is hours. Do
+not start a long run late in the day without resetting first.

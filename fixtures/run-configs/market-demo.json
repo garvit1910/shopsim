@@ -1,0 +1,38 @@
+{
+  "type": "ad_test",
+  "name": "market-demo",
+  "seed": 424,
+  "ticks": 60,
+  "t0": 1793000000,
+  "population": {
+    "size": 200
+  },
+  "market": {
+    "shared": true,
+    "allocation": {
+      "enabled": true
+    }
+  },
+  "creatives": [
+    {
+      "creative_id": 2000001,
+      "reach_prob": 0.12
+    },
+    {
+      "creative_id": 2000002,
+      "reach_prob": 0.12
+    },
+    {
+      "creative_id": 2000003,
+      "reach_prob": 0.12
+    },
+    {
+      "creative_id": 2000004,
+      "reach_prob": 0.12
+    },
+    {
+      "creative_id": 2000005,
+      "reach_prob": 0.12
+    }
+  ]
+}

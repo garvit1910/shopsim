@@ -1,0 +1,2487 @@
+<title>ShopSim Design Slate</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* ============ wrapper tokens (light default, dark via media + stamp) ============ */
+:root{
+  --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --hair:#e1e0d9; --ring:rgba(11,11,11,.10); --accent:#2a78d6; --accent-ink:#1c5cab;
+  --good:#006300; --warn:#b97700; --crit:#d03b3b;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --hair:#2c2c2a; --ring:rgba(255,255,255,.10); --accent:#3987e5; --accent-ink:#6da7ec;
+    --good:#0ca30c; --warn:#fab219; --crit:#e66767;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+  --hair:#2c2c2a; --ring:rgba(255,255,255,.10); --accent:#3987e5; --accent-ink:#6da7ec;
+  --good:#0ca30c; --warn:#fab219; --crit:#e66767;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:var(--sans);
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;text-wrap:balance;line-height:1.2}
+p{margin:0}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;padding:0}
+button:focus-visible,[tabindex]:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+code,.mono{font-family:var(--mono)}
+.num{font-variant-numeric:tabular-nums}
+
+/* ============ shell ============ */
+.shell-head{position:sticky;top:0;z-index:60;background:var(--page);border-bottom:1px solid var(--hair)}
+.shell-head .brand-row{display:flex;align-items:baseline;gap:14px;padding:14px 22px 10px;flex-wrap:wrap}
+.brand{font-weight:700;letter-spacing:.02em;font-size:16px}
+.brand .dot{color:var(--accent)}
+.brand-sub{color:var(--ink-2);font-size:13px}
+.tabbar{display:flex;gap:2px;padding:0 14px;overflow-x:auto;scrollbar-width:thin}
+.tabbar button{padding:9px 13px 11px;font-size:13.5px;font-weight:600;color:var(--ink-2);
+  border-bottom:2px solid transparent;white-space:nowrap;border-radius:6px 6px 0 0}
+.tabbar button:hover{color:var(--ink);background:var(--surface)}
+.tabbar button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabbar .key{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-right:6px;
+  border:1px solid var(--hair);border-radius:4px;padding:0 4px}
+main>section{display:none}
+main>section.active{display:block}
+.doc{max-width:980px;margin:0 auto;padding:34px 22px 90px}
+.doc .lede{font-size:17px;color:var(--ink-2);max-width:64ch}
+.doc h2{font-size:22px;margin:38px 0 12px}
+.doc h3{font-size:16.5px;margin:26px 0 8px}
+.doc p{max-width:70ch;margin:0 0 12px}
+.doc ul{margin:0 0 14px;padding-left:22px;max-width:72ch}
+.doc li{margin:4px 0}
+.doc table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0 18px}
+.doc th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+  border-bottom:1px solid var(--hair);padding:6px 10px 6px 0}
+.doc td{border-bottom:1px solid var(--hair);padding:7px 10px 7px 0;vertical-align:top}
+.doc .wide{overflow-x:auto}
+.pill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.05em;border-radius:99px;
+  padding:2px 9px;border:1px solid var(--ring);color:var(--ink-2)}
+.pill.acc{color:var(--accent-ink);border-color:var(--accent)}
+.eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 6px}
+
+/* overview design cards */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px;margin:18px 0 8px}
+.dcard{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:16px 16px 14px;
+  display:flex;flex-direction:column;gap:8px;text-align:left;transition:border-color .15s}
+.dcard:hover{border-color:var(--accent)}
+.dcard .swatch{height:44px;border-radius:6px;display:flex;align-items:center;padding:0 12px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em}
+.dcard h3{margin:2px 0 0;font-size:16px}
+.dcard .desc{color:var(--ink-2);font-size:13.5px;min-height:3.2em}
+.dcard .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+.note-box{background:var(--surface);border:1px solid var(--hair);border-left:3px solid var(--accent);
+  border-radius:8px;padding:12px 16px;margin:14px 0;max-width:76ch}
+.note-box.warn{border-left-color:var(--warn)}
+.checklist{list-style:none;padding:0;max-width:76ch}
+.checklist li{padding:5px 0 5px 26px;position:relative}
+.checklist li::before{content:"";position:absolute;left:2px;top:11px;width:12px;height:12px;
+  border:1.5px solid var(--muted);border-radius:3px}
+.checklist li.done::before{background:var(--accent);border-color:var(--accent)}
+.checklist li.done::after{content:"";position:absolute;left:5px;top:13px;width:6px;height:3.5px;
+  border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg)}
+
+/* ============ shared inspector drawer (used by all five designs) ============ */
+#inspector{position:fixed;inset:0;z-index:100;display:none}
+#inspector.open{display:block}
+#inspector .scrim{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+#inspector .panel{position:absolute;top:0;right:0;bottom:0;width:min(430px,94vw);overflow-y:auto;
+  background:#16181d;color:#e8e9ec;border-left:1px solid rgba(255,255,255,.12);
+  padding:20px 20px 40px;font-size:13.5px;line-height:1.5}
+#inspector h3{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#8b8f98;margin:22px 0 8px}
+#inspector .ins-head{display:flex;align-items:center;gap:12px}
+#inspector .ins-ava{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:16px;color:#0b0b0b;flex:none}
+#inspector .ins-name{font-size:18px;font-weight:800}
+#inspector .ins-sub{color:#8b8f98;font-family:var(--mono);font-size:11.5px}
+#inspector .ins-x{position:absolute;top:14px;right:16px;color:#8b8f98;font-size:20px;line-height:1;padding:4px 8px}
+#inspector .ins-x:hover{color:#fff}
+#inspector .chip{display:inline-block;font-size:11px;font-weight:700;border-radius:99px;padding:2px 9px;
+  background:rgba(255,255,255,.08);margin:2px 4px 2px 0}
+#inspector .need-chip{border:1px solid #c98500;color:#eda100;background:rgba(201,133,0,.12)}
+#inspector .bar-row{display:flex;align-items:center;gap:8px;margin:5px 0}
+#inspector .bar-lab{width:96px;flex:none;color:#c6c8cd;font-size:12.5px}
+#inspector .bar-track{flex:1;height:7px;background:rgba(255,255,255,.09);border-radius:4px;overflow:hidden}
+#inspector .bar-fill{height:100%;border-radius:4px;background:#3987e5}
+#inspector .bar-val{width:74px;flex:none;text-align:right;font-family:var(--mono);font-size:11.5px}
+#inspector .delta-up{color:#35c26a}
+#inspector .delta-dn{color:#e66767}
+#inspector .bcard{border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;margin:8px 0}
+#inspector .bcard .b-top{display:flex;justify-content:space-between;align-items:baseline}
+#inspector .bcard .b-val{font-family:var(--mono);font-weight:700}
+#inspector .conf-track{height:5px;background:rgba(255,255,255,.09);border-radius:3px;margin:7px 0 5px;overflow:hidden}
+#inspector .conf-fill{height:100%;background:#1baf7a;border-radius:3px}
+#inspector .prov{color:#8b8f98;font-size:12px;font-style:italic}
+#inspector .tl{list-style:none;margin:0;padding:0;position:relative}
+#inspector .tl::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1.5px;background:rgba(255,255,255,.14)}
+#inspector .tl li{position:relative;padding:0 0 12px 22px}
+#inspector .tl li::before{content:"";position:absolute;left:1px;top:5px;width:9px;height:9px;border-radius:50%;
+  background:#3987e5;border:2px solid #16181d}
+#inspector .tl .w{font-family:var(--mono);font-weight:700}
+#inspector .tl .cause{display:inline-block;font-size:10.5px;font-weight:700;font-family:var(--mono);
+  border-radius:4px;padding:1px 6px;background:rgba(57,135,229,.16);color:#9cc4f2;margin-left:6px}
+#inspector .diary{font-family:var(--mono);font-size:11.5px;color:#c6c8cd}
+#inspector .diary div{padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.08)}
+#inspector .diary .d{color:#8b8f98;margin-right:8px}
+#inspector .path{font-family:var(--mono);font-size:11px;background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.09);border-radius:6px;padding:7px 9px;margin:6px 0;overflow-x:auto;white-space:nowrap}
+#inspector .path .rel{color:#eda100;font-weight:700}
+#inspector .path .strength{color:#8b8f98}
+#inspector .appraise-note{color:#8b8f98;font-size:12px}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+
+<header class="shell-head">
+  <div class="brand-row">
+    <div class="brand">shopsim<span class="dot">·</span>design slate</div>
+    <div class="brand-sub">Phase 5 — five directions for the live market dashboard · mock data · 200 shoppers × 14 days</div>
+  </div>
+  <nav class="tabbar" role="tablist" id="tabbar">
+    <button role="tab" data-tab="overview" aria-selected="true"><span class="key">0</span>Overview</button>
+    <button role="tab" data-tab="v2" aria-selected="false" style="color:var(--accent-ink)"><span class="key">1</span>★ V2 · Trading Terminal</button>
+    <button role="tab" data-tab="d1" aria-selected="false"><span class="key">2</span>D1 · The Floor</button>
+    <button role="tab" data-tab="d2" aria-selected="false"><span class="key">3</span>D2 · Mission Control</button>
+    <button role="tab" data-tab="d3" aria-selected="false"><span class="key">4</span>D3 · Living Graph</button>
+    <button role="tab" data-tab="d4" aria-selected="false"><span class="key">5</span>D4 · Broadcast</button>
+    <button role="tab" data-tab="d5" aria-selected="false"><span class="key">6</span>D5 · The Terminal</button>
+    <button role="tab" data-tab="prereqs" aria-selected="false"><span class="key">7</span>Prereq check</button>
+    <button role="tab" data-tab="plan" aria-selected="false"><span class="key">8</span>Revised plan</button>
+  </nav>
+</header>
+
+<main>
+<section id="tab-overview" class="active">
+  <div class="doc">
+    <p class="eyebrow">Phase 5 · design review</p>
+    <h1 style="font-size:30px">Five ways to watch a synthetic market think</h1>
+    <p class="lede" style="margin-top:10px">
+      Each tab is a working, animated mock of the Phase-5 live experience: press play, watch DAY 1→14 advance,
+      scrub, and click any shopper to open the inspector. All five run on one seeded mock market whose data is
+      shaped exactly like the real endpoints (events.jsonl records, results_state series, worldview payloads) —
+      so the design you pick ports to the real stack by swapping the mock API for the real one.
+    </p>
+    <div class="note-box" style="margin-top:18px">
+      <strong>Decision made (2026-08-18):</strong> Terminal base + The Floor's live-market feel, no particle
+      theater — built as <a href="#v2" data-goto="v2" style="color:var(--accent-ink);font-weight:700">★ V2 · Trading Terminal</a>
+      (tab 1). Broadcast survives as a story-mode demo toggle inside it; the Living Graph returns as a deepened
+      inspector feature (decision replay with real probabilities, version rails). D1–D5 remain for reference.
+      Keyboard: <code>0–8</code> switch tabs, <code>Esc</code> closes the inspector, <code>Space</code> plays/pauses.
+    </div>
+
+    <div class="card-grid" id="ovCards">
+      <button class="dcard" data-goto="v2" style="border-color:var(--accent)">
+        <div class="swatch" style="background:#fcfcfb;color:#1c5cab;border:1px solid #e1e0d9">★ CHOSEN · TERMINAL × FLOOR · NO PARTICLES</div>
+        <h3>V2 · The Trading Terminal</h3>
+        <p class="desc">The fused production design: Terminal base + funnel-flow widths that ARE the counts,
+          movers chips, the tape, a story-mode demo toggle, and the deepened decision-replay inspector.</p>
+        <div class="meta"><span class="pill acc">the build target</span><span class="pill">glance &amp; confirm</span></div>
+      </button>
+      <button class="dcard" data-goto="d1">
+        <div class="swatch" style="background:#111310;color:#7ea87e">CANVAS · PARTICLES · DARK CHARCOAL</div>
+        <h3>D1 · The Floor</h3>
+        <p class="desc">A trading-floor funnel river. Every particle is a real shopper falling from creative gates
+          through CLICK → BROWSE → CART → BUY; purchases flare. Feed on the right, drift band below.</p>
+        <div class="meta"><span class="pill">kinetic hero</span><span class="pill">difficulty 4/5</span></div>
+      </button>
+      <button class="dcard" data-goto="d2">
+        <div class="swatch" style="background:#10161f;color:#7fa3cc">MATRIX · INSTRUMENTS · DEEP BLUE</div>
+        <h3>D2 · Mission Control</h3>
+        <p class="desc">200 cells, one per real shopper, colored by funnel depth and pulsing on events.
+          Instrument gauges for the population's internal state; a mission log of everything that happens.</p>
+        <div class="meta"><span class="pill">strongest honesty</span><span class="pill">difficulty 2/5</span></div>
+      </button>
+      <button class="dcard" data-goto="d3">
+        <div class="swatch" style="background:#14121f;color:#9c92e0">FORCE GRAPH · MOTIF PATHS · INDIGO</div>
+        <h3>D3 · Living Graph</h3>
+        <p class="desc">One shopper's worldview as a living graph: PREFERS / HOLDS / NEEDS edges grow with cause
+          labels, motif paths light up at decision time. The graph-native pitch, on screen.</p>
+        <div class="meta"><span class="pill">judges' rubric</span><span class="pill">difficulty 5/5</span></div>
+      </button>
+      <button class="dcard" data-goto="d4">
+        <div class="swatch" style="background:#f5f4f0;color:#8c2f2a;border:1px solid #e1e0d9">STORY CARDS · TICKER · STUDIO</div>
+        <h3>D4 · Broadcast</h3>
+        <p class="desc">A market newsroom. Auto-directed featured-shopper stories with before→after preference
+          bars, breaking-news market events, a scoreboard, and an always-running event ticker.</p>
+        <div class="meta"><span class="pill">demo-video gold</span><span class="pill">difficulty 3/5</span></div>
+      </button>
+      <button class="dcard" data-goto="d5">
+        <div class="swatch" style="background:#fcfcfb;color:#1c5cab;border:1px solid #e1e0d9">TIMELINE · SMALL MULTIPLES · PAPER</div>
+        <h3>D5 · The Terminal</h3>
+        <p class="desc">An analyst workbench. A master timeline owns the clock — scrub it, and every panel
+          (CTR, funnels, drift, pulse) follows. Densest information, replay-native.</p>
+        <div class="meta"><span class="pill">lowest risk</span><span class="pill">difficulty 1/5</span></div>
+      </button>
+    </div>
+
+    <h2>What is real here, and what is mock</h2>
+    <p><strong>Real:</strong> every layout is driven by data shapes the shipped engine already produces —
+      per-tick event batches (with shopper ids, creatives, prices, need lifecycles), per-tick cumulative series
+      (funnels, CTR, preference drift per concept×segment, reference price), and per-shopper worldview payloads
+      (beliefs with confidence and provenance sentences, cause-stamped preference chains). Maya #0042's preference
+      timeline uses the contract-tested golden-chain numbers verbatim: 0.45 → 0.476 → 0.532 → 0.614 → 0.714 → 0.761.</p>
+    <p><strong>Mock:</strong> the market itself is a ~60-line seeded generator (no HydraDB, no LLMs, no engine),
+      and shopper display names are cosmetic aliases for offsets. Counters are honest to a 200-shopper × 14-day run —
+      about 2,000 impressions and a handful of buys — not inflated for effect. The real run at this scale advances
+      one day every ~5–8 s; the mock plays one day every ~2.5 s at 1×.</p>
+
+    <h2>How the five differ</h2>
+    <div class="wide"><table>
+      <tr><th style="width:13%">Design</th><th>Hero</th><th>Activity story</th><th>Worldview drift</th><th>Market events</th></tr>
+      <tr><td><strong>D1 Floor</strong></td><td>particle funnel river</td><td>state-change cards, right rail</td><td>sparkline band</td><td>flags on the day axis</td></tr>
+      <tr><td><strong>D2 Mission</strong></td><td>200-cell population matrix</td><td>mission log (monospace)</td><td>drift strip below matrix</td><td>banner cards in the log</td></tr>
+      <tr><td><strong>D3 Graph</strong></td><td>force-directed worldview</td><td>graph-write log</td><td>segment constellation</td><td>annotations on the graph</td></tr>
+      <tr><td><strong>D4 Broadcast</strong></td><td>featured-shopper story stage</td><td>the stage itself + ticker</td><td>annotated storyline chart</td><td>breaking-news banners</td></tr>
+      <tr><td><strong>D5 Terminal</strong></td><td>master timeline</td><td>event table, clickable</td><td>small-multiple grid</td><td>markers on the timeline</td></tr>
+    </table></div>
+    <p style="color:var(--ink-2)">Full tradeoff notes sit at the bottom of each design tab. The prerequisite audit
+      and the revised Phase-5 plan are tabs 6 and 7.</p>
+  </div>
+</section>
+
+<script>
+/* ================= CORE: seeded mock market, clock, helpers ================= */
+"use strict";
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* --- vocabulary (real ids from contracts/enums.py + Appendix A) --- */
+const CONCEPTS = {eco_friendly:5003, performance:5004, comfort:5005, discount:5011, style:5014};
+const CAT_RUNNING = 5504, BRAND = {id:6001, name:"ShoeCo"};
+const PRODUCT = {id:3000001, name:"Trail Runner", list:39.00};
+const CREATIVES = [
+  {id:2000003, key:"eco",  name:"EcoStride 10% Off", concept:"eco_friendly", extra:"discount", start:0,  color:"#1baf7a"},
+  {id:2000006, key:"perf", name:"Apex Runner",       concept:"performance",  extra:null,       start:2,  color:"#3987e5"},
+  {id:2000007, key:"comf", name:"CloudWalk Daily",   concept:"comfort",      extra:"style",    start:5,  color:"#d95926", abTest:true},
+];
+const PAGES = {consistent:4000001, violation:4000002};
+const SEGMENTS = [
+  {id:1001,name:"eco_enthusiast",    share:.09, aff:{eco:.90,perf:.30,comf:.40,deal:.20}, needRate:.020, grp:0},
+  {id:1002,name:"performance_athlete",share:.08,aff:{eco:.30,perf:.90,comf:.30,deal:.20}, needRate:.025, grp:1},
+  {id:1003,name:"bargain_hunter",    share:.11, aff:{eco:.20,perf:.20,comf:.40,deal:.95}, needRate:.022, grp:2},
+  {id:1004,name:"comfort_seeker",    share:.10, aff:{eco:.30,perf:.20,comf:.90,deal:.40}, needRate:.018, grp:1},
+  {id:1005,name:"style_conscious",   share:.09, aff:{eco:.35,perf:.25,comf:.45,deal:.30}, needRate:.018, grp:1},
+  {id:1006,name:"casual_browser",    share:.11, aff:{eco:.35,perf:.35,comf:.35,deal:.50}, needRate:.012, grp:2},
+  {id:1007,name:"trail_adventurer",  share:.06, aff:{eco:.70,perf:.70,comf:.35,deal:.25}, needRate:.028, grp:0},
+  {id:1008,name:"marathon_trainer",  share:.05, aff:{eco:.35,perf:.95,comf:.50,deal:.20}, needRate:.035, grp:1},
+  {id:1009,name:"ortho_comfort",     share:.06, aff:{eco:.30,perf:.15,comf:.95,deal:.35}, needRate:.020, grp:1},
+  {id:1010,name:"fashion_forward",   share:.05, aff:{eco:.30,perf:.20,comf:.40,deal:.30}, needRate:.015, grp:1},
+  {id:1011,name:"brand_skeptic",     share:.07, aff:{eco:.20,perf:.20,comf:.25,deal:.40}, needRate:.010, grp:2},
+  {id:1012,name:"deal_stacker",      share:.06, aff:{eco:.25,perf:.20,comf:.35,deal:.95}, needRate:.022, grp:2},
+  {id:1013,name:"quality_investor",  share:.07, aff:{eco:.50,perf:.50,comf:.60,deal:.15}, needRate:.015, grp:0},
+];
+const GROUP_NAMES = ["eco-leaning","mainstream","deal-driven"];
+const GROUP_COLORS_D = ["#199e70","#3987e5","#d95926"]; /* dark surfaces */
+const GROUP_COLORS_L = ["#1baf7a","#2a78d6","#eb6834"]; /* light surfaces */
+const NAMES = ["Asha","Leo","Maya","Tom","Zoe","Ivan","Nina","Raj","Mia","Kai","Ana","Ben","Lena","Omar","Ivy","Sam","Rosa","Finn","Ada","Noor","Eli","Tara","Hugo","Sana","Max","Lila","Owen","Duaa","Jack","Emmy","Ravi","Cleo","Nate","Isla","Yara","Cole","Ruth","Dev","June","Amir"];
+const padO = o => "#"+String(o).padStart(4,"0");
+
+/* --- evidence blend: the REAL formula from contracts/evidence.py --- */
+function blend(w,E,wt,target){const nw=(E*w+wt*target)/(E+wt);return [nw, Math.min(E+wt,8)]}
+const conf = E => E/(E+0.7);
+
+const SIM = (function build(){
+  const rnd = mulberry32(415);
+  const TICKS = 14;
+  /* population */
+  const shoppers=[]; let o=1;
+  SEGMENTS.forEach(sg=>{
+    const n=Math.round(sg.share*200);
+    for(let i=0;i<n && shoppers.length<200;i++,o++){
+      shoppers.push({off:o, name:NAMES[o%NAMES.length], seg:sg,
+        ecoW:0.22+sg.aff.eco*0.35+ (rnd()-0.5)*0.06, ecoE:2,
+        prefHist:[], trustW:null, trustE:0, prov:{}, diary:[],
+        exp:{eco:0,perf:0,comf:0}, need:null, stage:0, ref:null, buys:0, page:null});
+    }
+  });
+  while(shoppers.length<200){shoppers.push({off:o,name:NAMES[o%NAMES.length],seg:SEGMENTS[5],ecoW:0.35,ecoE:2,prefHist:[],trustW:null,trustE:0,prov:{},diary:[],exp:{eco:0,perf:0,comf:0},need:null,stage:0,ref:null,buys:0,page:null});o++}
+  const maya = shoppers.find(s=>s.off===42); maya.name="Maya"; maya.seg=SEGMENTS[0];
+  maya.ecoW=0.45; maya.ecoE=2;
+  shoppers.forEach(s=>s.prefHist.push({t:0,w:s.ecoW,cause:"SEED",delta:0}));
+
+  const promoWindows=[[3,4],[8,9],[12,13]];
+  const inPromo = t => promoWindows.some(w=>t>=w[0]&&t<=w[1]);
+  const waveOn = t => t>=6&&t<=9;
+  /* Maya's scripted beats -> the golden chain, digit-exact via the real blend */
+  const mayaScript = {1:"SAW",2:"CLICK",4:"BROWSE",6:"NEED",7:"CART",8:"BUY",10:"EXP"};
+
+  const days=[]; const cum={imp:0,clicks:0,browses:0,bounces:0,carts:0,buys:0,revenue:0};
+  const funnelByCreative={}; CREATIVES.forEach(c=>funnelByCreative[c.key]={SAW:0,CLICKED:0,BROWSED:0,CARTED:0,BOUGHT:0});
+  const pageStats={[PAGES.consistent]:{VISITED:0,BOUNCED:0},[PAGES.violation]:{VISITED:0,BOUNCED:0}};
+  const series={ctr:[],ctrByCreative:{eco:[],perf:[],comf:[]},driftEco:[[],[],[]],driftDiscount:[],trust:[],needs:[],fatigue:[],ref:[],shelf:[],revenue:[],buysPerDay:[]};
+  const pendingExp=[]; /* {due, off, sat} */
+  let discountW=0.42, discountE=2;
+
+  const evWeight={CLICK:[0.10,"CLICKED"],BROWSE:[0.25,"BROWSED"],CART:[0.50,"CARTED"],BUY:[1.00,"BOUGHT"]};
+
+  for(let t=0;t<TICKS;t++){
+    const price = inPromo(t)? +(PRODUCT.list*0.8).toFixed(2) : PRODUCT.list;
+    const events=[]; const feed=[]; const stageToday=new Uint8Array(201);
+    const rec=(type,s,subject,extra)=>{const e=Object.assign({type,shopper_id:1000000+s.off,off:s.off,subject,t},extra||{});events.push(e);s.diary.push({t,type,subject,extra});return e};
+    const pushFeed=(score,item)=>feed.push(Object.assign({score,t},item));
+    const prefTouch=(s,ck,kind)=>{ /* preference evidence on the creative's claimed concept; track eco */
+      const cr=CREATIVES.find(c=>c.key===ck);
+      if(cr.concept!=="eco_friendly" && cr.extra!=="discount") return null;
+      if(cr.concept==="eco_friendly"){const [wt]=evWeight[kind];const before=s.ecoW;
+        [s.ecoW,s.ecoE]=blend(s.ecoW,s.ecoE,wt,1);
+        if(Math.abs(s.ecoW-before)>=0.01){s.prefHist.push({t,w:s.ecoW,cause:evWeight[kind][1]+" "+cr.name,delta:s.ecoW-before});
+          return {concept:"eco preference",before,after:s.ecoW};}
+      }
+      return null;
+    };
+    const trustTouch=(s,wt,target,kind)=>{const before=s.trustW;
+      if(s.trustW==null){s.trustW=0.5;s.trustE=0.7}
+      [s.trustW,s.trustE]=blend(s.trustW,s.trustE,wt,target);
+      s.prov[kind]=(s.prov[kind]||0)+1;
+      return {before,after:s.trustW};
+    };
+
+    /* 0. fulfillment: deliveries due today */
+    for(let i=pendingExp.length-1;i>=0;i--){const d=pendingExp[i];if(d.due!==t)continue;pendingExp.splice(i,1);
+      const s=d.s; rec("EXPERIENCED",s,PRODUCT.id,{sat:d.sat});
+      const tr=trustTouch(s,2.0,d.sat,"delivery");
+      const before=s.ecoW; const mag=0.75*Math.abs(2*d.sat-1), tgt=d.sat>=0.5?1:0;
+      [s.ecoW,s.ecoE]=blend(s.ecoW,s.ecoE,mag,tgt);
+      if(Math.abs(s.ecoW-before)>=0.01)s.prefHist.push({t,w:s.ecoW,cause:"EXPERIENCED "+PRODUCT.name+(d.sat<0.5?" (bad)":""),delta:s.ecoW-before});
+      pushFeed(d.sat<0.5?4.8:4.2,{off:s.off,kind:d.sat<0.5?"exp_bad":"exp_good",
+        title:(d.sat<0.5?"Rough delivery":"Product delivered"),
+        line:"Trust in ShoeCo "+tr.before.toFixed(2)+" → "+tr.after.toFixed(2),
+        cause:(d.sat<0.5?"Negative":"Positive")+" product experience (sat "+d.sat.toFixed(2)+")",
+        dir:d.sat<0.5?-1:1});
+    }
+    /* 1. goal step: arrivals, expiry */
+    shoppers.forEach(s=>{
+      if(s.need && t>=s.need.expires){rec("NEED_EXPIRED",s,CAT_RUNNING,{});s.need=null}
+      const mult=waveOn(t)?4:1;
+      const scripted = s.off===42;
+      if(!s.need && !scripted && rnd()<s.seg.needRate*mult){
+        const urg=+(0.4+rnd()*0.55).toFixed(2);
+        s.need={cat:CAT_RUNNING,urgency:urg,strength:+(0.5+rnd()*0.4).toFixed(2),expires:t+5,cap:70+Math.floor(rnd()*50)};
+        rec("NEED_ACTIVATED",s,CAT_RUNNING,{strength:s.need.strength,urgency:urg,budget_cap:s.need.cap,source:waveOn(t)?"wave":"seeded"});
+        pushFeed(2.4+urg,{off:s.off,kind:"need",title:"New need",line:"Running shoes · urgency "+urg.toFixed(2),cause:waveOn(t)?"Marathon-season wave":"Seeded arrival",dir:1});
+      }
+      if(scripted && mayaScript[t]==="NEED" && !s.need){
+        s.need={cat:CAT_RUNNING,urgency:0.82,strength:0.79,expires:t+6,cap:90};
+        rec("NEED_ACTIVATED",s,CAT_RUNNING,{strength:0.79,urgency:0.82,budget_cap:90,source:"wave"});
+        pushFeed(5.0,{off:42,kind:"need",title:"New need",line:"Running shoes · urgency 0.82",cause:"Marathon-season wave",dir:1});
+      }
+    });
+    /* 2-5. exposure + decisions */
+    shoppers.forEach(s=>{
+      let expToday=0;
+      CREATIVES.forEach(cr=>{
+        if(t<cr.start||expToday>=2)return;
+        const isMaya=s.off===42, beat=mayaScript[t];
+        const forced=isMaya&&cr.key==="eco"&&!!beat;   /* her scripted beats always reach her */
+        const reach = cr.key==="eco"?0.35:0.30;
+        if(!forced&&rnd()>=reach)return;
+        expToday++; s.exp[cr.key]++; cum.imp++;
+        funnelByCreative[cr.key].SAW++;
+        rec("SAW",s,cr.id,{});
+        if(s.stage<1){s.stage=1} if(stageToday[s.off]<1)stageToday[s.off]=1;
+        if(isMaya && cr.key!=="eco") return;           /* Maya's story rides the eco creative */
+        if(isMaya && !["CLICK","BROWSE","CART","BUY"].includes(beat||"")) return; /* SAW beat: sees it, ignores */
+        /* click model */
+        const aff = cr.key==="eco" ? (s.seg.aff.eco*1.15+s.seg.aff.deal*0.3)
+                  : cr.key==="perf"? s.seg.aff.perf : (s.seg.aff.comf*0.8+0.15);
+        const needBoost = s.need?1+1.4*s.need.urgency:1;
+        const wear = s.exp[cr.key]>4?0.33:(s.exp[cr.key]>2?0.65:1);
+        const promoBoost = (cr.extra==="discount"&&inPromo(t))?1+0.7*s.seg.aff.deal:1;
+        let pClick=0.12*aff*needBoost*wear*promoBoost;
+        const clicks = isMaya ? true : rnd()<pClick;
+        if(!clicks)return;
+        cum.clicks++; funnelByCreative[cr.key].CLICKED++;
+        rec("CLICKED",s,cr.id,{});
+        if(s.stage<2)s.stage=2; if(stageToday[s.off]<2)stageToday[s.off]=2;
+        const pt1=(isMaya&&beat!=="CLICK")?null:prefTouch(s,cr.key,"CLICK");
+        if(pt1&&Math.abs(pt1.after-pt1.before)>0.02)pushFeed(2.6,{off:s.off,kind:"pref",title:"Preference shift",line:"Eco preference "+pt1.before.toFixed(3)+" → "+pt1.after.toFixed(3),cause:"CLICKED "+cr.name,dir:1});
+        if(isMaya&&beat==="CLICK")return;
+        /* page: A/B for comf creative */
+        let page=PAGES.consistent;
+        if(cr.abTest){ if(s.page==null)s.page=rnd()<0.5?PAGES.consistent:PAGES.violation; page=s.page }
+        const pBounce = page===PAGES.violation?0.62:0.42;
+        const bounced = isMaya ? false : rnd()<pBounce;
+        pageStats[page][bounced?"BOUNCED":"VISITED"]++;
+        if(bounced){cum.bounces++;rec("BOUNCED",s,page,{cause_creative:cr.id});
+          if(page===PAGES.violation)pushFeed(1.8,{off:s.off,kind:"bounce",title:"Bounced",line:"Ad promised what the page hides",cause:"Expectation violation · "+cr.name,dir:-1});
+          return}
+        rec("VISITED",s,page,{cause_creative:cr.id});
+        rec("PRICE_SEEN",s,PRODUCT.id,{price,cause_creative:cr.id});
+        s.ref = s.ref==null?price:+(s.ref+0.3*(price-s.ref)).toFixed(2);
+        cum.browses++; funnelByCreative[cr.key].BROWSED++;
+        rec("BROWSED",s,page,{cause_creative:cr.id});
+        if(s.stage<3)s.stage=3; if(stageToday[s.off]<3)stageToday[s.off]=3;
+        const pt2=(isMaya&&beat!=="BROWSE")?null:prefTouch(s,cr.key,"BROWSE");
+        if(isMaya&&beat==="BROWSE")return;
+        trustTouch(s,0.75,0.6,"visit");
+        const pCart=0.3*(s.need?1+1.3*s.need.urgency:1);
+        const carts = isMaya?(beat==="CART"||beat==="BUY"):rnd()<pCart;
+        if(!carts)return;
+        cum.carts++; funnelByCreative[cr.key].CARTED++;
+        rec("CARTED",s,PRODUCT.id,{cause_creative:cr.id});
+        if(s.stage<4)s.stage=4; if(stageToday[s.off]<4)stageToday[s.off]=4;
+        const pt3=(isMaya&&beat!=="CART")?null:prefTouch(s,cr.key,"CART");
+        if(pt3)pushFeed(3.4,{off:s.off,kind:"pref",title:"Preference shift",line:"Eco preference "+pt3.before.toFixed(3)+" → "+pt3.after.toFixed(3),cause:"CARTED "+PRODUCT.name,dir:1});
+        if(isMaya&&beat==="CART")return;
+        const pBuy=0.4*(s.need?1+0.8*s.need.urgency:0.5)*((cr.extra==="discount"&&inPromo(t))?1+0.4*s.seg.aff.deal:1);
+        const buys = isMaya?beat==="BUY":rnd()<pBuy;
+        if(!buys)return;
+        cum.buys++; cum.revenue+=price; s.buys++; funnelByCreative[cr.key].BOUGHT++;
+        rec("BOUGHT",s,PRODUCT.id,{price,cause_creative:cr.id});
+        s.stage=5; stageToday[s.off]=5;
+        if(!isMaya||beat==="BUY")prefTouch(s,cr.key,"BUY");
+        trustTouch(s,1.5,0.65,"purchase");
+        pushFeed(5.2,{off:s.off,kind:"buy",title:"Purchase",line:PRODUCT.name+" · $"+price.toFixed(2),cause:"via "+cr.name+(s.need?" · need live":""),dir:1});
+        if(s.need){rec("NEED_SATISFIED",s,CAT_RUNNING,{cause:"BOUGHT "+PRODUCT.id});
+          pushFeed(4.0,{off:s.off,kind:"satisfied",title:"Need satisfied",line:"Running shoes · closed by purchase",cause:"BOUGHT "+PRODUCT.name,dir:1});s.need=null}
+        /* delivery in 2 days; days 8-9 purchases hit a bad batch */
+        const bad = !isMaya && t>=7 && t<=9;   /* the day 8-10 fulfillment batch ships flawed */
+        pendingExp.push({due:t+2,s,sat: isMaya?1.0 : bad? +(0.1+rnd()*0.2).toFixed(2) : +(0.78+rnd()*0.18).toFixed(2)});
+      });
+    });
+    /* Maya extras: guarantee her SAW on days she is scripted but reach missed her */
+    events.push({type:"TICK_COMPLETE",tick:t,t,n_events:events.length});
+
+    /* series sweep (mirrors end_tick_sweep) */
+    const expDay=events.filter(e=>e.type==="SAW").length, clkDay=events.filter(e=>e.type==="CLICKED").length;
+    series.ctr.push({tick:t,exposures:expDay,clicks:clkDay,ctr:expDay?clkDay/expDay:null});
+    CREATIVES.forEach(cr=>{const ex=events.filter(e=>e.type==="SAW"&&e.subject===cr.id).length,ck=events.filter(e=>e.type==="CLICKED"&&e.subject===cr.id).length;
+      series.ctrByCreative[cr.key].push({tick:t,exposures:ex,clicks:ck,ctr:ex?ck/ex:null})});
+    [0,1,2].forEach(g=>{const grp=shoppers.filter(s=>s.seg.grp===g);
+      series.driftEco[g].push(grp.reduce((a,s)=>a+s.ecoW,0)/grp.length)});
+    const dealShoppers=shoppers.filter(s=>s.seg.aff.deal>=0.9);
+    if(inPromo(t)){[discountW,discountE]=blend(discountW,discountE,0.3,1)}
+    series.driftDiscount.push(discountW);
+    const holders=shoppers.filter(s=>s.trustW!=null);
+    series.trust.push(holders.length?holders.reduce((a,s)=>a+s.trustW,0)/holders.length:null);
+    series.needs.push(shoppers.filter(s=>s.need).length);
+    series.fatigue.push(shoppers.reduce((a,s)=>a+Math.max(s.exp.eco,s.exp.perf,s.exp.comf),0)/200/6);
+    const refH=shoppers.filter(s=>s.ref!=null);
+    series.ref.push(refH.length?refH.reduce((a,s)=>a+s.ref,0)/refH.length:PRODUCT.list);
+    series.shelf.push(price);
+    series.revenue.push(cum.revenue);
+    series.buysPerDay.push(events.filter(e=>e.type==="BOUGHT").length);
+
+    feed.sort((a,b)=>b.score-a.score);
+    days.push({t, price, events, feed:feed.slice(0,7),
+      stageCum:Uint8Array.from(shoppers.map(s=>s.stage)),
+      stageToday,
+      kpis:{imp:cum.imp,clicks:cum.clicks,browses:cum.browses,carts:cum.carts,buys:cum.buys,
+            revenue:+cum.revenue.toFixed(2),ctr:cum.imp?cum.clicks/cum.imp:0,
+            needs:series.needs[t],trust:series.trust[t],fatigue:series.fatigue[t]}});
+  }
+
+  /* market events */
+  const scheduled=[
+    {t:0, kind:"flight", label:"Flight begins", detail:"EcoStride 10% Off goes live · reach 0.35"},
+    {t:2, kind:"flight", label:"Apex Runner joins", detail:"Second creative enters the flight"},
+    {t:3, kind:"promo",  label:"Promo cycle 1", detail:"20% off "+PRODUCT.name+" · $31.20 (days 4–5)"},
+    {t:5, kind:"flight", label:"Page A/B live", detail:"CloudWalk Daily · consistent vs violation page, seeded 50/50"},
+    {t:6, kind:"wave",   label:"Marathon season", detail:"Running-shoe need arrivals ×4 (days 7–10)"},
+    {t:8, kind:"promo",  label:"Promo cycle 2", detail:"20% off returns (days 9–10)"},
+    {t:9, kind:"wave",   label:"Marathon season ends", detail:"Need arrivals return to baseline"},
+    {t:12,kind:"promo",  label:"Promo cycle 3", detail:"Third discount window (days 13–14)"}
+  ];
+  const detected=[];
+  {const d0=series.driftEco[0][0];
+   for(let t=1;t<TICKS;t++){ if(series.driftEco[0][t]-d0>=0.02){detected.push({t,kind:"drift",sev:"info",label:"Eco preference climbing",
+     detail:"Eco-leaning segments mean +"+(series.driftEco[0][t]-d0).toFixed(3)+" since day 1 — behavior-earned, never from exposure",rule:"Δ mean PREFERS(eco) ≥ 0.02 vs day 1"});break}}
+   {const c=series.ctrByCreative.eco;
+    const vals=ts=>ts.map(i=>c[i]&&c[i].ctr).filter(v=>v!=null);
+    const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+    const early=avg(vals([1,2,3,4]));
+    for(let t=7;t<TICKS;t++){const recent=avg(vals([t-2,t-1,t]));
+      if(early!=null&&recent!=null&&series.fatigue[t]>0.7&&recent<0.85*early){
+        detected.push({t,kind:"fatigue",sev:"warning",label:"Message fatigue detected",
+        detail:"EcoStride CTR last-3-day mean "+(100*recent).toFixed(1)+"% vs "+(100*early).toFixed(1)+"% early-flight; mean top-creative exposures "+(series.fatigue[t]*6).toFixed(1)+"/shopper",
+        rule:"3-day CTR mean < 0.85 × days 2–5 mean AND mean exposures ≥ 4.2"});break}}}
+   for(let t=2;t<TICKS;t++){ if(series.trust[t]!=null&&series.trust[t-2]!=null&&series.trust[t]-series.trust[t-2]<=-0.004){
+       detected.push({t,kind:"trust",sev:"serious",label:"Trust drop",
+       detail:"Avg ShoeCo trust "+series.trust[t-2].toFixed(3)+" → "+series.trust[t].toFixed(3)+" — bad deliveries from the day 8–10 batch are pulling recent buyers down ~0.2 each",
+       rule:"Δ avg trust ≤ −0.004 over 2 ticks (population means move slowly; per-shopper hits are ~−0.2)"});break}}
+   for(let t=0;t<TICKS;t++){ if(series.ref[t]<=PRODUCT.list*0.95){detected.push({t,kind:"promo",sev:"warning",label:"Reference price eroding",
+       detail:"Mean reference price $"+series.ref[t].toFixed(2)+" — "+(100-100*series.ref[t]/PRODUCT.list).toFixed(1)+"% under list",
+       rule:"mean REFERENCE_PRICE ≤ 0.95 × list"});break}}
+  }
+  const eventsAt = t => ({sched:scheduled.filter(e=>e.t===t), det:detected.filter(e=>e.t===t)});
+
+  return {TICKS,shoppers,days,series,scheduled,detected,eventsAt,funnelByCreative,pageStats,
+          maya:shoppers.find(s=>s.off===42)};
+})();
+
+/* ================= market clock ================= */
+const CLOCK = (function(){
+  const subs=new Set();
+  const c={tick:0,frac:0,ticks:SIM.TICKS,playing:false,speed:1,dayMs:2500,done:false,
+    subscribe(f){subs.add(f);return()=>subs.delete(f)},
+    emit(type){subs.forEach(f=>f({type,tick:c.tick,frac:c.frac}))},
+    play(){if(c.done&&c.tick>=c.ticks-1){c.seek(0)}c.playing=true;last=performance.now();c.emit("play");loop()},
+    pause(){c.playing=false;c.emit("pause")},
+    toggle(){c.playing?c.pause():c.play()},
+    setSpeed(s){c.speed=s;c.emit("speed")},
+    seek(t){c.tick=Math.max(0,Math.min(c.ticks-1,t));c.frac=0;c.done=c.tick>=c.ticks-1&&c.done;c.emit("seek")},
+  };
+  let last=0, raf=0;
+  function loop(){
+    if(!c.playing)return;
+    raf=requestAnimationFrame(loop);
+    const now=performance.now(), dt=now-last; last=now;
+    c.frac+=dt*c.speed/c.dayMs;
+    if(c.frac>=1){
+      c.frac=0; 
+      if(c.tick<c.ticks-1){c.tick++;c.emit("advance")}
+      else {c.done=true;c.playing=false;c.emit("complete");return}
+    }
+    c.emit("frame");
+  }
+  return c;
+})();
+
+/* ================= tiny SVG chart helpers ================= */
+const fmt = {
+  int:n=>n.toLocaleString("en-US"),
+  pct:n=>n==null?"—":(100*n).toFixed(2)+"%",
+  usd:n=>"$"+n.toFixed(2),
+  w:n=>n==null?"—":n.toFixed(3),
+};
+function lineChart(el,cfg){
+  const w=cfg.w||el.clientWidth||320, h=cfg.h||120, p={t:8,r:8,b:cfg.xLabels?18:6,l:cfg.yLabels?34:6};
+  const iw=w-p.l-p.r, ih=h-p.t-p.b;
+  const upto = cfg.upto==null?SIM.TICKS-1:cfg.upto;
+  const all=cfg.series.flatMap(s=>s.data.slice(0,upto+1)).filter(v=>v!=null);
+  let lo=cfg.min!=null?cfg.min:Math.min(...all), hi=cfg.max!=null?cfg.max:Math.max(...all);
+  if(hi-lo<1e-9){hi=lo+1}
+  const pad=(hi-lo)*0.08; if(cfg.min==null)lo-=pad; if(cfg.max==null)hi+=pad;
+  const X=i=>p.l+iw*(i/(SIM.TICKS-1)), Y=v=>p.t+ih*(1-(v-lo)/(hi-lo));
+  let g="";
+  const gy=cfg.gridY==null?3:cfg.gridY;
+  for(let i=0;i<=gy;i++){const y=p.t+ih*i/gy;g+=`<line x1="${p.l}" x2="${w-p.r}" y1="${y}" y2="${y}" stroke="${cfg.grid}" stroke-width="1"/>`;
+    if(cfg.yLabels){const v=hi-(hi-lo)*i/gy;g+=`<text x="${p.l-5}" y="${y+3.5}" text-anchor="end" font-size="9" fill="${cfg.mut}" font-family="var(--mono)">${cfg.yFmt?cfg.yFmt(v):v.toFixed(2)}</text>`}}
+  if(cfg.xLabels){[0,Math.floor((SIM.TICKS-1)/2),SIM.TICKS-1].forEach(i=>{g+=`<text x="${X(i)}" y="${h-4}" text-anchor="middle" font-size="9" fill="${cfg.mut}" font-family="var(--mono)">d${i+1}</text>`})}
+  if(cfg.bands)cfg.bands.forEach(b=>{g+=`<rect x="${X(b[0])}" y="${p.t}" width="${X(Math.min(b[1],SIM.TICKS-1))-X(b[0])}" height="${ih}" fill="${b[2]}" opacity="0.5"/>`});
+  cfg.series.forEach(s=>{
+    let dPath="",started=false, lastPt=null;
+    s.data.forEach((v,i)=>{ if(i>upto||v==null)return;
+      dPath+=(started?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1);started=true;lastPt=[X(i),Y(v),v]});
+    if(!started)return;
+    if(s.fill)g+=`<path d="${dPath} L ${lastPt[0].toFixed(1)} ${p.t+ih} L ${p.l} ${p.t+ih} Z" fill="${s.color}" opacity="0.10"/>`;
+    g+=`<path d="${dPath}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"${s.dash?` stroke-dasharray="${s.dash}"`:""}/>`;
+    g+=`<circle cx="${lastPt[0].toFixed(1)}" cy="${lastPt[1].toFixed(1)}" r="3" fill="${s.color}"/>`;
+    if(s.label)g+=`<text x="${Math.min(lastPt[0]+5,w-2)}" y="${lastPt[1]-5}" font-size="9.5" font-weight="700" fill="${s.color}" font-family="var(--mono)" text-anchor="${lastPt[0]>w-52?"end":"start"}">${s.label}</text>`;
+  });
+  if(cfg.marker!=null&&cfg.marker<=upto){g+=`<line x1="${X(cfg.marker)}" x2="${X(cfg.marker)}" y1="${p.t}" y2="${p.t+ih}" stroke="${cfg.mut}" stroke-width="1" stroke-dasharray="2 3"/>`}
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" role="img" aria-label="${cfg.aria||"chart"}">${g}</svg>`;
+}
+function sparkSVG(data,upto,color,w,h,opts){
+  opts=opts||{};const all=data.slice(0,upto+1).filter(v=>v!=null);
+  if(!all.length)return "";
+  let lo=opts.min!=null?opts.min:Math.min(...all),hi=opts.max!=null?opts.max:Math.max(...all);
+  if(hi-lo<1e-9)hi=lo+1;
+  const X=i=>2+(w-4)*(i/(data.length-1)),Y=v=>2+(h-4)*(1-(v-lo)/(hi-lo));
+  let d="",st=false,lp=null;
+  data.forEach((v,i)=>{if(i>upto||v==null)return;d+=(st?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1);st=true;lp=[X(i),Y(v)]});
+  return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><path d="${d}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round"/><circle cx="${lp[0]}" cy="${lp[1]}" r="2.4" fill="${color}"/></svg>`;
+}
+function stageColor(stage,darkMode){ /* ordinal blue ramp, surface-aware */
+  const light=["#e6e4dd","#9ec5f4","#6da7ec","#3987e5","#2a78d6","#eda100"];
+  const dark =["#26262c","#184f95","#1c5cab","#2a78d6","#3987e5","#eda100"];
+  return (darkMode?dark:light)[stage];
+}
+const STAGE_NAMES=["unexposed","saw","clicked","browsed","carted","bought"];
+
+/* ================= shared inspector ================= */
+function motifPathsFor(s){
+  const sid=1000000+s.off, paths=[];
+  paths.push({type:"preference_fit",strength:+s.ecoW.toFixed(3),
+    path:`${sid} —PREFERS(w ${s.ecoW.toFixed(2)})→ eco_friendly:5003 ←CLAIMS— EcoStride:2000003`});
+  if(s.need)paths.push({type:"goal_fit",strength:+(s.need.strength*s.need.urgency).toFixed(3),
+    path:`${sid} —NEEDS(urg ${s.need.urgency})→ running_shoes:5504 ←IN_CATEGORY— ${PRODUCT.name}:3000001 ←OFFERS— 2000003`});
+  const mx=Math.max(s.exp.eco,s.exp.perf,s.exp.comf);
+  if(mx>3)paths.push({type:"brand_semantic_fatigue",strength:+Math.min(0.9,mx/8).toFixed(2),
+    path:`${sid} —SAW(×${mx})→ past creatives —CLAIMS→ eco_friendly:5003 ←CLAIMS— 2000003 (same brand 6001)`});
+  if(s.page===PAGES.violation)paths.push({type:"expectation_violation",strength:0.9,
+    path:`${sid} —EXPECTS→ discount:5011 —NOT_SHOWN_BY→ page:4000002`});
+  return paths;
+}
+function provSentence(s){
+  const p=s.prov, parts=[];
+  if(p.visit)parts.push(p.visit+" visit"+(p.visit>1?"s":""));
+  if(p.purchase)parts.push(p.purchase+" purchase"+(p.purchase>1?"s":""));
+  if(p.delivery)parts.push(p.delivery+" deliver"+(p.delivery>1?"ies":"y"));
+  return parts.length?"from "+parts.join(", ").replace(/, ([^,]*)$/," and $1"):"no direct evidence yet";
+}
+const SEG_AVA=["#1baf7a","#3987e5","#eb6834","#e87ba4","#eda100","#86b6ef","#199e70","#2a78d6","#d95926","#d55181","#c98500","#9ec5f4","#9085e9"];
+function openInspector(off){
+  const s=SIM.shoppers.find(x=>x.off===off); if(!s)return;
+  const t=CLOCK.tick;
+  const stage=SIM.days[t].stageCum[SIM.shoppers.indexOf(s)];
+  const segIdx=SEGMENTS.indexOf(s.seg);
+  const hist=s.prefHist.filter(h=>h.t<=t);
+  const diary=s.diary.filter(d=>d.t<=t).slice(-14).reverse();
+  /* ---- decision replay (as-of day t, shaped like GET /decision-preview) ---- */
+  const wNow=hist.length?hist[hist.length-1].w:s.ecoW;
+  let needNow=null;s.diary.forEach(d=>{if(d.t>t)return;
+    if(d.type==="NEED_ACTIVATED")needNow={urgency:d.extra.urgency,strength:d.extra.strength};
+    if(d.type==="NEED_SATISFIED"||d.type==="NEED_EXPIRED")needNow=null});
+  let twv=null,twE=0;s.diary.forEach(d=>{if(d.t>t)return;
+    const touch=(wt,tg)=>{if(twv==null){twv=0.5;twE=0.7}const b=blend(twv,twE,wt,tg);twv=b[0];twE=b[1]};
+    if(d.type==="VISITED")touch(0.75,0.6);
+    if(d.type==="BOUGHT")touch(1.5,0.65);
+    if(d.type==="EXPERIENCED")touch(2.0,d.extra.sat)});
+  let expMax=0;{const by={};s.diary.forEach(d=>{if(d.t<=t&&d.type==="SAW"){by[d.subject]=(by[d.subject]||0)+1;expMax=Math.max(expMax,by[d.subject])}})}
+  const trustKnown=twv!=null;
+  const provAsOf={};s.diary.forEach(d=>{if(d.t>t)return;
+    if(d.type==="VISITED")provAsOf.visit=(provAsOf.visit||0)+1;
+    if(d.type==="BOUGHT")provAsOf.purchase=(provAsOf.purchase||0)+1;
+    if(d.type==="EXPERIENCED")provAsOf.delivery=(provAsOf.delivery||0)+1});
+  const buysAsOf=s.diary.filter(d=>d.t<=t&&d.type==="BOUGHT").length;
+  const promoNow=SIM.days[t].price<PRODUCT.list;
+  const dims={relevance:Math.min(1,0.15+0.55*wNow+(needNow?0.35*needNow.urgency:0)),
+    credibility:twv==null?0.30:Math.min(1,0.12+twv*conf(twE)),
+    brand_message_fatigue:Math.min(0.9,expMax/8),
+    offer_attractiveness:promoNow?Math.min(1,0.35+0.4*s.seg.aff.deal):0.22,
+    expectation_alignment:s.page===PAGES.violation?0.18:0.88};
+  const WT={CLICK:{relevance:1.7,credibility:0.7,brand_message_fatigue:-1.3,offer_attractiveness:0.9,expectation_alignment:0.2},
+    BROWSE:{relevance:1.2,credibility:0.9,brand_message_fatigue:-0.5,offer_attractiveness:0.7,expectation_alignment:1.4},
+    CART:{relevance:1.9,credibility:1.1,brand_message_fatigue:-0.4,offer_attractiveness:1.0,expectation_alignment:0.7},
+    BUY:{relevance:2.5,credibility:1.4,brand_message_fatigue:-0.4,offer_attractiveness:1.1,expectation_alignment:0.7}};
+  const TH={CLICK:2.9,BROWSE:1.5,CART:2.6,BUY:3.1};
+  const sig=x=>1/(1+Math.exp(-x));
+  const pOf=dd=>{const o={};for(const st in WT){let u=0;for(const k in WT[st])u+=WT[st][k]*dd[k];o[st]=sig(u-TH[st])}return o};
+  const P=pOf(dims);
+  let CF=null;
+  if(needNow){const d2=Object.assign({},dims);d2.relevance=Math.min(1,0.15+0.55*wNow);CF=pOf(d2)}
+  const DIM_COLORS={relevance:"#4cc38a",credibility:"#6da7ec",brand_message_fatigue:"#d95926",
+    offer_attractiveness:"#eda100",expectation_alignment:"#9085e9"};
+  const replayHTML=`
+  <h3>Decision replay · vs EcoStride ad · day ${t+1}</h3>
+  ${Object.keys(dims).map(k=>`<div class="bar-row"><div class="bar-lab" style="width:118px">${k.replace(/_/g," ")}</div>
+    <div class="bar-track"><div class="bar-fill" style="width:${(100*dims[k]).toFixed(0)}%;background:${DIM_COLORS[k]}"></div></div>
+    <div class="bar-val">${dims[k].toFixed(2)}</div></div>`).join("")}
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px;font-family:var(--mono);font-size:11.5px">
+    ${["CLICK","BROWSE","CART","BUY"].map(st=>`<span style="border:1px solid rgba(255,255,255,.16);border-radius:6px;padding:3px 9px">
+      P(${st.toLowerCase()}) <b style="color:${st==="BUY"?"#eda100":"#e8e9ec"}">${P[st].toFixed(2)}</b></span>`).join("")}
+  </div>
+  ${CF?`<div style="font-family:var(--mono);font-size:11.5px;color:#eda100;margin:6px 0 2px">
+    need removed → P(buy) ${CF.BUY.toFixed(2)} · the live need multiplies buy odds ×${(P.BUY/Math.max(CF.BUY,1e-6)).toFixed(1)}</div>`:""}
+  <p class="appraise-note">Shaped like <code>GET /decision-preview</code>: in production these are the REAL
+  <code>appraise()</code> dims and pure <code>stage_probabilities()</code> recomputed from the live context
+  (weights shown are illustrative here; the mechanism — relevance weighing far more at BUY than CLICK — is the real one).</p>`;
+  const railHTML=(()=>{const W=372,H=30,x=d=>8+(W-16)*d/(SIM.TICKS-1);
+    if(!hist.length)return "";
+    const segs=hist.map((h,i)=>({from:h.t,to:i+1<hist.length?hist[i+1].t:t,w:h.w,cause:h.cause}));
+    return `<h3>Version rail · PREFERS eco_friendly · valid_to spans</h3>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="preference version rail">`+
+    segs.map(sg=>`<rect x="${x(sg.from).toFixed(1)}" y="8" width="${Math.max(2.5,x(Math.max(sg.to,sg.from))-x(sg.from)).toFixed(1)}" height="13" rx="2" fill="#4cc38a" opacity="${(0.22+sg.w*0.78).toFixed(2)}"><title>d${sg.from+1}→${sg.to>=t?"live":"d"+(sg.to+1)} · w ${sg.w.toFixed(3)} · ${sg.cause}</title></rect>
+      <line x1="${x(sg.from).toFixed(1)}" x2="${x(sg.from).toFixed(1)}" y1="5" y2="24" stroke="#8b8f98" stroke-width="1"/>`).join("")+
+    `</svg><div class="prov">each span = one supersession version (hover for its receipt); darker = higher w</div>`})();
+  const el=document.getElementById("insBody");
+  el.innerHTML=`
+  <div class="ins-head">
+    <div class="ins-ava" style="background:${SEG_AVA[segIdx]}">${s.name[0]}</div>
+    <div><div class="ins-name">${s.name} <span style="color:#8b8f98;font-weight:400">${padO(s.off)}</span></div>
+    <div class="ins-sub">shopper ${1000000+s.off} · ${s.seg.name} · day ${t+1}</div></div>
+  </div>
+  <div style="margin-top:10px">
+    <span class="chip">${s.seg.name}</span>
+    <span class="chip">funnel: ${STAGE_NAMES[stage]}</span>
+    ${buysAsOf?`<span class="chip">${buysAsOf} purchase${buysAsOf>1?"s":""}</span>`:""}
+    ${needNow?`<span class="chip need-chip">NEEDS running shoes · urgency ${needNow.urgency.toFixed(2)} · live</span>`:""}
+  </div>
+  <h3>Preferences (learned, live)</h3>
+  <div class="bar-row"><div class="bar-lab">eco_friendly</div><div class="bar-track"><div class="bar-fill" style="width:${(100*s2w(hist)).toFixed(1)}%;background:#1baf7a"></div></div>
+    <div class="bar-val">${s2w(hist).toFixed(3)} ${histDelta(hist)}</div></div>
+  <div class="bar-row"><div class="bar-lab">performance</div><div class="bar-track"><div class="bar-fill" style="width:${(100*(0.2+s.seg.aff.perf*0.4)).toFixed(1)}%;background:#3987e5"></div></div>
+    <div class="bar-val">${(0.2+s.seg.aff.perf*0.4).toFixed(3)}</div></div>
+  <div class="bar-row"><div class="bar-lab">discount</div><div class="bar-track"><div class="bar-fill" style="width:${(100*(0.2+s.seg.aff.deal*0.5)).toFixed(1)}%;background:#eda100"></div></div>
+    <div class="bar-val">${(0.2+s.seg.aff.deal*0.5).toFixed(3)}</div></div>
+  <h3>Beliefs</h3>
+  ${trustKnown?`<div class="bcard"><div class="b-top"><span>trust · ShoeCo</span><span class="b-val">${twv.toFixed(3)}</span></div>
+    <div class="conf-track"><div class="conf-fill" style="width:${(100*conf(twE)).toFixed(0)}%"></div></div>
+    <div class="prov">confidence ${conf(twE).toFixed(2)} — ${provSentence({prov:provAsOf})}</div></div>`
+   :`<div class="bcard"><div class="b-top"><span>trust · ShoeCo</span><span class="b-val" style="color:#8b8f98">null</span></div>
+    <div class="prov">No belief node — unknown brand. Appraisal floors to neutral-low; nothing is fabricated (abstention, C1).</div></div>`}
+  <h3>Preference timeline — eco_friendly</h3>
+  <ul class="tl">${hist.map(h=>`<li><span class="w">${h.w.toFixed(3)}</span>
+     ${h.delta?`<span class="${h.delta>0?"delta-up":"delta-dn"}" style="font-family:var(--mono);font-size:11px">${h.delta>0?"+":""}${h.delta.toFixed(3)}</span>`:""}
+     <span class="cause">${h.cause}</span><div style="color:#8b8f98;font-size:11px">day ${h.t+1}</div></li>`).join("")}</ul>
+  <h3>Why-trace · vs EcoStride ad</h3>
+  ${motifPathsFor(s).map(m=>`<div class="path"><span class="rel">${m.type}</span> <span class="strength">strength ${m.strength}</span><br>${m.path}</div>`).join("")||'<div class="prov">no motifs — no paths, no knowledge</div>'}
+  <p class="appraise-note" style="margin-top:8px">In production this panel is fed by <code>get_shopper_worldview</code>,
+  <code>get_preference_history</code> and <code>get_trace</code> — same shapes, real store.</p>
+  ${replayHTML}
+  ${railHTML}
+  <h3>Diary (last ${diary.length})</h3>
+  <div class="diary">${diary.map(d=>`<div><span class="d">d${d.t+1}</span>${d.type}${d.extra&&d.extra.price?" $"+d.extra.price.toFixed(2):""} <span style="color:#5c6069">→ ${d.subject}</span></div>`).join("")}</div>`;
+  document.getElementById("inspector").classList.add("open");
+  function s2w(h){return h.length?h[h.length-1].w:s.ecoW}
+  function histDelta(h){if(h.length<2)return"";const d=h[h.length-1].w-h[0].w;
+    return `<span class="${d>=0?"delta-up":"delta-dn"}">${d>=0?"▲":"▼"}${Math.abs(d).toFixed(2)}</span>`}
+}
+document.addEventListener("click",e=>{
+  if(e.target.closest("[data-close]"))document.getElementById("inspector").classList.remove("open");
+  const insp=e.target.closest("[data-inspect]");
+  if(insp)openInspector(+insp.getAttribute("data-inspect"));
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape")document.getElementById("inspector").classList.remove("open");
+});
+
+/* ================= tabs + design registry ================= */
+const DESIGNS={};
+function registerDesign(id,init){DESIGNS[id]={init,started:false}}
+let ACTIVE="overview";
+function showTab(id){
+  document.querySelectorAll("main>section").forEach(s=>s.classList.toggle("active",s.id==="tab-"+id));
+  document.querySelectorAll("#tabbar button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===id)));
+  ACTIVE=id;
+  const d=DESIGNS[id];
+  if(d&&!d.started){d.started=true;d.api=d.init()}
+  if(d&&d.api&&d.api.show)d.api.show();
+  if((/^d\d$/.test(id)||id==="v2")&&!CLOCK.playing&&!CLOCK.done)CLOCK.play();
+}
+document.getElementById("tabbar").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(b)showTab(b.dataset.tab);
+});
+document.addEventListener("click",e=>{
+  const g=e.target.closest("[data-goto]");if(g)showTab(g.getAttribute("data-goto"));
+});
+document.addEventListener("keydown",e=>{
+  if(e.target.matches("input,textarea"))return;
+  const map={"0":"overview","1":"v2","2":"d1","3":"d2","4":"d3","5":"d4","6":"d5","7":"prereqs","8":"plan"};
+  if(map[e.key])showTab(map[e.key]);
+  if(e.key===" "&&(/^d\d$/.test(ACTIVE)||ACTIVE==="v2")){e.preventDefault();CLOCK.toggle()}
+});
+CLOCK.subscribe(ev=>{
+  const d=DESIGNS[ACTIVE];
+  if(d&&d.api&&d.api.onClock)d.api.onClock(ev);
+});
+/* shared transport-control builder used by every design */
+function transportHTML(cls){
+  return `<div class="${cls}">
+    <button data-tr="toggle" aria-label="Play/pause">▶</button>
+    <input data-tr="seek" type="range" min="0" max="${SIM.TICKS-1}" value="0" step="1" aria-label="Scrub day">
+    <div class="tr-speeds">${[1,2,4].map(s=>`<button data-tr="speed" data-s="${s}">×${s}</button>`).join("")}</div>
+    <span data-tr="mode" class="tr-mode">LIVE</span>
+  </div>`;
+}
+function wireTransport(root){
+  const tog=root.querySelector('[data-tr="toggle"]'), seek=root.querySelector('[data-tr="seek"]'), mode=root.querySelector('[data-tr="mode"]');
+  tog.addEventListener("click",()=>CLOCK.toggle());
+  seek.addEventListener("input",()=>{CLOCK.pause();CLOCK.seek(+seek.value);mode.textContent="REPLAY"});
+  root.querySelectorAll('[data-tr="speed"]').forEach(b=>b.addEventListener("click",()=>{
+    CLOCK.setSpeed(+b.dataset.s);
+    root.querySelectorAll('[data-tr="speed"]').forEach(x=>x.classList.toggle("on",x===b));
+  }));
+  return {
+    sync(){ tog.textContent=CLOCK.playing?"⏸":"▶"; seek.value=CLOCK.tick;
+      mode.textContent=CLOCK.done?"COMPLETE":(CLOCK.playing&&CLOCK.tick===SIM.TICKS-1?"LIVE":(CLOCK.playing?"LIVE":"REPLAY"));
+      if(CLOCK.done)mode.classList.add("done");else mode.classList.remove("done");}
+  };
+}
+</script>
+
+<!-- ==================== D1 · THE FLOOR ==================== -->
+<style>
+#tab-d1 .d1-root{background:#0f110f;color:#d7dad3;min-height:calc(100vh - 92px);padding:14px 16px 22px;
+  font-family:var(--sans)}
+#tab-d1 .d1-top{display:flex;align-items:center;gap:22px;flex-wrap:wrap;background:#141714;
+  border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 16px}
+#tab-d1 .d1-day{font-family:var(--mono);font-size:22px;font-weight:800;letter-spacing:.04em}
+#tab-d1 .d1-day .of{color:#7c8177;font-size:14px;font-weight:500}
+#tab-d1 .d1-kpis{display:flex;gap:26px;flex-wrap:wrap;font-family:var(--mono)}
+#tab-d1 .d1-kpi .l{font-size:9.5px;letter-spacing:.14em;color:#7c8177;text-transform:uppercase}
+#tab-d1 .d1-kpi .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+#tab-d1 .d1-kpi .v.gold{color:#eda100}
+#tab-d1 .tr{display:flex;align-items:center;gap:10px;margin-left:auto;font-family:var(--mono)}
+#tab-d1 .tr button{color:#d7dad3;border:1px solid rgba(255,255,255,.14);border-radius:6px;padding:3px 10px;font-size:12px}
+#tab-d1 .tr button:hover{background:rgba(255,255,255,.06)}
+#tab-d1 .tr button.on{border-color:#eda100;color:#eda100}
+#tab-d1 .tr input[type=range]{width:130px;accent-color:#eda100}
+#tab-d1 .tr-mode{font-size:10px;letter-spacing:.12em;border:1px solid #35c26a;color:#35c26a;border-radius:99px;padding:2px 9px}
+#tab-d1 .tr-mode.done{border-color:#7c8177;color:#7c8177}
+#tab-d1 .d1-main{display:grid;grid-template-columns:1fr 310px;gap:14px;margin-top:14px}
+@media (max-width:900px){#tab-d1 .d1-main{grid-template-columns:1fr}}
+#tab-d1 .d1-stage-wrap{position:relative;background:#121512;border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;overflow:hidden;min-height:520px}
+#tab-d1 .d1-gates{position:absolute;top:0;left:0;right:84px;display:flex;z-index:3}
+#tab-d1 .d1-gate{flex:1;margin:10px 8px 0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);
+  border-top:3px solid var(--gc);border-radius:8px;padding:8px 10px 7px}
+#tab-d1 .d1-gate .gn{font-weight:700;font-size:12.5px}
+#tab-d1 .d1-gate .gm{font-family:var(--mono);font-size:10.5px;color:#7c8177;margin-top:2px}
+#tab-d1 .d1-gate .gm b{color:#d7dad3;font-weight:700}
+#tab-d1 .d1-gate.off{opacity:.35}
+#tab-d1 canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#tab-d1 .d1-bandlabels{position:absolute;top:0;right:0;bottom:0;width:84px;z-index:2;
+  border-left:1px dashed rgba(255,255,255,.08)}
+#tab-d1 .d1-bl{position:absolute;right:8px;text-align:right;font-family:var(--mono)}
+#tab-d1 .d1-bl .n{font-size:9.5px;letter-spacing:.12em;color:#7c8177;text-transform:uppercase}
+#tab-d1 .d1-bl .c{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+#tab-d1 .d1-hint{position:absolute;left:12px;bottom:8px;z-index:2;font-size:10.5px;color:#7c8177;font-family:var(--mono)}
+#tab-d1 .d1-rail{display:flex;flex-direction:column;gap:8px;max-height:560px;overflow-y:auto;scrollbar-width:thin}
+#tab-d1 .d1-railh{font-size:10px;font-family:var(--mono);letter-spacing:.16em;color:#7c8177;padding:2px 2px 0}
+#tab-d1 .d1-fcard{background:#161916;border:1px solid rgba(255,255,255,.09);border-left:3px solid #3987e5;
+  border-radius:8px;padding:8px 11px;text-align:left;width:100%;animation:d1in .3s ease}
+#tab-d1 .d1-fcard:hover{border-color:#eda100}
+#tab-d1 .d1-fcard .fh{display:flex;justify-content:space-between;font-size:11px;color:#7c8177;font-family:var(--mono)}
+#tab-d1 .d1-fcard .fn{font-weight:700;font-size:13px;margin:1px 0}
+#tab-d1 .d1-fcard .fl{font-family:var(--mono);font-size:12px}
+#tab-d1 .d1-fcard .fc{font-size:11px;color:#9aa093;margin-top:2px}
+#tab-d1 .d1-fcard.buy{border-left-color:#eda100}
+#tab-d1 .d1-fcard.bad{border-left-color:#ec835a}
+#tab-d1 .d1-fcard.need{border-left-color:#1baf7a}
+#tab-d1 .d1-ev{background:#1b1a12;border:1px solid rgba(237,161,0,.35);border-radius:8px;padding:8px 11px;animation:d1in .3s ease}
+#tab-d1 .d1-ev .eh{font-size:10px;font-family:var(--mono);letter-spacing:.14em;color:#eda100}
+#tab-d1 .d1-ev .en{font-weight:700;font-size:13px;margin:2px 0 1px}
+#tab-d1 .d1-ev .ed{font-size:11.5px;color:#9aa093}
+#tab-d1 .d1-ev.serious{border-color:rgba(236,131,90,.55)}
+#tab-d1 .d1-ev.serious .eh{color:#ec835a}
+#tab-d1 .d1-ev .rule{font-family:var(--mono);font-size:10px;color:#7c8177;margin-top:3px}
+@keyframes d1in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+#tab-d1 .d1-band{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:14px}
+#tab-d1 .d1-spark{background:#141714;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 12px 6px}
+#tab-d1 .d1-spark .sh{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;
+  letter-spacing:.1em;color:#7c8177;text-transform:uppercase}
+#tab-d1 .d1-spark .sv{font-family:var(--mono);font-weight:700;color:#d7dad3}
+#tab-d1 .d1-note{margin-top:16px;background:#141714;border:1px solid rgba(255,255,255,.08);border-radius:10px;
+  padding:14px 18px;font-size:13px;color:#9aa093;max-width:none}
+#tab-d1 .d1-note b{color:#d7dad3}
+#tab-d1 .d1-legend{display:flex;gap:14px;font-size:11px;color:#9aa093;font-family:var(--mono);margin-left:2px}
+#tab-d1 .d1-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+</style>
+<section id="tab-d1">
+<div class="d1-root">
+  <div class="d1-top">
+    <div class="d1-day num">DAY <span id="d1day">1</span><span class="of">/14</span></div>
+    <div class="d1-kpis" id="d1kpis"></div>
+    <div class="tr" id="d1tr"></div>
+  </div>
+  <div class="d1-main">
+    <div class="d1-stage-wrap">
+      <div class="d1-gates" id="d1gates"></div>
+      <canvas id="d1canvas"></canvas>
+      <div class="d1-bandlabels" id="d1bands"></div>
+      <div class="d1-hint">200 shoppers · every particle is a real offset — click one to inspect</div>
+    </div>
+    <aside class="d1-rail" id="d1rail" aria-live="polite"></aside>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:8px">
+    <div class="d1-legend">
+      <span><i style="background:#199e70"></i>eco-leaning</span>
+      <span><i style="background:#3987e5"></i>mainstream</span>
+      <span><i style="background:#d95926"></i>deal-driven</span>
+      <span><i style="background:#eda100"></i>purchase</span>
+    </div>
+  </div>
+  <div class="d1-band" id="d1sparks"></div>
+  <div class="d1-note"><b>D1 · The Floor — tradeoffs.</b> The particle river is the closest thing to “watching the
+    market breathe”: exposures rain from the creative gates, most fade at SAW, a few sink to CART and BUY with a flare.
+    Identity is retained — hit-testing any particle opens the real inspector, so it is never decoration.
+    <b>Build cost 4/5</b>: one canvas layer plus everything in D5’s data plane; the canvas tuning (spawn pacing,
+    fade curves, flare restraint) is the time sink. Live fit excellent (particles emit as ticks land); replay scrubbing
+    re-seeds the day statically, which reads fine but loses mid-day motion. Production data needs: per-tick event
+    batches (shipped), population segment map (small new endpoint), feed deltas via ≤8 preference-history fetches/tick.</div>
+</div>
+</section>
+<script>
+registerDesign("d1",function(){
+  const root=document.getElementById("tab-d1");
+  const cvs=document.getElementById("d1canvas"), ctx=cvs.getContext("2d");
+  const G=[{k:"eco"},{k:"perf"},{k:"comf"}];
+  const gatesEl=document.getElementById("d1gates");
+  gatesEl.innerHTML=CREATIVES.map(c=>`<div class="d1-gate" id="d1g-${c.key}" style="--gc:${c.color}">
+    <div class="gn">${c.name}</div><div class="gm">CTR <b id="d1gc-${c.key}">—</b> · <span id="d1gx-${c.key}">0</span> imp</div></div>`).join("");
+  const BANDS=[["SAW",0.24],["CLICK",0.42],["BROWSE",0.60],["CART",0.78],["BUY",0.93]];
+  document.getElementById("d1bands").innerHTML=BANDS.map((b,i)=>`<div class="d1-bl" style="top:calc(${(b[1]*100).toFixed(1)}% - 14px)">
+    <div class="n">${b[0]}</div><div class="c" id="d1bc-${i}">0</div></div>`).join("");
+  document.getElementById("d1tr").innerHTML=transportHTML("trin").replace('class="trin"','style="display:contents"');
+  const tr=wireTransport(root);
+  let parts=[],flares=[],dpr=1;
+  function size(){dpr=Math.min(devicePixelRatio||1,2);
+    const r=cvs.getBoundingClientRect();cvs.width=r.width*dpr;cvs.height=r.height*dpr}
+  new ResizeObserver(size).observe(cvs); size();
+  function gateX(key){const i=CREATIVES.findIndex(c=>c.key===key);const r=cvs.getBoundingClientRect();
+    const w=(r.width-84)/3;return (i+0.5)*w}
+  function buildDay(t){
+    parts=[];flares=[];
+    const day=SIM.days[t];
+    const byShopper={};
+    day.events.forEach(e=>{
+      if(e.type==="SAW"){const cr=CREATIVES.find(c=>c.id===e.subject);
+        const p=byShopper[e.off]||(byShopper[e.off]={off:e.off,key:cr.key,stage:1});
+        if(cr&&p.stage<=1)p.key=cr.key}
+      const up={CLICKED:2,BROWSED:3,CARTED:4,BOUGHT:5};
+      if(up[e.type]){const p=byShopper[e.off];if(p)p.stage=Math.max(p.stage,up[e.type]);
+        if(e.type==="BOUGHT"&&p)p.bought=true;
+        if(e.cause_creative){const cr=CREATIVES.find(c=>c.id===e.cause_creative);if(cr&&p)p.key=cr.key}}
+    });
+    const rr=mulberry32(t*7+3);
+    Object.values(byShopper).forEach(p=>{
+      const s=SIM.shoppers.find(x=>x.off===p.off);
+      parts.push({off:p.off,grp:s.seg.grp,key:p.key,stage:p.stage,bought:p.bought,
+        jx:(rr()-0.5)*60,jy:rr()*10,delay:rr()*0.25,x:0,y:0,alive:true});
+    });
+    /* gate + band + kpi chrome */
+    CREATIVES.forEach(c=>{
+      const g=document.getElementById("d1g-"+c.key);g.classList.toggle("off",t<c.start);
+      const row=SIM.series.ctrByCreative[c.key][t];
+      document.getElementById("d1gc-"+c.key).textContent=row.ctr==null?"—":(100*row.ctr).toFixed(1)+"%";
+      document.getElementById("d1gx-"+c.key).textContent=SIM.funnelByCreativeUpTo(c.key,t).SAW;
+    });
+    const k=day.kpis;
+    document.getElementById("d1day").textContent=t+1;
+    document.getElementById("d1kpis").innerHTML=[
+      ["IMPRESSIONS",fmt.int(k.imp)],["CLICKS",fmt.int(k.clicks)],["CTR",fmt.pct(k.ctr)],
+      ["CARTS",fmt.int(k.carts)],["BUYS",fmt.int(k.buys),"gold"],["REVENUE",fmt.usd(k.revenue),"gold"],
+      ["ACTIVE NEEDS",fmt.int(k.needs)]
+    ].map(x=>`<div class="d1-kpi"><div class="l">${x[0]}</div><div class="v ${x[2]||""}">${x[1]}</div></div>`).join("");
+    const cums=[0,0,0,0,0];
+    for(let i=0;i<=t;i++){const d=SIM.days[i];
+      cums[0]+=d.events.filter(e=>e.type==="SAW").length;
+      cums[1]+=d.events.filter(e=>e.type==="CLICKED").length;
+      cums[2]+=d.events.filter(e=>e.type==="BROWSED").length;
+      cums[3]+=d.events.filter(e=>e.type==="CARTED").length;
+      cums[4]+=d.events.filter(e=>e.type==="BOUGHT").length;}
+    cums.forEach((c,i)=>document.getElementById("d1bc-"+i).textContent=c);
+    /* rail: market events + feed */
+    const rail=document.getElementById("d1rail");const ev=SIM.eventsAt(t);
+    let html="";
+    ev.sched.forEach(e=>html+=`<div class="d1-ev"><div class="eh">DAY ${t+1} · SCHEDULED</div><div class="en">${e.label}</div><div class="ed">${e.detail}</div></div>`);
+    ev.det.forEach(e=>html+=`<div class="d1-ev ${e.sev==="serious"?"serious":""}"><div class="eh">DAY ${t+1} · DETECTED</div><div class="en">${e.label}</div><div class="ed">${e.detail}</div><div class="rule">rule: ${e.rule}</div></div>`);
+    html+=`<div class="d1-railh">LIVE ACTIVITY — DAY ${t+1}</div>`;
+    day.feed.forEach(f=>{const s=SIM.shoppers.find(x=>x.off===f.off);
+      html+=`<button class="d1-fcard ${f.kind==="buy"?"buy":f.kind==="exp_bad"?"bad":f.kind==="need"?"need":""}" data-inspect="${f.off}">
+        <div class="fh"><span>${s.name.toUpperCase()} ${padO(f.off)}</span><span>${s.seg.name}</span></div>
+        <div class="fn">${f.title}</div><div class="fl">${f.line}</div><div class="fc">Cause: ${f.cause}</div></button>`});
+    rail.innerHTML=html;
+    /* sparks */
+    document.getElementById("d1sparks").innerHTML=[
+      ["ECO PREFERENCE · eco-leaning",SIM.series.driftEco[0],"#199e70",v=>v.toFixed(3),{}],
+      ["AVG TRUST · SHOECO",SIM.series.trust,"#3987e5",v=>v==null?"—":v.toFixed(3),{}],
+      ["ACTIVE NEEDS",SIM.series.needs,"#1baf7a",v=>v,{min:0}],
+      ["MEAN REFERENCE PRICE",SIM.series.ref,"#eda100",v=>"$"+v.toFixed(2),{}],
+    ].map((s,i)=>`<div class="d1-spark"><div class="sh"><span>${s[0]}</span><span class="sv">${s[3](s[1][t])}</span></div>
+      <div>${sparkSVG(s[1],t,s[2],230,34,s[4])}</div></div>`).join("");
+    tr.sync();
+  }
+  SIM.funnelByCreativeUpTo=function(key,t){const out={SAW:0};const id=CREATIVES.find(c=>c.key===key).id;
+    for(let i=0;i<=t;i++)out.SAW+=SIM.days[i].events.filter(e=>e.type==="SAW"&&e.subject===id).length;return out};
+  function draw(){
+    const r=cvs.getBoundingClientRect();ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,r.width,r.height);
+    /* stage bands */
+    ctx.strokeStyle="rgba(255,255,255,.05)";ctx.lineWidth=1;
+    BANDS.forEach(b=>{ctx.beginPath();ctx.moveTo(0,b[1]*r.height);ctx.lineTo(r.width-84,b[1]*r.height);ctx.stroke()});
+    const frac=CLOCK.playing?CLOCK.frac:1;
+    parts.forEach(p=>{
+      const f=Math.max(0,Math.min(1,(frac-p.delay)/(1-p.delay||1)));
+      if(f<=0)return;
+      const prog=f*p.stage;               /* how far down its own journey */
+      const si=Math.min(Math.floor(prog),p.stage-1)+ (prog%1);
+      const yFor=k=>{const kk=Math.max(0,Math.min(k,BANDS.length-1));
+        const lo=Math.floor(kk),hi=Math.min(lo+1,BANDS.length-1),m=kk-lo;
+        return (BANDS[lo][1]*(1-m)+BANDS[hi][1]*m)*r.height};
+      const y=yFor(si-1<0?0:si-1)+p.jy;
+      const x=gateX(p.key)+p.jx*(1-0.4*Math.min(1,prog/2));
+      p.x=x;p.y=y;
+      const done=f>=1;
+      let alpha=1;
+      if(done&&p.stage<3)alpha=0.16;               /* saw/click-only fade back */
+      else if(done&&p.stage<5)alpha=0.75;
+      ctx.globalAlpha=alpha;
+      ctx.fillStyle=p.bought&&done?"#eda100":GROUP_COLORS_D[p.grp];
+      ctx.beginPath();ctx.arc(x,y,p.bought?3.4:2.4,0,7);ctx.fill();
+      if(p.bought&&done&&!p.flared){p.flared=true;flares.push({x,y,r0:4,age:0})}
+    });
+    ctx.globalAlpha=1;
+    flares=flares.filter(fl=>fl.age<1);
+    flares.forEach(fl=>{fl.age+=REDUCED?1:0.02;
+      ctx.strokeStyle=`rgba(237,161,0,${(1-fl.age)*0.8})`;ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.arc(fl.x,fl.y,fl.r0+fl.age*26,0,7);ctx.stroke()});
+  }
+  cvs.addEventListener("click",e=>{
+    const r=cvs.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;
+    let best=null,bd=144;
+    parts.forEach(p=>{const d=(p.x-mx)**2+(p.y-my)**2;if(d<bd){bd=d;best=p}});
+    if(best)openInspector(best.off);
+  });
+  buildDay(CLOCK.tick);draw();
+  return {
+    show(){size();buildDay(CLOCK.tick);draw()},
+    onClock(ev){
+      if(ev.type==="advance"||ev.type==="seek"||ev.type==="complete"){buildDay(CLOCK.tick);draw()}
+      else if(ev.type==="frame"){draw()}
+      else tr.sync();
+    }
+  };
+});
+</script>
+
+<!-- ==================== D2 · MISSION CONTROL ==================== -->
+<style>
+#tab-d2 .d2-root{background:#10161f;color:#dce4f0;min-height:calc(100vh - 92px);padding:14px 16px 22px}
+#tab-d2 .d2-top{display:flex;align-items:baseline;gap:20px;flex-wrap:wrap;padding:4px 6px 12px}
+#tab-d2 .d2-title{font-size:11px;letter-spacing:.22em;color:#74809a;font-family:var(--mono)}
+#tab-d2 .d2-day{font-family:var(--mono);font-size:30px;font-weight:800}
+#tab-d2 .d2-day .of{color:#74809a;font-size:16px;font-weight:400}
+#tab-d2 .d2-arm{font-family:var(--mono);font-size:11.5px;color:#9db4d6;border:1px solid rgba(157,180,214,.3);
+  border-radius:6px;padding:3px 10px}
+#tab-d2 .d2-daybar{flex:1;min-width:160px;height:6px;background:#1c2635;border-radius:3px;overflow:hidden;align-self:center}
+#tab-d2 .d2-daybar i{display:block;height:100%;background:linear-gradient(90deg,#2a78d6,#6da7ec);border-radius:3px}
+#tab-d2 .tr{display:flex;align-items:center;gap:10px;font-family:var(--mono)}
+#tab-d2 .tr button{color:#dce4f0;border:1px solid rgba(157,180,214,.3);border-radius:6px;padding:3px 10px;font-size:12px}
+#tab-d2 .tr button:hover{background:rgba(157,180,214,.1)}
+#tab-d2 .tr button.on{border-color:#6da7ec;color:#6da7ec}
+#tab-d2 .tr input[type=range]{width:120px;accent-color:#6da7ec}
+#tab-d2 .tr-mode{font-size:10px;letter-spacing:.12em;border:1px solid #35c26a;color:#35c26a;border-radius:99px;padding:2px 9px}
+#tab-d2 .tr-mode.done{border-color:#74809a;color:#74809a}
+#tab-d2 .d2-grid{display:grid;grid-template-columns:230px 1fr 300px;gap:14px}
+@media (max-width:1000px){#tab-d2 .d2-grid{grid-template-columns:1fr;}}
+#tab-d2 .panel{background:#141b26;border:1px solid rgba(157,180,214,.13);border-radius:10px;padding:12px 14px}
+#tab-d2 .panel h4{font-size:10px;font-family:var(--mono);letter-spacing:.18em;color:#74809a;font-weight:700;margin:0 0 8px}
+#tab-d2 .d2-instr{display:flex;flex-direction:column;gap:12px}
+#tab-d2 .gauge{display:flex;flex-direction:column;align-items:center;gap:2px}
+#tab-d2 .gauge .gv{font-family:var(--mono);font-size:19px;font-weight:800;margin-top:-34px}
+#tab-d2 .gauge .gl{font-size:9.5px;font-family:var(--mono);letter-spacing:.14em;color:#74809a;text-transform:uppercase;text-align:center}
+#tab-d2 .gauge .gs{font-size:10px;color:#9db4d6;text-align:center}
+#tab-d2 .d2-matrix-wrap{display:flex;flex-direction:column;gap:8px}
+#tab-d2 .d2-matrix{display:grid;grid-template-columns:repeat(20,1fr);gap:3px}
+#tab-d2 .d2-cell{aspect-ratio:1;border-radius:2.5px;background:#26262c;border:none;padding:0;min-width:0;
+  transition:background .35s;position:relative}
+#tab-d2 .d2-cell:hover{outline:1.5px solid #eda100;z-index:2}
+#tab-d2 .d2-cell.pulse{animation:d2pulse .9s ease}
+@keyframes d2pulse{0%{box-shadow:0 0 0 0 rgba(109,167,236,.9)}100%{box-shadow:0 0 0 7px rgba(109,167,236,0)}}
+#tab-d2 .d2-cell.bpulse{animation:d2bpulse 1.1s ease}
+@keyframes d2bpulse{0%{box-shadow:0 0 0 0 rgba(237,161,0,.95)}100%{box-shadow:0 0 0 9px rgba(237,161,0,0)}}
+#tab-d2 .d2-mleg{display:flex;gap:12px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;color:#9db4d6}
+#tab-d2 .d2-mleg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+#tab-d2 .d2-log{font-family:var(--mono);font-size:11px;line-height:1.7;max-height:430px;overflow-y:auto;scrollbar-width:thin}
+#tab-d2 .d2-log .ln{border-bottom:1px dashed rgba(157,180,214,.1);padding:2px 0;text-align:left;display:block;width:100%;color:#dce4f0}
+#tab-d2 .d2-log .ln:hover{color:#fff;background:rgba(157,180,214,.06)}
+#tab-d2 .d2-log .d{color:#74809a;margin-right:7px}
+#tab-d2 .d2-log .who{color:#6da7ec;font-weight:700}
+#tab-d2 .d2-log .delta{color:#35c26a}
+#tab-d2 .d2-log .delta.dn{color:#e66767}
+#tab-d2 .d2-banner{border-radius:8px;padding:8px 11px;margin:8px 0;border:1px solid;font-family:var(--sans)}
+#tab-d2 .d2-banner .bh{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em}
+#tab-d2 .d2-banner .bn{font-weight:700;font-size:13px;margin:1px 0}
+#tab-d2 .d2-banner .bd{font-size:11.5px;opacity:.85}
+#tab-d2 .d2-banner .rule{font-family:var(--mono);font-size:9.5px;color:#74809a;margin-top:2px}
+#tab-d2 .d2-banner.sched{border-color:rgba(109,167,236,.4);background:rgba(42,120,214,.08);color:#c9dcf5}
+#tab-d2 .d2-banner.warning{border-color:rgba(250,178,25,.45);background:rgba(250,178,25,.07);color:#f5dcae}
+#tab-d2 .d2-banner.serious{border-color:rgba(236,131,90,.5);background:rgba(236,131,90,.08);color:#f5c9b4}
+#tab-d2 .d2-banner.info{border-color:rgba(27,175,122,.45);background:rgba(27,175,122,.07);color:#bfe8d8}
+#tab-d2 .d2-bottom{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:14px}
+#tab-d2 .d2-funnel .fr{display:flex;align-items:center;gap:9px;margin:6px 0}
+#tab-d2 .d2-funnel .fl{width:66px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:#9db4d6;text-align:right}
+#tab-d2 .d2-funnel .ft{flex:1;height:14px;background:#1c2635;border-radius:3px;overflow:hidden}
+#tab-d2 .d2-funnel .ff{height:100%;border-radius:3px;transition:width .5s}
+#tab-d2 .d2-funnel .fv{width:46px;font-family:var(--mono);font-size:11px;font-weight:700}
+#tab-d2 .d2-note{margin-top:16px;background:#141b26;border:1px solid rgba(157,180,214,.13);border-radius:10px;
+  padding:14px 18px;font-size:13px;color:#9db4d6}
+#tab-d2 .d2-note b{color:#dce4f0}
+</style>
+<section id="tab-d2">
+<div class="d2-root">
+  <div class="d2-top">
+    <div>
+      <div class="d2-title">SHOPSIM MISSION CONTROL · AD TEST · SEED 415</div>
+      <div class="d2-day num">DAY <span id="d2day">1</span><span class="of"> / 14</span></div>
+    </div>
+    <div class="d2-arm">ARM 1/3 · ecostride-10-off · 200 shoppers</div>
+    <div class="d2-daybar"><i id="d2daybar" style="width:0%"></i></div>
+    <div class="tr" id="d2tr"></div>
+  </div>
+  <div class="d2-grid">
+    <div class="panel d2-instr" id="d2instr"><h4>POPULATION INSTRUMENTS</h4></div>
+    <div class="panel d2-matrix-wrap">
+      <h4>POPULATION · 200 SHOPPERS · CELL = ONE REAL OFFSET · COLOR = FUNNEL DEPTH</h4>
+      <div class="d2-matrix" id="d2matrix"></div>
+      <div class="d2-mleg" id="d2leg"></div>
+    </div>
+    <div class="panel">
+      <h4>MISSION LOG</h4>
+      <div id="d2banners"></div>
+      <div class="d2-log" id="d2log" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="d2-bottom">
+    <div class="panel d2-funnel"><h4>CUMULATIVE FUNNEL</h4><div id="d2funnel"></div></div>
+    <div class="panel"><h4>WORLDVIEW DRIFT · MEAN PREFERS(eco) BY SEGMENT GROUP</h4><div id="d2drift"></div></div>
+    <div class="panel"><h4>REFERENCE PRICE vs SHELF</h4><div id="d2price"></div></div>
+  </div>
+  <div class="d2-note"><b>D2 · Mission Control — tradeoffs.</b> The matrix is the most honest macro→micro device
+    possible: every cell IS a shopper (offset-keyed), lit by real funnel state, pulsing when its person acts, and one
+    click from the full inspector. Instruments read population internals without inventing scores. <b>Build cost 2/5</b>
+    — no canvas, pure DOM/SVG on shipped series; scrubbing recolors the matrix from folded state, so REPLAY is native.
+    Weakness: quieter than D1/D4 — motion is pulse-scale, not flow-scale. Production needs: population endpoint
+    (segment per offset), events tail, results-live; nothing else.</div>
+</div>
+</section>
+<script>
+registerDesign("d2",function(){
+  const root=document.getElementById("tab-d2");
+  document.getElementById("d2tr").innerHTML=transportHTML("x").replace('class="x"','style="display:contents"');
+  const tr=wireTransport(root);
+  const matrix=document.getElementById("d2matrix");
+  matrix.innerHTML=SIM.shoppers.map((s,i)=>`<button class="d2-cell" data-inspect="${s.off}" id="d2c-${i}"
+    title="${s.name} ${padO(s.off)} · ${s.seg.name}" aria-label="${s.name} ${padO(s.off)}"></button>`).join("");
+  document.getElementById("d2leg").innerHTML=
+    STAGE_NAMES.map((n,i)=>`<span><i style="background:${stageColor(i,true)}"></i>${n}</span>`).join("")+
+    `<span style="margin-left:auto">click any cell → inspector</span>`;
+  let prev=new Uint8Array(200);
+  function gauge(v,color,label,sub,fmtV){
+    const a0=-210,a1=30,a=(a0+(a1-a0)*Math.max(0,Math.min(1,v)))*Math.PI/180;
+    const cx=62,cy=58,R=46;
+    const arc=(from,to,col,w)=>{const x0=cx+R*Math.cos(from),y0=cy+R*Math.sin(from),
+      x1=cx+R*Math.cos(to),y1=cy+R*Math.sin(to),large=(to-from)>Math.PI?1:0;
+      return `<path d="M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${R} ${R} 0 ${large} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`};
+    const f0=a0*Math.PI/180;
+    return `<div class="gauge"><svg viewBox="0 0 124 78" width="124" height="78" aria-hidden="true">
+      ${arc(f0,a1*Math.PI/180,"#1c2635",7)}${arc(f0,a,color,7)}
+      <circle cx="${(cx+R*Math.cos(a)).toFixed(1)}" cy="${(cy+R*Math.sin(a)).toFixed(1)}" r="4" fill="${color}"/></svg>
+      <div class="gv num">${fmtV}</div><div class="gl">${label}</div><div class="gs">${sub}</div></div>`;
+  }
+  function render(t,pulse){
+    const day=SIM.days[t],k=day.kpis;
+    document.getElementById("d2day").textContent=t+1;
+    document.getElementById("d2daybar").style.width=(100*(t+(CLOCK.playing?CLOCK.frac:1))/SIM.TICKS).toFixed(1)+"%";
+    /* matrix */
+    for(let i=0;i<200;i++){
+      const c=document.getElementById("d2c-"+i);
+      const st=day.stageCum[i];
+      c.style.background=stageColor(st,true);
+      if(pulse&&day.stageToday[SIM.shoppers[i].off]>0&&st!==prev[i]){
+        c.classList.remove("pulse","bpulse");void c.offsetWidth;
+        c.classList.add(st===5?"bpulse":"pulse");
+      }
+    }
+    prev=Uint8Array.from(day.stageCum);
+    /* instruments */
+    const needShare=k.needs/200;
+    document.getElementById("d2instr").innerHTML="<h4>POPULATION INSTRUMENTS</h4>"+
+      gauge(needShare,"#1baf7a","BUYING PRESSURE",k.needs+" live needs / 200",(100*needShare).toFixed(0)+"%")+
+      gauge(k.trust==null?0:k.trust,"#6da7ec","AVG BRAND TRUST",k.trust==null?"no beliefs yet":"holders only · ShoeCo",k.trust==null?"—":k.trust.toFixed(2))+
+      gauge(k.fatigue,"#eda100","MESSAGE FATIGUE","mean top-creative exposures ÷ 6",(k.fatigue*6).toFixed(1))+
+      `<div style="text-align:center;font-family:var(--mono)"><div style="font-size:22px;font-weight:800" class="num">${fmt.pct(k.ctr)}</div>
+       <div class="gl" style="color:#74809a;font-size:9.5px;letter-spacing:.14em">BLENDED CTR</div>
+       <div style="margin-top:4px">${sparkSVG(SIM.series.ctr.map(r=>r.ctr),t,"#6da7ec",170,26)}</div></div>`;
+    /* mission log: banners + lines */
+    const ev=SIM.eventsAt(t);let bh="";
+    ev.sched.forEach(e=>bh+=`<div class="d2-banner sched"><div class="bh">DAY ${t+1} · SCHEDULED</div><div class="bn">${e.label}</div><div class="bd">${e.detail}</div></div>`);
+    ev.det.forEach(e=>bh+=`<div class="d2-banner ${e.sev}"><div class="bh">DAY ${t+1} · DETECTED</div><div class="bn">${e.label}</div><div class="bd">${e.detail}</div><div class="rule">rule: ${e.rule}</div></div>`);
+    document.getElementById("d2banners").innerHTML=bh;
+    const lines=[];
+    for(let d=t;d>=Math.max(0,t-2);d--){
+      SIM.days[d].feed.forEach(f=>{const s=SIM.shoppers.find(x=>x.off===f.off);
+        lines.push(`<button class="ln" data-inspect="${f.off}"><span class="d">d${d+1}</span><span class="who">${s.name}${padO(f.off)}</span>
+          ${f.title.toLowerCase()} · <span class="${f.dir<0?"delta dn":"delta"}">${f.line}</span></button>`)});
+    }
+    document.getElementById("d2log").innerHTML=lines.join("");
+    /* funnel */
+    const stages=[["SAW","#184f95"],["CLICKED","#1c5cab"],["BROWSED","#2a78d6"],["CARTED","#3987e5"],["BOUGHT","#eda100"]];
+    const cums={SAW:0,CLICKED:0,BROWSED:0,CARTED:0,BOUGHT:0};
+    for(let i=0;i<=t;i++)SIM.days[i].events.forEach(e=>{if(cums[e.type]!=null)cums[e.type]++});
+    const mx=Math.max(cums.SAW,1);
+    document.getElementById("d2funnel").innerHTML=stages.map(s=>
+      `<div class="fr"><div class="fl">${s[0]}</div><div class="ft"><div class="ff" style="width:${(100*cums[s[0]]/mx).toFixed(2)}%;background:${s[1]}"></div></div>
+       <div class="fv num">${cums[s[0]]}</div></div>`).join("");
+    lineChart(document.getElementById("d2drift"),{h:120,upto:t,gridY:3,yLabels:true,xLabels:true,
+      grid:"rgba(157,180,214,.12)",mut:"#74809a",min:0.3,max:0.75,yFmt:v=>v.toFixed(2),
+      aria:"eco preference drift by segment group",
+      series:[{data:SIM.series.driftEco[0],color:"#199e70",label:"eco",fill:true},
+              {data:SIM.series.driftEco[1],color:"#3987e5",label:"main"},
+              {data:SIM.series.driftEco[2],color:"#d95926",label:"deal"}]});
+    lineChart(document.getElementById("d2price"),{h:120,upto:t,gridY:3,yLabels:true,xLabels:true,
+      grid:"rgba(157,180,214,.12)",mut:"#74809a",min:29,max:41,yFmt:v=>"$"+v.toFixed(0),
+      aria:"reference price versus shelf price",
+      bands:[[3,4,"rgba(237,161,0,.10)"],[8,9,"rgba(237,161,0,.10)"],[12,13,"rgba(237,161,0,.10)"]],
+      series:[{data:SIM.series.shelf,color:"#74809a",dash:"3 3"},
+              {data:SIM.series.ref,color:"#eda100",label:"reference",fill:true}]});
+    tr.sync();
+  }
+  render(CLOCK.tick,false);
+  return {show(){render(CLOCK.tick,false)},
+    onClock(ev){
+      if(ev.type==="advance")render(CLOCK.tick,true);
+      else if(ev.type==="seek"||ev.type==="complete")render(CLOCK.tick,false);
+      else if(ev.type==="frame"){document.getElementById("d2daybar").style.width=(100*(CLOCK.tick+CLOCK.frac)/SIM.TICKS).toFixed(1)+"%"}
+      else tr.sync();
+    }};
+});
+</script>
+
+<!-- ==================== D3 · THE LIVING GRAPH ==================== -->
+<style>
+#tab-d3 .d3-root{background:#14121f;color:#d9d5ee;min-height:calc(100vh - 92px);padding:14px 16px 22px}
+#tab-d3 .d3-top{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+#tab-d3 .d3-title{font-size:11px;font-family:var(--mono);letter-spacing:.2em;color:#7d77a2}
+#tab-d3 .d3-day{font-family:var(--mono);font-size:24px;font-weight:800}
+#tab-d3 .d3-day .of{color:#7d77a2;font-size:14px;font-weight:400}
+#tab-d3 .d3-who{display:flex;gap:6px;flex-wrap:wrap}
+#tab-d3 .d3-who button{font-family:var(--mono);font-size:11px;border:1px solid rgba(144,133,233,.35);
+  color:#b5aee0;border-radius:99px;padding:3px 11px}
+#tab-d3 .d3-who button.on{background:#9085e9;color:#14121f;border-color:#9085e9;font-weight:700}
+#tab-d3 .tr{display:flex;align-items:center;gap:10px;margin-left:auto;font-family:var(--mono)}
+#tab-d3 .tr button{color:#d9d5ee;border:1px solid rgba(144,133,233,.35);border-radius:6px;padding:3px 10px;font-size:12px}
+#tab-d3 .tr button.on{border-color:#9085e9;color:#c9c2f5}
+#tab-d3 .tr input[type=range]{width:120px;accent-color:#9085e9}
+#tab-d3 .tr-mode{font-size:10px;letter-spacing:.12em;border:1px solid #35c26a;color:#35c26a;border-radius:99px;padding:2px 9px}
+#tab-d3 .tr-mode.done{border-color:#7d77a2;color:#7d77a2}
+#tab-d3 .d3-grid{display:grid;grid-template-columns:1fr 320px;gap:14px}
+@media (max-width:980px){#tab-d3 .d3-grid{grid-template-columns:1fr}}
+#tab-d3 .panel{background:#1a1730;border:1px solid rgba(144,133,233,.16);border-radius:10px}
+#tab-d3 .d3-stage{position:relative;min-height:520px;overflow:hidden}
+#tab-d3 canvas{position:absolute;inset:0;width:100%;height:100%;cursor:pointer}
+#tab-d3 .d3-cap{position:absolute;left:12px;bottom:9px;font-family:var(--mono);font-size:10.5px;color:#7d77a2}
+#tab-d3 .d3-side{display:flex;flex-direction:column;gap:14px}
+#tab-d3 .d3-side h4{font-size:10px;font-family:var(--mono);letter-spacing:.18em;color:#7d77a2;margin:0;padding:11px 14px 0}
+#tab-d3 .d3-trace{padding:4px 14px 12px}
+#tab-d3 .d3-abar{display:flex;align-items:center;gap:8px;margin:6px 0}
+#tab-d3 .d3-abar .al{width:120px;font-size:11.5px;color:#b5aee0}
+#tab-d3 .d3-abar .at{flex:1;height:6px;background:rgba(144,133,233,.15);border-radius:3px;overflow:hidden}
+#tab-d3 .d3-abar .af{height:100%;border-radius:3px;background:#9085e9}
+#tab-d3 .d3-abar .av{width:40px;text-align:right;font-family:var(--mono);font-size:11px}
+#tab-d3 .d3-outcome{font-family:var(--mono);font-size:12px;margin-top:8px;padding:6px 10px;border-radius:6px;
+  border:1px solid rgba(144,133,233,.3);display:inline-block}
+#tab-d3 .d3-outcome.buy{border-color:#eda100;color:#eda100}
+#tab-d3 .d3-outcome.quiet{color:#7d77a2}
+#tab-d3 .d3-tracenote{font-size:10.5px;color:#7d77a2;padding:0 14px 10px}
+#tab-d3 .d3-log{font-family:var(--mono);font-size:11px;line-height:1.75;max-height:250px;overflow-y:auto;
+  scrollbar-width:thin;padding:4px 14px 12px}
+#tab-d3 .d3-log div{border-bottom:1px dashed rgba(144,133,233,.12);padding:2px 0}
+#tab-d3 .d3-log .d{color:#7d77a2;margin-right:6px}
+#tab-d3 .d3-log .op{color:#4cc38a;font-weight:700}
+#tab-d3 .d3-log .op.trust{color:#6da7ec}
+#tab-d3 .d3-log .op.need{color:#eda100}
+#tab-d3 .d3-log .cause{color:#7d77a2}
+#tab-d3 .d3-const{margin-top:14px;padding:12px 16px 8px}
+#tab-d3 .d3-const h4{padding:0 0 6px}
+#tab-d3 .d3-note{margin-top:16px;background:#1a1730;border:1px solid rgba(144,133,233,.16);border-radius:10px;
+  padding:14px 18px;font-size:13px;color:#a49dcb}
+#tab-d3 .d3-note b{color:#d9d5ee}
+</style>
+<section id="tab-d3">
+<div class="d3-root">
+  <div class="d3-top">
+    <div>
+      <div class="d3-title">THE LIVING GRAPH · ONE WORLDVIEW, GROWING</div>
+      <div class="d3-day num">DAY <span id="d3day">1</span><span class="of"> / 14</span></div>
+    </div>
+    <div class="d3-who" id="d3who" role="group" aria-label="Featured shopper"></div>
+    <div class="tr" id="d3tr"></div>
+  </div>
+  <div class="d3-grid">
+    <div class="panel d3-stage">
+      <canvas id="d3canvas"></canvas>
+      <div class="d3-cap">six-state worldview · edges appear as evidence lands · click the center node to inspect</div>
+    </div>
+    <div class="d3-side">
+      <div class="panel">
+        <h4>DECISION TRACE · TODAY</h4>
+        <div class="d3-trace" id="d3trace"></div>
+        <div class="d3-tracenote">illustrative appraisal weights — production renders <code>appraise()</code> output + <code>get_trace</code> paths</div>
+      </div>
+      <div class="panel">
+        <h4>GRAPH WRITES · SUPERSESSIONS WITH RECEIPTS</h4>
+        <div class="d3-log" id="d3log" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel d3-const">
+    <h4>SEGMENT CONSTELLATION · POPULATION DRIFT IN CONCEPT SPACE (mean PREFERS eco →)</h4>
+    <div id="d3const"></div>
+  </div>
+  <div class="d3-note"><b>D3 · The Living Graph — tradeoffs.</b> This is the graph-native pitch on screen: you watch
+    one person's HydraDB worldview grow — PREFERS supersessions with cause receipts, a trust belief forming with its
+    confidence ring, a NEEDS edge pulsing until a purchase closes it, motif paths lighting at decision time. Nothing
+    here is invented: every edge maps to <code>get_shopper_worldview</code> / <code>get_trace</code> payloads.
+    <b>Build cost 5/5</b> — the layout/pacing is bespoke canvas work, and it shows ONE shopper at a time (the
+    constellation strip carries the population story at segment grain, honestly — per-shopper positions exist in no
+    live feed). Strongest for judges scoring graph-native retrieval; weakest as an everyday analyst dashboard.
+    Pairs well as a "story mode" inside D2/D5.</div>
+</div>
+</section>
+<script>
+registerDesign("d3",function(){
+  const root=document.getElementById("tab-d3");
+  document.getElementById("d3tr").innerHTML=transportHTML("x").replace('class="x"','style="display:contents"');
+  const tr=wireTransport(root);
+  const cvs=document.getElementById("d3canvas"),ctx=cvs.getContext("2d");
+  let dpr=1;function size(){dpr=Math.min(devicePixelRatio||1,2);const r=cvs.getBoundingClientRect();
+    cvs.width=r.width*dpr;cvs.height=r.height*dpr}
+  new ResizeObserver(size).observe(cvs);size();
+  /* featured cast: Maya + auto-picked stories */
+  const cast=[SIM.maya];
+  const byBuys=[...SIM.shoppers].filter(s=>s.off!==42).sort((a,b)=>b.buys-a.buys);
+  if(byBuys[0])cast.push(byBuys[0]);
+  const bad=SIM.shoppers.find(s=>s.diary.some(d=>d.type==="EXPERIENCED"&&d.extra&&d.extra.sat<0.5));
+  if(bad&&!cast.includes(bad))cast.push(bad);
+  const bounced=SIM.shoppers.find(s=>s.page===PAGES.violation&&s.diary.some(d=>d.type==="BOUNCED"));
+  if(bounced&&!cast.includes(bounced))cast.push(bounced);
+  const skeptic=SIM.shoppers.find(s=>s.seg.name==="brand_skeptic");
+  if(skeptic&&!cast.includes(skeptic))cast.push(skeptic);
+  let hero=cast[0];
+  document.getElementById("d3who").innerHTML=cast.map((s,i)=>
+    `<button data-hero="${s.off}" class="${i===0?"on":""}">${s.name} ${padO(s.off)}</button>`).join("");
+  root.querySelectorAll("[data-hero]").forEach(b=>b.addEventListener("click",()=>{
+    hero=SIM.shoppers.find(s=>s.off===+b.dataset.hero);
+    root.querySelectorAll("[data-hero]").forEach(x=>x.classList.toggle("on",x===b));
+    rebuild(CLOCK.tick);render(CLOCK.tick);
+  }));
+  /* replayers over the diary (exact evidence math) */
+  const ecoAt=(s,t)=>{const h=s.prefHist.filter(x=>x.t<=t);return h.length?h[h.length-1].w:s.ecoW};
+  function trustAt(s,t){let w=null,E=0;s.diary.forEach(d=>{if(d.t>t)return;
+    const touch=(wt,tg)=>{if(w==null){w=0.5;E=0.7}const b=blend(w,E,wt,tg);w=b[0];E=b[1]};
+    if(d.type==="VISITED")touch(0.75,0.6);
+    if(d.type==="BOUGHT")touch(1.5,0.65);
+    if(d.type==="EXPERIENCED")touch(2.0,d.extra.sat)});return {w,E}}
+  function needAt(s,t){let need=null;s.diary.forEach(d=>{if(d.t>t)return;
+    if(d.type==="NEED_ACTIVATED")need={t:d.t,urgency:d.extra.urgency,strength:d.extra.strength};
+    if(d.type==="NEED_SATISFIED"||d.type==="NEED_EXPIRED")need=null});return need}
+  /* graph model: nodes ease toward polar targets around the hero */
+  let nodes={},edges=[],highlight=null;
+  function setNode(id,label,type,ang,dist,r,color,extra){
+    const cur=nodes[id];const R=cvs.getBoundingClientRect();
+    const tx=R.width/2+Math.cos(ang)*dist,ty=R.height/2+Math.sin(ang)*dist;
+    nodes[id]=Object.assign({id,label,type,tx,ty,r,color,
+      x:cur?cur.x:R.width/2,y:cur?cur.y:R.height/2,seen:true},extra||{});
+  }
+  function rebuild(t){
+    Object.values(nodes).forEach(n=>n.seen=false);edges=[];highlight=null;
+    const s=hero,R=cvs.getBoundingClientRect();
+    setNode("me",s.name+" "+padO(s.off),"me",0,0,26,"#9085e9");
+    const eco=ecoAt(s,t);
+    setNode("eco","eco_friendly:5003","concept",Math.PI*1.05,150,10+eco*16,"#4cc38a",{w:eco});
+    const lastCause=s.prefHist.filter(h=>h.t<=t).slice(-1)[0];
+    edges.push({a:"me",b:"eco",label:"PREFERS w "+eco.toFixed(3),color:"#4cc38a",w:2.2,
+      sub:lastCause&&lastCause.cause!=="SEED"?"cause: "+lastCause.cause:"source: prior (SEED)"});
+    const tw=trustAt(s,t);
+    if(tw.w!=null){
+      setNode("trust","Belief · trust ShoeCo","belief",Math.PI*1.45,155,13,"#6da7ec",{val:tw.w,conf:conf(tw.E)});
+      edges.push({a:"me",b:"trust",label:"HOLDS "+tw.w.toFixed(2)+" · conf "+conf(tw.E).toFixed(2),color:"#6da7ec",w:2});
+      setNode("brand","ShoeCo:6001","brand",Math.PI*1.45,255,11,"#3f5f8f");
+      edges.push({a:"trust",b:"brand",label:"ABOUT",color:"#3f5f8f",w:1});
+    }
+    const nd=needAt(s,t);
+    if(nd){setNode("need","NEEDS running_shoes","need",Math.PI*0.55,150,12,"#eda100",{urg:nd.urgency});
+      edges.push({a:"me",b:"need",label:"NEEDS urg "+nd.urgency.toFixed(2),color:"#eda100",w:2.2})}
+    const sawByCr={};s.diary.forEach(d=>{if(d.t<=t&&d.type==="SAW"){sawByCr[d.subject]=(sawByCr[d.subject]||0)+1}});
+    Object.keys(sawByCr).forEach((cid,i)=>{
+      const cr=CREATIVES.find(c=>c.id===+cid);if(!cr)return;
+      setNode("cr"+cid,cr.name,"creative",-Math.PI*0.32+i*0.5,205,11,cr.color);
+      edges.push({a:"me",b:"cr"+cid,label:"SAW ×"+sawByCr[cid],color:"rgba(125,119,162,.8)",w:1,dash:true});
+      edges.push({a:"cr"+cid,b:"eco",label:"CLAIMS",color:"rgba(76,195,138,.45)",w:1,dash:true});
+    });
+    const bought=s.diary.some(d=>d.t<=t&&d.type==="BOUGHT");
+    if(bought){setNode("prod",PRODUCT.name+":3000001","product",Math.PI*0.16,215,11,"#eda100");
+      edges.push({a:"me",b:"prod",label:"BOUGHT",color:"#eda100",w:1.6})}
+    /* today's decision → motif highlight */
+    const today=s.diary.filter(d=>d.t===t);
+    const clicked=today.find(d=>d.type==="CLICKED"),boughtT=today.find(d=>d.type==="BOUGHT");
+    if(boughtT)highlight={path:["me","need","prod"].filter(id=>nodes[id]&&nodes[id].seen),color:"#eda100",label:"goal_fit → BUY"};
+    else if(clicked&&nodes["cr"+clicked.subject])highlight={path:["cr"+clicked.subject,"eco","me"],color:"#4cc38a",label:"preference_fit → CLICK"};
+    Object.keys(nodes).forEach(k=>{if(!nodes[k].seen)delete nodes[k]});
+    /* trace panel */
+    const promo=SIM.days[t].price<PRODUCT.list;
+    const bars=[["relevance",Math.min(1,0.2+0.55*eco+(nd?0.35*nd.urgency:0)),"#4cc38a"],
+      ["credibility",tw.w==null?0.3:tw.w*conf(tw.E),"#6da7ec"],
+      ["msg fatigue",Math.min(0.9,Math.max(s.exp.eco,s.exp.perf,s.exp.comf)*(t/13)/8),"#d95926"],
+      ["offer attract.",promo?0.45+0.4*s.seg.aff.deal:0.22,"#eda100"],
+      ["expect. align",s.page===PAGES.violation?0.18:0.88,"#9085e9"]];
+    let act="IGNORE",cls="quiet";
+    if(boughtT){act="BUY";cls="buy"}else if(today.find(d=>d.type==="CARTED")){act="CART";cls=""}
+    else if(today.find(d=>d.type==="BROWSED")){act="BROWSE";cls=""}
+    else if(clicked){act="CLICK";cls=""}else if(today.find(d=>d.type==="BOUNCED")){act="BOUNCE";cls=""}
+    document.getElementById("d3trace").innerHTML=
+      bars.map(b=>`<div class="d3-abar"><div class="al">${b[0]}</div><div class="at"><div class="af" style="width:${(100*b[1]).toFixed(0)}%;background:${b[2]}"></div></div>
+        <div class="av num">${b[1].toFixed(2)}</div></div>`).join("")+
+      `<div class="d3-outcome ${cls}">${today.length?("action → "+act):"not exposed today"}</div>`;
+    /* graph-write log */
+    const lines=[];
+    s.prefHist.forEach(h=>{if(h.t<=t&&h.cause!=="SEED")lines.push({t:h.t,html:`<span class="op">PREFERS⟲</span> eco ${(h.w-h.delta).toFixed(3)}→${h.w.toFixed(3)} <span class="cause">(${h.cause})</span>`})});
+    s.diary.forEach(d=>{if(d.t>t)return;
+      if(d.type==="BOUGHT")lines.push({t:d.t,html:`<span class="op trust">Belief⟲</span> trust +evidence 1.5 <span class="cause">(BOUGHT ${PRODUCT.name})</span>`});
+      if(d.type==="EXPERIENCED")lines.push({t:d.t,html:`<span class="op trust">Belief⟲</span> trust target ${d.extra.sat.toFixed(2)} · wt 2.0 <span class="cause">(EXPERIENCED)</span>`});
+      if(d.type==="NEED_ACTIVATED")lines.push({t:d.t,html:`<span class="op need">+NEEDS</span> running_shoes urg ${d.extra.urgency} <span class="cause">(${d.extra.source})</span>`});
+      if(d.type==="NEED_SATISFIED")lines.push({t:d.t,html:`<span class="op need">NEEDS✓</span> closed with cause <span class="cause">(BOUGHT 3000001)</span>`});
+    });
+    lines.sort((a,b)=>b.t-a.t);
+    document.getElementById("d3log").innerHTML=lines.map(l=>`<div><span class="d">d${l.t+1}</span>${l.html}</div>`).join("")
+      ||'<div style="color:#7d77a2">no writes yet — exposure alone never teaches taste (Law 14)</div>';
+    document.getElementById("d3day").textContent=t+1;
+    /* constellation */
+    constellation(t);
+    tr.sync();
+  }
+  function constellation(t){
+    const el=document.getElementById("d3const");
+    const w=el.clientWidth||900,h=110,x0=60,x1=w-20;
+    const X=v=>x0+(x1-x0)*(v-0.30)/(0.45);
+    const rows=[38,62,86];
+    let g=`<line x1="${x0}" x2="${x1}" y1="${h-8}" y2="${h-8}" stroke="rgba(144,133,233,.25)"/>`;
+    [0.3,0.45,0.6,0.75].forEach(v=>{g+=`<text x="${X(v)}" y="${h+2}" font-size="9" fill="#7d77a2" text-anchor="middle" font-family="var(--mono)">${v.toFixed(2)}</text>`});
+    [0,1,2].forEach(gi=>{
+      const ser=SIM.series.driftEco[gi];const col=["#4cc38a","#6da7ec","#d95926"][gi];
+      let d="";for(let i=0;i<=t;i++){d+=(i?"L":"M")+X(ser[i]).toFixed(1)+" "+rows[gi]}
+      g+=`<path d="${d}" stroke="${col}" stroke-width="1.4" fill="none" opacity=".5"/>`;
+      g+=`<circle cx="${X(ser[t]).toFixed(1)}" cy="${rows[gi]}" r="6" fill="${col}"/>`;
+      g+=`<text x="${X(ser[t])+11}" y="${rows[gi]+3.5}" font-size="10" fill="${col}" font-family="var(--mono)">${GROUP_NAMES[gi]} ${ser[t].toFixed(3)}</text>`;
+      SEGMENTS.forEach((sg,si)=>{if(sg.grp!==gi)return;
+        g+=`<circle cx="${(X(ser[t])+((si*37)%23)-11).toFixed(1)}" cy="${rows[gi]+(((si*13)%9)-4)}" r="${(2+sg.share*14).toFixed(1)}" fill="${col}" opacity=".28"><title>${sg.name}</title></circle>`});
+    });
+    el.innerHTML=`<svg viewBox="0 0 ${w} ${h+10}" width="100%" height="${h+10}" role="img" aria-label="segment drift constellation">${g}</svg>`;
+  }
+  let dash=0;
+  function render(){
+    const R=cvs.getBoundingClientRect();ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,R.width,R.height);
+    dash-=REDUCED?0:0.5;
+    const ease=REDUCED?1:0.12;
+    Object.values(nodes).forEach(n=>{n.x+=(n.tx-n.x)*ease;n.y+=(n.ty-n.y)*ease});
+    edges.forEach(e=>{
+      const a=nodes[e.a],b=nodes[e.b];if(!a||!b)return;
+      const hl=highlight&&highlight.path.includes(e.a)&&highlight.path.includes(e.b);
+      ctx.strokeStyle=hl?highlight.color:e.color;ctx.lineWidth=hl?3:e.w;
+      ctx.setLineDash(e.dash&&!hl?[3,4]:hl?[7,5]:[]);ctx.lineDashOffset=hl?dash:0;
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.setLineDash([]);
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      ctx.font="9.5px ui-monospace,Menlo,monospace";ctx.fillStyle=hl?highlight.color:"#a49dcb";
+      ctx.fillText(e.label,mx+5,my-4);
+      if(e.sub){ctx.fillStyle="#7d77a2";ctx.fillText(e.sub,mx+5,my+7)}
+    });
+    Object.values(nodes).forEach(n=>{
+      ctx.beginPath();ctx.fillStyle="#221e3c";ctx.strokeStyle=n.color;ctx.lineWidth=2;
+      ctx.arc(n.x,n.y,n.r,0,7);ctx.fill();ctx.stroke();
+      if(n.type==="belief"){ctx.beginPath();ctx.strokeStyle="rgba(109,167,236,.5)";ctx.lineWidth=3;
+        ctx.arc(n.x,n.y,n.r+5,-Math.PI/2,-Math.PI/2+n.conf*2*Math.PI);ctx.stroke()}
+      if(n.type==="need"&&!REDUCED){const p=(performance.now()/700)%1;
+        ctx.beginPath();ctx.strokeStyle=`rgba(237,161,0,${(1-p)*.7})`;ctx.lineWidth=1.5;
+        ctx.arc(n.x,n.y,n.r+3+p*13,0,7);ctx.stroke()}
+      ctx.font=(n.type==="me"?"700 12px":"10px")+" ui-monospace,Menlo,monospace";
+      ctx.fillStyle=n.type==="me"?"#e9e5ff":"#c4bde8";ctx.textAlign="center";
+      ctx.fillText(n.label,n.x,n.y+n.r+13);ctx.textAlign="left";
+      if(n.type==="me"){ctx.font="700 13px ui-monospace,Menlo,monospace";ctx.fillStyle="#14121f";
+        ctx.textAlign="center";ctx.fillText(hero.name[0],n.x,n.y+4.5);ctx.textAlign="left";
+        ctx.font="9px ui-monospace,Menlo,monospace";ctx.fillStyle="#9085e9"}
+      if(highlight){ctx.font="700 11px ui-monospace,Menlo,monospace";ctx.fillStyle=highlight.color;
+        ctx.fillText("motif: "+highlight.label,14,20)}
+    });
+    if(CLOCK.playing&&!REDUCED){cancelAnimationFrame(raf);raf=requestAnimationFrame(render)}
+  }
+  let raf=0;
+  cvs.addEventListener("click",()=>openInspector(hero.off));
+  rebuild(CLOCK.tick);render();
+  return {show(){size();rebuild(CLOCK.tick);render()},
+    onClock(ev){
+      if(ev.type==="advance"||ev.type==="seek"||ev.type==="complete"){rebuild(CLOCK.tick);if(!CLOCK.playing||REDUCED)render()}
+      else if(ev.type==="play"){cancelAnimationFrame(raf);render()}
+      else if(ev.type==="frame"&&REDUCED){}
+      else tr.sync();
+    }};
+});
+</script>
+
+<!-- ==================== D4 · BROADCAST ==================== -->
+<style>
+#tab-d4 .d4-root{background:#fbfbf9;color:#191817;min-height:calc(100vh - 92px);padding:0 0 26px}
+#tab-d4 .d4-score{background:#16151d;color:#f2f1f6;display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+  padding:12px 22px}
+#tab-d4 .d4-live{display:flex;align-items:center;gap:7px;font-weight:800;font-size:12px;letter-spacing:.14em;
+  color:#ff5c50;font-family:var(--mono)}
+#tab-d4 .d4-live i{width:9px;height:9px;border-radius:50%;background:#ff5c50;animation:d4blink 1.2s infinite}
+#tab-d4 .d4-live.replay{color:#9a97ad}#tab-d4 .d4-live.replay i{background:#9a97ad;animation:none}
+@keyframes d4blink{0%,100%{opacity:1}50%{opacity:.25}}
+#tab-d4 .d4-sday{font-family:var(--mono);font-size:20px;font-weight:800}
+#tab-d4 .d4-sday .of{color:#9a97ad;font-size:13px;font-weight:400}
+#tab-d4 .d4-nums{display:flex;gap:22px;font-family:var(--mono)}
+#tab-d4 .d4-num .l{font-size:9px;letter-spacing:.16em;color:#9a97ad}
+#tab-d4 .d4-num .v{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+#tab-d4 .d4-num .v.red{color:#ff5c50}
+#tab-d4 .tr{display:flex;align-items:center;gap:10px;margin-left:auto;font-family:var(--mono)}
+#tab-d4 .tr button{color:#f2f1f6;border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:3px 10px;font-size:12px}
+#tab-d4 .tr button.on{border-color:#ff5c50;color:#ff8a80}
+#tab-d4 .tr input[type=range]{width:120px;accent-color:#ff5c50}
+#tab-d4 .tr-mode{font-size:10px;letter-spacing:.12em;border:1px solid #35c26a;color:#35c26a;border-radius:99px;padding:2px 9px}
+#tab-d4 .tr-mode.done{border-color:#9a97ad;color:#9a97ad}
+#tab-d4 .d4-main{display:grid;grid-template-columns:1fr 340px;gap:20px;padding:20px 22px 0;max-width:1240px;margin:0 auto}
+@media (max-width:980px){#tab-d4 .d4-main{grid-template-columns:1fr}}
+#tab-d4 .d4-stagewrap{position:relative}
+#tab-d4 .d4-kicker{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:#8a877f;margin:0 0 8px}
+#tab-d4 .d4-story{background:#fff;border:1px solid #e4e2da;border-radius:14px;padding:26px 30px;
+  box-shadow:0 2px 14px rgba(25,24,23,.05);min-height:300px;position:relative;overflow:hidden}
+#tab-d4 .d4-story .tagrow{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+#tab-d4 .d4-tag{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;border-radius:4px;
+  padding:2.5px 8px;background:#191817;color:#fff}
+#tab-d4 .d4-tag.buy{background:#9a6b00}
+#tab-d4 .d4-tag.bad{background:#b3402e}
+#tab-d4 .d4-tag.need{background:#0e7a4e}
+#tab-d4 .d4-tag.seg{background:#efeee8;color:#57544c}
+#tab-d4 .d4-story h2{font-family:Georgia,"Times New Roman",serif;font-size:32px;line-height:1.15;font-weight:700;margin:0 0 6px}
+#tab-d4 .d4-story .who{font-size:14px;color:#57544c;margin-bottom:20px}
+#tab-d4 .d4-story .who b{color:#191817}
+#tab-d4 .d4-ba{margin:16px 0 6px;max-width:520px}
+#tab-d4 .d4-ba .lab{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:#8a877f}
+#tab-d4 .d4-ba .track{height:14px;background:#efeee8;border-radius:7px;margin-top:5px;position:relative;overflow:hidden}
+#tab-d4 .d4-ba .was{position:absolute;inset:0 auto 0 0;background:#c9c6ba;border-radius:7px}
+#tab-d4 .d4-ba .now{position:absolute;inset:0 auto 0 0;background:#0e7a4e;border-radius:7px;transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
+#tab-d4 .d4-ba .now.dn{background:#b3402e}
+#tab-d4 .d4-ba .vals{display:flex;gap:10px;font-family:var(--mono);font-size:13px;font-weight:700;margin-top:6px}
+#tab-d4 .d4-ba .vals .arrow{color:#8a877f;font-weight:400}
+#tab-d4 .d4-cause{font-family:Georgia,serif;font-style:italic;font-size:15px;color:#57544c;margin-top:14px}
+#tab-d4 .d4-inspect{position:absolute;right:18px;bottom:14px;font-family:var(--mono);font-size:11px;
+  color:#8a877f;border:1px solid #e4e2da;border-radius:6px;padding:4px 10px}
+#tab-d4 .d4-inspect:hover{color:#191817;border-color:#191817}
+#tab-d4 .d4-next{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+#tab-d4 .d4-nextcard{flex:1;min-width:150px;background:#fff;border:1px solid #e4e2da;border-radius:9px;
+  padding:9px 12px;text-align:left}
+#tab-d4 .d4-nextcard:hover{border-color:#191817}
+#tab-d4 .d4-nextcard .n{font-weight:700;font-size:12.5px}
+#tab-d4 .d4-nextcard .m{font-family:var(--mono);font-size:10.5px;color:#8a877f;margin-top:2px}
+#tab-d4 .d4-side h3{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:#8a877f;font-weight:700;margin:0 0 8px}
+#tab-d4 .d4-news{border-radius:10px;border:1px solid #e4e2da;background:#fff;padding:11px 14px;margin-bottom:10px;
+  border-left:4px solid #2a78d6;animation:d4in .35s ease}
+#tab-d4 .d4-news.warning{border-left-color:#c98500}
+#tab-d4 .d4-news.serious{border-left-color:#b3402e}
+#tab-d4 .d4-news.info{border-left-color:#0e7a4e}
+#tab-d4 .d4-news .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:#8a877f}
+#tab-d4 .d4-news .h{font-family:Georgia,serif;font-weight:700;font-size:16px;margin:2px 0}
+#tab-d4 .d4-news .b{font-size:12.5px;color:#57544c}
+#tab-d4 .d4-news .rule{font-family:var(--mono);font-size:9.5px;color:#a5a29a;margin-top:3px}
+@keyframes d4in{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+#tab-d4 .d4-storyline{background:#fff;border:1px solid #e4e2da;border-radius:10px;padding:12px 14px;margin-top:4px}
+#tab-d4 .d4-ticker{margin-top:22px;background:#16151d;color:#c9c7d4;overflow:hidden;white-space:nowrap;
+  font-family:var(--mono);font-size:12px;padding:8px 0;position:relative}
+#tab-d4 .d4-ticker .lbl{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;background:#ff5c50;
+  color:#16151d;font-weight:800;padding:0 12px;z-index:2;letter-spacing:.1em;font-size:10px}
+#tab-d4 .d4-track{display:inline-block;padding-left:100%;animation:d4tick 36s linear infinite}
+@keyframes d4tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+#tab-d4 .d4-track span{margin-right:44px}
+#tab-d4 .d4-track .who{color:#fff;font-weight:700}
+#tab-d4 .d4-track .up{color:#58d68d}
+#tab-d4 .d4-track .dn{color:#ff8a80}
+#tab-d4 .d4-inter{position:absolute;inset:0;z-index:5;display:none;align-items:center;justify-content:center;
+  background:rgba(22,21,29,.92);color:#fff;border-radius:14px;text-align:center;padding:20px}
+#tab-d4 .d4-inter.show{display:flex;animation:d4in .3s ease}
+#tab-d4 .d4-inter .id{font-family:var(--mono);font-size:12px;letter-spacing:.3em;color:#ff8a80}
+#tab-d4 .d4-inter .ih{font-family:Georgia,serif;font-size:34px;font-weight:700;margin:8px 0 4px}
+#tab-d4 .d4-inter .ib{color:#c9c7d4;font-size:14px}
+#tab-d4 .d4-note{margin:24px 22px 0;max-width:1240px;background:#fff;border:1px solid #e4e2da;border-radius:10px;
+  padding:14px 18px;font-size:13px;color:#57544c}
+#tab-d4 .d4-note b{color:#191817}
+@media (min-width:1284px){#tab-d4 .d4-note{margin:24px auto 0}}
+</style>
+<section id="tab-d4">
+<div class="d4-root">
+  <div class="d4-score">
+    <div class="d4-live" id="d4live"><i></i>LIVE</div>
+    <div class="d4-sday num">DAY <span id="d4day">1</span><span class="of">/14</span></div>
+    <div class="d4-nums" id="d4nums"></div>
+    <div class="tr" id="d4tr"></div>
+  </div>
+  <div class="d4-main">
+    <div class="d4-stagewrap">
+      <p class="d4-kicker">MARKET DESK · TOP STORY · AUTO-DIRECTED FROM THE EVENT STREAM</p>
+      <div class="d4-story" id="d4story"></div>
+      <div class="d4-inter" id="d4inter"></div>
+      <div class="d4-next" id="d4next"></div>
+    </div>
+    <aside class="d4-side">
+      <h3>BREAKING · MARKET EVENTS</h3>
+      <div id="d4news"></div>
+      <h3 style="margin-top:16px">THE SEASON SO FAR · ECO PREFERENCE</h3>
+      <div class="d4-storyline" id="d4chart"></div>
+    </aside>
+  </div>
+  <div class="d4-ticker"><span class="lbl">WIRE</span><div class="d4-track" id="d4tickertrack"></div></div>
+  <div class="d4-note"><b>D4 · Broadcast — tradeoffs.</b> The most narrative design: the market becomes coverage,
+    and the coverage is real — every story card is a ranked event from the stream with genuine before→after numbers
+    (the interestingness ranker is exactly the production feed selector). Day-boundary interstitials give scheduled
+    events real presence; the ticker keeps ambient motion cheap. <b>Build cost 3/5</b> — DOM/CSS only. Live fit is
+    outstanding for the demo video; the risk is analyst thinness, mitigated by the scoreboard and storyline chart but
+    still lighter on density than D2/D5. Production needs: events tail + ≤8 preference-history fetches/tick for the
+    featured numbers.</div>
+</div>
+</section>
+<script>
+registerDesign("d4",function(){
+  const root=document.getElementById("tab-d4");
+  document.getElementById("d4tr").innerHTML=transportHTML("x").replace('class="x"','style="display:contents"');
+  const tr=wireTransport(root);
+  let storyIdx=-1,interTimer=0;
+  function stories(t){const f=SIM.days[t].feed;return f.length?f.slice(0,3):[]}
+  function renderStory(t,idx){
+    const st=stories(t);const el=document.getElementById("d4story");
+    if(!st.length){el.innerHTML=`<div class="tagrow"><span class="d4-tag seg">QUIET DAY</span></div>
+      <h2>The market breathes</h2><div class="who">No standout state changes today — ${SIM.days[t].events.length} events landed quietly.</div>`;return}
+    const f=st[Math.min(idx,st.length-1)];
+    const s=SIM.shoppers.find(x=>x.off===f.off);
+    const kindTag={buy:"PURCHASE",exp_bad:"TRUST HIT",exp_good:"DELIVERY",need:"NEW NEED",pref:"PREFERENCE SHIFT",satisfied:"NEED CLOSED",bounce:"BOUNCE"}[f.kind]||"EVENT";
+    const kindCls={buy:"buy",exp_bad:"bad",need:"need",satisfied:"need"}[f.kind]||"";
+    let ba="";
+    const m=f.line.match(/([\d.]+) → ([\d.]+)/);
+    if(m){const a=+m[1],b=+m[2],dn=b<a;
+      ba=`<div class="d4-ba"><div class="lab"><span>${f.line.split(" ").slice(0,-3).join(" ")||"value"}</span><span>0 — 1</span></div>
+        <div class="track"><div class="was" style="width:${(100*a).toFixed(1)}%"></div>
+        <div class="now ${dn?"dn":""}" id="d4ba" style="width:${(100*a).toFixed(1)}%"></div></div>
+        <div class="vals num"><span>${a.toFixed(3)}</span><span class="arrow">→</span><span style="color:${dn?"#b3402e":"#0e7a4e"}">${b.toFixed(3)} ${dn?"▼":"▲"}</span></div></div>`;
+    } else {
+      ba=`<div class="d4-ba"><div class="vals num" style="font-size:20px">${f.line}</div></div>`;
+    }
+    el.innerHTML=`<div class="tagrow"><span class="d4-tag ${kindCls}">${kindTag}</span>
+      <span class="d4-tag seg">${s.seg.name.replace(/_/g," ").toUpperCase()}</span>
+      <span class="d4-tag seg">DAY ${t+1}</span></div>
+      <h2>${f.title}: ${s.name} ${padO(f.off)}</h2>
+      <div class="who">Shopper <b>${1000000+f.off}</b> · ${s.buys?s.buys+" lifetime purchase"+(s.buys>1?"s":"")+" · ":""}${s.trustW!=null?"holds a trust belief in ShoeCo":"no brand belief yet"}</div>
+      ${ba}
+      <div class="d4-cause">“Cause on the record: ${f.cause}.”</div>
+      <button class="d4-inspect" data-inspect="${f.off}">OPEN FULL PROFILE →</button>`;
+    if(m&&!REDUCED)requestAnimationFrame(()=>{const bar=document.getElementById("d4ba");if(bar)bar.style.width=(100*+m[2]).toFixed(1)+"%"});
+    document.getElementById("d4next").innerHTML=st.map((x,i)=>{const xs=SIM.shoppers.find(q=>q.off===x.off);
+      return `<button class="d4-nextcard" style="${i===Math.min(idx,st.length-1)?"border-color:#191817":""}" data-story="${i}">
+      <div class="n">${xs.name} ${padO(x.off)} · ${x.title}</div><div class="m">${x.cause}</div></button>`}).join("");
+  }
+  function render(t){
+    const k=SIM.days[t].kpis;
+    document.getElementById("d4day").textContent=t+1;
+    document.getElementById("d4nums").innerHTML=[
+      ["IMPRESSIONS",fmt.int(k.imp)],["CLICKS",fmt.int(k.clicks)],["CTR",fmt.pct(k.ctr)],
+      ["CARTS",fmt.int(k.carts)],["BUYS",fmt.int(k.buys),"red"],["NEEDS LIVE",k.needs]
+    ].map(x=>`<div class="d4-num"><div class="l">${x[0]}</div><div class="v ${x[2]||""}">${x[1]}</div></div>`).join("");
+    const live=document.getElementById("d4live");
+    live.classList.toggle("replay",!CLOCK.playing||CLOCK.done);
+    live.innerHTML="<i></i>"+(CLOCK.done?"RUN COMPLETE":(CLOCK.playing?"LIVE":"REPLAY"));
+    /* news rail: this day + previous still pinned */
+    let nh="";
+    for(let d=t;d>=Math.max(0,t-3);d--){const ev=SIM.eventsAt(d);
+      ev.det.forEach(e=>nh+=`<div class="d4-news ${e.sev}"><div class="k">DAY ${d+1} · DETECTED</div><div class="h">${e.label}</div><div class="b">${e.detail}</div><div class="rule">rule: ${e.rule}</div></div>`);
+      ev.sched.forEach(e=>nh+=`<div class="d4-news"><div class="k">DAY ${d+1} · SCHEDULED</div><div class="h">${e.label}</div><div class="b">${e.detail}</div></div>`);
+    }
+    document.getElementById("d4news").innerHTML=nh||'<div class="d4-news"><div class="b">Nothing on the wire yet.</div></div>';
+    lineChart(document.getElementById("d4chart"),{h:130,upto:t,gridY:3,yLabels:true,xLabels:true,
+      grid:"#efeee8",mut:"#a5a29a",min:0.3,max:0.75,yFmt:v=>v.toFixed(2),
+      aria:"eco preference storyline",
+      marker:SIM.detected.find(e=>e.kind==="drift")?SIM.detected.find(e=>e.kind==="drift").t:null,
+      series:[{data:SIM.series.driftEco[0],color:"#1baf7a",label:"eco segs",fill:true},
+              {data:SIM.series.driftEco[2],color:"#eb6834",label:"deal segs"}]});
+    const tk=[];
+    SIM.days[t].events.forEach(e=>{
+      if(e.type==="TICK_COMPLETE")return;
+      const s=SIM.shoppers.find(x=>x.off===e.off);if(!s)return;
+      const short={SAW:"saw",CLICKED:"clicked",BROWSED:"browsed",BOUNCED:"bounced",CARTED:"▲ carted",BOUGHT:"● BOUGHT",
+        PRICE_SEEN:null,VISITED:null,EXPERIENCED:e.sat<0.5?"▼ rough delivery":"▲ good delivery",
+        NEED_ACTIVATED:"needs shoes",NEED_SATISFIED:"need closed",NEED_EXPIRED:"need expired"}[e.type];
+      if(!short)return;
+      const cls=/▲|BOUGHT|good/.test(short)?"up":/▼|bounced|expired/.test(short)?"dn":"";
+      tk.push(`<span><span class="who">${s.name}${padO(e.off)}</span> <span class="${cls}">${short}</span></span>`);
+    });
+    const track=tk.join("")||"<span>quiet wire…</span>";
+    document.getElementById("d4tickertrack").innerHTML=track+track;
+    storyIdx=-1;advanceStory(t,0);
+    tr.sync();
+  }
+  function advanceStory(t,idx){if(idx===storyIdx)return;storyIdx=idx;renderStory(t,idx)}
+  function interstitial(t){
+    const ev=SIM.eventsAt(t);const first=ev.sched[0]||ev.det[0];
+    if(!first||REDUCED)return;
+    const el=document.getElementById("d4inter");
+    el.innerHTML=`<div><div class="id">DAY ${t+1}</div><div class="ih">${first.label}</div><div class="ib">${first.detail}</div></div>`;
+    el.classList.add("show");clearTimeout(interTimer);
+    interTimer=setTimeout(()=>el.classList.remove("show"),1600);
+  }
+  root.addEventListener("click",e=>{const b=e.target.closest("[data-story]");
+    if(b)advanceStory(CLOCK.tick,+b.dataset.story)});
+  render(CLOCK.tick);
+  return {show(){render(CLOCK.tick)},
+    onClock(ev){
+      if(ev.type==="advance"){render(CLOCK.tick);interstitial(CLOCK.tick)}
+      else if(ev.type==="seek"||ev.type==="complete")render(CLOCK.tick);
+      else if(ev.type==="frame"){const idx=Math.min(2,Math.floor(CLOCK.frac*3));advanceStory(CLOCK.tick,idx)}
+      else {render(CLOCK.tick)}
+    }};
+});
+</script>
+
+<!-- ==================== D5 · THE TERMINAL ==================== -->
+<style>
+:is(#tab-d5,#tab-v2) .d5-root{background:#f4f4f1;color:#0b0b0b;min-height:calc(100vh - 92px);padding:14px 18px 26px}
+:is(#tab-d5,#tab-v2) .panel{background:#fcfcfb;border:1px solid #e1e0d9;border-radius:8px}
+:is(#tab-d5,#tab-v2) .d5-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+:is(#tab-d5,#tab-v2) .d5-run{font-family:var(--mono);font-size:12.5px;color:#52514e}
+:is(#tab-d5,#tab-v2) .d5-run b{color:#0b0b0b}
+:is(#tab-d5,#tab-v2) .d5-status{font-family:var(--mono);font-size:10px;letter-spacing:.12em;border-radius:99px;padding:2.5px 10px;
+  border:1px solid #0ca30c;color:#006300;font-weight:700}
+:is(#tab-d5,#tab-v2) .d5-status.done{border-color:#898781;color:#52514e}
+:is(#tab-d5,#tab-v2) .tr{display:flex;align-items:center;gap:10px;margin-left:auto;font-family:var(--mono)}
+:is(#tab-d5,#tab-v2) .tr button{border:1px solid #c3c2b7;border-radius:6px;padding:3px 10px;font-size:12px;color:#0b0b0b}
+:is(#tab-d5,#tab-v2) .tr button:hover{background:#efefe9}
+:is(#tab-d5,#tab-v2) .tr button.on{border-color:#2a78d6;color:#1c5cab;font-weight:700}
+:is(#tab-d5,#tab-v2) .tr input[type=range]{width:130px;accent-color:#2a78d6}
+:is(#tab-d5,#tab-v2) .tr-mode{font-size:10px;letter-spacing:.12em;border:1px solid #0ca30c;color:#006300;border-radius:99px;padding:2px 9px}
+:is(#tab-d5,#tab-v2) .tr-mode.done{border-color:#898781;color:#52514e}
+:is(#tab-d5,#tab-v2) .d5-timeline{padding:8px 12px 4px;margin-bottom:12px;cursor:pointer}
+:is(#tab-d5,#tab-v2) .d5-tl-cap{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;
+  letter-spacing:.12em;color:#898781;padding:2px 4px}
+:is(#tab-d5,#tab-v2) .d5-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:10px;margin-bottom:12px}
+:is(#tab-d5,#tab-v2) .d5-tile{padding:10px 12px 8px}
+:is(#tab-d5,#tab-v2) .d5-tile .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;color:#898781;text-transform:uppercase}
+:is(#tab-d5,#tab-v2) .d5-tile .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;margin:2px 0}
+:is(#tab-d5,#tab-v2) .d5-tile .v small{font-size:12px;font-weight:600;color:#52514e}
+:is(#tab-d5,#tab-v2) .d5-tile .d{font-family:var(--mono);font-size:10.5px;color:#006300}
+:is(#tab-d5,#tab-v2) .d5-tile .d.dn{color:#b3402e}
+:is(#tab-d5,#tab-v2) .d5-row2{display:grid;grid-template-columns:1.4fr 1fr 0.8fr;gap:10px;margin-bottom:12px}
+@media (max-width:1000px){:is(#tab-d5,#tab-v2) .d5-row2{grid-template-columns:1fr}}
+:is(#tab-d5,#tab-v2) .ph{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:#898781;font-weight:700;
+  padding:9px 12px 0;text-transform:uppercase}
+:is(#tab-d5,#tab-v2) .pc{padding:4px 10px 8px}
+:is(#tab-d5,#tab-v2) .d5-sm{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:10px;margin-bottom:12px}
+:is(#tab-d5,#tab-v2) .d5-row4{display:grid;grid-template-columns:1fr 1.3fr;gap:10px}
+@media (max-width:900px){:is(#tab-d5,#tab-v2) .d5-row4{grid-template-columns:1fr}}
+:is(#tab-d5,#tab-v2) table{width:100%;border-collapse:collapse;font-size:12px}
+:is(#tab-d5,#tab-v2) th{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:#898781;text-align:left;
+  padding:4px 8px;border-bottom:1px solid #e1e0d9;text-transform:uppercase}
+:is(#tab-d5,#tab-v2) td{padding:4.5px 8px;border-bottom:1px solid #efefe9;font-variant-numeric:tabular-nums}
+:is(#tab-d5,#tab-v2) tr.click{cursor:pointer}
+:is(#tab-d5,#tab-v2) tr.click:hover{background:#f2f6fc}
+:is(#tab-d5,#tab-v2) .evk{font-family:var(--mono);font-size:9.5px;font-weight:700;border-radius:4px;padding:1px 6px}
+:is(#tab-d5,#tab-v2) .evk.sched{background:#e7f0fb;color:#1c5cab}
+:is(#tab-d5,#tab-v2) .evk.warning{background:#fdf3dc;color:#8a5c00}
+:is(#tab-d5,#tab-v2) .evk.serious{background:#fbe9e2;color:#a03516}
+:is(#tab-d5,#tab-v2) .evk.info{background:#e2f5ec;color:#0e7a4e}
+:is(#tab-d5,#tab-v2) .fbar{display:flex;align-items:center;gap:7px;margin:3px 0}
+:is(#tab-d5,#tab-v2) .fbar .fl{width:62px;font-family:var(--mono);font-size:9.5px;color:#52514e;text-align:right}
+:is(#tab-d5,#tab-v2) .fbar .ft{flex:1;height:11px;background:#efefe9;border-radius:2px;overflow:hidden}
+:is(#tab-d5,#tab-v2) .fbar .ff{height:100%;transition:width .4s}
+:is(#tab-d5,#tab-v2) .fbar .fv{width:36px;font-family:var(--mono);font-size:10.5px;font-weight:700}
+:is(#tab-d5,#tab-v2) .d5-note{margin-top:14px;padding:14px 18px;font-size:13px;color:#52514e}
+:is(#tab-d5,#tab-v2) .d5-note b{color:#0b0b0b}
+:is(#tab-d5,#tab-v2) .legend{display:flex;gap:12px;font-family:var(--mono);font-size:10px;color:#52514e;padding:0 12px 8px}
+:is(#tab-d5,#tab-v2) .legend i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:4px;vertical-align:2px}
+</style>
+<section id="tab-d5">
+<div class="d5-root">
+  <div class="d5-head">
+    <div class="d5-run"><b>ad-test · ecostride-vs-apex-vs-cloudwalk</b> · seed 415 · 200 shoppers · arm 1/3 · formula mind</div>
+    <div class="d5-status" id="d5status">RUNNING</div>
+    <div class="tr" id="d5tr"></div>
+  </div>
+  <div class="panel d5-timeline" id="d5timeline" role="slider" aria-label="Simulation timeline" tabindex="0">
+    <div class="d5-tl-cap"><span>MASTER TIMELINE — CLICK TO SCRUB · ▮ PROMO · ▨ NEED WAVE · ● DETECTED · ▼ SCHEDULED</span><span id="d5tlday"></span></div>
+    <div id="d5tlsvg"></div>
+  </div>
+  <div class="d5-tiles" id="d5tiles"></div>
+  <div class="d5-row2">
+    <div class="panel"><div class="ph">CTR BY DAY · PER CREATIVE</div>
+      <div class="legend"><span><i style="background:#1baf7a"></i>EcoStride</span><span><i style="background:#2a78d6"></i>Apex</span><span><i style="background:#eb6834"></i>CloudWalk</span></div>
+      <div class="pc" id="d5ctr"></div></div>
+    <div class="panel"><div class="ph">FUNNEL BY CREATIVE · CUMULATIVE</div><div class="pc" id="d5funnel"></div></div>
+    <div class="panel"><div class="ph">PAGE A/B · BOUNCE RATE</div><div class="pc" id="d5pages"></div></div>
+  </div>
+  <div class="d5-sm" id="d5small"></div>
+  <div class="d5-row4">
+    <div class="panel"><div class="ph">MARKET EVENTS · SCHEDULED + DETECTED</div><div class="pc" style="overflow-x:auto"><table id="d5events"></table></div></div>
+    <div class="panel"><div class="ph">ACTIVITY · CLICK A ROW TO INSPECT</div><div class="pc" style="overflow-x:auto"><table id="d5act"></table></div></div>
+  </div>
+  <div class="panel d5-note"><b>D5 · The Terminal — tradeoffs.</b> Everything on this screen maps 1:1 to a shipped
+    series — no new visual machinery, which is exactly its virtue: <b>build cost 1/5</b>, the safest path to a complete,
+    dense Phase 5. The master timeline IS the MarketClock (replay-native; live mode just follows the head), so
+    scrubbing, event markers, and promo/wave spans come free. Weakness: least theatrical — the "shoppers are people"
+    story lives one click away in the inspector rather than on the surface. Strong hybrid base: D2's matrix or D4's
+    story stage can dock into this grid later. Production needs: results-live + events tail only.</div>
+</div>
+</section>
+<script>
+registerDesign("d5",function(){
+  const root=document.getElementById("tab-d5");
+  document.getElementById("d5tr").innerHTML=transportHTML("x").replace('class="x"','style="display:contents"');
+  const tr=wireTransport(root);
+  const CRC={eco:"#1baf7a",perf:"#2a78d6",comf:"#eb6834"};
+  function timeline(t){
+    const el=document.getElementById("d5tlsvg");
+    const w=el.clientWidth||1000,h=56,x0=14,x1=w-14;
+    const X=d=>x0+(x1-x0)*d/(SIM.TICKS-1);
+    let g=`<line x1="${x0}" x2="${x1}" y1="34" y2="34" stroke="#c3c2b7" stroke-width="1.5"/>`;
+    [[3,4,"#f6e5c4"],[8,9,"#f6e5c4"],[12,13,"#f6e5c4"]].forEach(b=>{g+=`<rect x="${X(b[0])-6}" y="24" width="${X(b[1])-X(b[0])+12}" height="20" fill="${b[2]}" rx="3"/>`});
+    g+=`<rect x="${X(6)-6}" y="24" width="${X(9)-X(6)+12}" height="20" fill="#dcefe6" rx="3" opacity=".8"/>`;
+    for(let d=0;d<SIM.TICKS;d++){
+      g+=`<line x1="${X(d)}" x2="${X(d)}" y1="30" y2="38" stroke="${d<=t?"#2a78d6":"#c3c2b7"}" stroke-width="${d<=t?2:1}"/>`;
+      g+=`<text x="${X(d)}" y="52" font-size="9" fill="${d===t?"#0b0b0b":"#898781"}" font-weight="${d===t?"700":"400"}" text-anchor="middle" font-family="ui-monospace,Menlo,monospace">${d+1}</text>`;
+    }
+    SIM.scheduled.forEach(e=>{g+=`<path d="M ${X(e.t)-4} 14 L ${X(e.t)+4} 14 L ${X(e.t)} 21 Z" fill="#1c5cab"><title>d${e.t+1} ${e.label}</title></path>`});
+    SIM.detected.forEach(e=>{const c={warning:"#c98500",serious:"#d03b3b",info:"#0ca30c"}[e.sev]||"#2a78d6";
+      g+=`<circle cx="${X(e.t)}" cy="8" r="4" fill="${e.t<=t?c:"#c3c2b7"}"><title>d${e.t+1} ${e.label} — ${e.rule}</title></circle>`});
+    const px=X(t)+(CLOCK.playing?(X(Math.min(t+1,13))-X(t))*CLOCK.frac:0);
+    g+=`<line x1="${px}" x2="${px}" y1="4" y2="46" stroke="#0b0b0b" stroke-width="1.5"/><circle cx="${px}" cy="4" r="3" fill="#0b0b0b"/>`;
+    el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${g}</svg>`;
+    document.getElementById("d5tlday").textContent="DAY "+(t+1)+" / "+SIM.TICKS;
+  }
+  document.getElementById("d5timeline").addEventListener("click",e=>{
+    const el=document.getElementById("d5tlsvg");const r=el.getBoundingClientRect();
+    const frac=(e.clientX-r.left-14)/(r.width-28);
+    CLOCK.pause();CLOCK.seek(Math.round(frac*(SIM.TICKS-1)));
+  });
+  function tiles(t){
+    const k=SIM.days[t].kpis,prev=t>0?SIM.days[t-1].kpis:null;
+    const d=(cur,pr,fm)=>pr==null?"":(cur-pr===0?"— flat":((cur-pr>0?"▲ +":"▼ ")+fm(Math.abs(cur-pr))+" today"));
+    const cls=(cur,pr)=>pr!=null&&cur-pr<0?"d dn":"d";
+    document.getElementById("d5tiles").innerHTML=[
+      ["IMPRESSIONS",fmt.int(k.imp),d(k.imp,prev&&prev.imp,fmt.int),cls(k.imp,prev&&prev.imp)],
+      ["CLICKS",fmt.int(k.clicks),d(k.clicks,prev&&prev.clicks,fmt.int),"d"],
+      ["BLENDED CTR",fmt.pct(k.ctr),sparkSVG(SIM.series.ctr.map(r=>r.ctr),t,"#2a78d6",96,20),"spark"],
+      ["CARTS",fmt.int(k.carts),d(k.carts,prev&&prev.carts,fmt.int),"d"],
+      ["BUYS",fmt.int(k.buys),d(k.buys,prev&&prev.buys,fmt.int),"d"],
+      ["REVENUE",fmt.usd(k.revenue),d(k.revenue,prev&&prev.revenue,v=>"$"+v.toFixed(0)),"d"],
+      ["ACTIVE NEEDS",fmt.int(k.needs),sparkSVG(SIM.series.needs,t,"#1baf7a",96,20,{min:0}),"spark"],
+      ["AVG TRUST",k.trust==null?"—":k.trust.toFixed(3),sparkSVG(SIM.series.trust,t,"#2a78d6",96,20),"spark"],
+    ].map(x=>`<div class="panel d5-tile"><div class="l">${x[0]}</div><div class="v">${x[1]}</div>
+      ${x[3]==="spark"?x[2]:`<div class="${x[3]}">${x[2]||"&nbsp;"}</div>`}</div>`).join("");
+  }
+  function charts(t){
+    lineChart(document.getElementById("d5ctr"),{h:150,upto:t,gridY:4,yLabels:true,xLabels:true,
+      grid:"#efefe9",mut:"#898781",min:0,yFmt:v=>(100*v).toFixed(1)+"%",aria:"CTR by day per creative",
+      series:[{data:SIM.series.ctrByCreative.eco.map(r=>r.ctr),color:CRC.eco,fill:true},
+              {data:SIM.series.ctrByCreative.perf.map(r=>r.ctr),color:CRC.perf},
+              {data:SIM.series.ctrByCreative.comf.map(r=>r.ctr),color:CRC.comf}]});
+    /* funnel by creative */
+    const stages=["SAW","CLICKED","BROWSED","CARTED","BOUGHT"];
+    const cums={};CREATIVES.forEach(c=>cums[c.key]={SAW:0,CLICKED:0,BROWSED:0,CARTED:0,BOUGHT:0});
+    for(let i=0;i<=t;i++)SIM.days[i].events.forEach(e=>{
+      let key=null;
+      if(e.type==="SAW"||e.type==="CLICKED"){const cr=CREATIVES.find(c=>c.id===e.subject);key=cr&&cr.key}
+      else if(e.cause_creative){const cr=CREATIVES.find(c=>c.id===e.cause_creative);key=cr&&cr.key}
+      if(key&&cums[key][e.type]!=null)cums[key][e.type]++});
+    const mx=Math.max(1,...CREATIVES.map(c=>cums[c.key].SAW));
+    document.getElementById("d5funnel").innerHTML=CREATIVES.map(c=>
+      `<div style="font-family:var(--mono);font-size:10px;color:${CRC[c.key]};font-weight:700;margin-top:7px">${c.name.toUpperCase()}</div>`+
+      stages.map(st=>`<div class="fbar"><div class="fl">${st}</div><div class="ft">
+        <div class="ff" style="width:${(100*cums[c.key][st]/mx).toFixed(2)}%;background:${CRC[c.key]};opacity:${st==="SAW"?.45:st==="CLICKED"?.65:st==="BROWSED"?.8:1}"></div></div>
+        <div class="fv">${cums[c.key][st]}</div></div>`).join("")).join("");
+    /* pages */
+    const ps={[PAGES.consistent]:{V:0,B:0},[PAGES.violation]:{V:0,B:0}};
+    for(let i=0;i<=t;i++)SIM.days[i].events.forEach(e=>{
+      if(e.type==="VISITED"&&ps[e.subject])ps[e.subject].V++;
+      if(e.type==="BOUNCED"&&ps[e.subject])ps[e.subject].B++});
+    const rate=p=>{const n=p.V+p.B;return n?p.B/n:null};
+    document.getElementById("d5pages").innerHTML=[["consistent 4000001",rate(ps[PAGES.consistent]),"#2a78d6"],
+      ["violation 4000002",rate(ps[PAGES.violation]),"#d03b3b"]].map(r=>
+      `<div style="margin:12px 0"><div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:#52514e">
+        <span>${r[0]}</span><b style="color:#0b0b0b">${r[1]==null?"—":(100*r[1]).toFixed(1)+"%"}</b></div>
+       <div class="ft" style="height:12px;background:#efefe9;border-radius:2px;overflow:hidden;margin-top:4px">
+        <div style="height:100%;width:${r[1]==null?0:(100*r[1]).toFixed(1)}%;background:${r[2]}"></div></div></div>`).join("")+
+      `<div style="font-size:11px;color:#898781;margin-top:6px">CloudWalk clicks split 50/50 by the seeded page substream; the violation page hides the promised claim.</div>`;
+    /* small multiples */
+    const sm=[
+      ["ECO PREFERENCE · BY SEGMENT GROUP",el=>lineChart(el,{h:105,upto:t,gridY:2,yLabels:true,grid:"#efefe9",mut:"#898781",min:.3,max:.75,yFmt:v=>v.toFixed(2),
+        series:[{data:SIM.series.driftEco[0],color:"#1baf7a",label:"eco"},{data:SIM.series.driftEco[1],color:"#2a78d6"},{data:SIM.series.driftEco[2],color:"#eb6834"}]})],
+      ["AVG BRAND TRUST · SHOECO",el=>lineChart(el,{h:105,upto:t,gridY:2,yLabels:true,grid:"#efefe9",mut:"#898781",min:.4,max:.8,yFmt:v=>v.toFixed(2),
+        series:[{data:SIM.series.trust,color:"#2a78d6",fill:true}]})],
+      ["ACTIVE NEEDS",el=>lineChart(el,{h:105,upto:t,gridY:2,yLabels:true,grid:"#efefe9",mut:"#898781",min:0,yFmt:v=>v.toFixed(0),
+        bands:[[6,9,"#dcefe6"]],series:[{data:SIM.series.needs,color:"#1baf7a",fill:true}]})],
+      ["REFERENCE PRICE vs SHELF",el=>lineChart(el,{h:105,upto:t,gridY:2,yLabels:true,grid:"#efefe9",mut:"#898781",min:29,max:41,yFmt:v=>"$"+v.toFixed(0),
+        bands:[[3,4,"#f6e5c4"],[8,9,"#f6e5c4"],[12,13,"#f6e5c4"]],
+        series:[{data:SIM.series.shelf,color:"#898781",dash:"3 3"},{data:SIM.series.ref,color:"#c98500",fill:true}]})],
+      ["MESSAGE FATIGUE · MEAN TOP-CREATIVE EXPOSURES",el=>lineChart(el,{h:105,upto:t,gridY:2,yLabels:true,grid:"#efefe9",mut:"#898781",min:0,max:6,yFmt:v=>v.toFixed(1),
+        series:[{data:SIM.series.fatigue.map(v=>v*6),color:"#eb6834",fill:true}]})],
+      ["DISCOUNT PREFERENCE · DEAL SEGMENTS (PROMO ADDICTION)",el=>lineChart(el,{h:105,upto:t,gridY:2,yLabels:true,grid:"#efefe9",mut:"#898781",min:.4,max:.8,yFmt:v=>v.toFixed(2),
+        bands:[[3,4,"#f6e5c4"],[8,9,"#f6e5c4"],[12,13,"#f6e5c4"]],
+        series:[{data:SIM.series.driftDiscount,color:"#c98500",fill:true}]})],
+    ];
+    document.getElementById("d5small").innerHTML=sm.map((s,i)=>`<div class="panel"><div class="ph">${s[0]}</div><div class="pc" id="d5sm${i}"></div></div>`).join("");
+    sm.forEach((s,i)=>s[1](document.getElementById("d5sm"+i)));
+  }
+  function tables(t){
+    let eh=`<tr><th>Day</th><th>Kind</th><th>Event</th><th>Detail</th></tr>`;
+    const evs=[];
+    SIM.scheduled.forEach(e=>{if(e.t<=t)evs.push({t:e.t,k:"sched",kl:"SCHED",l:e.label,d:e.detail})});
+    SIM.detected.forEach(e=>{if(e.t<=t)evs.push({t:e.t,k:e.sev,kl:"DETECT",l:e.label,d:e.detail+" · rule: "+e.rule})});
+    evs.sort((a,b)=>b.t-a.t);
+    document.getElementById("d5events").innerHTML=eh+evs.map(e=>
+      `<tr><td class="num">d${e.t+1}</td><td><span class="evk ${e.k}">${e.kl}</span></td><td><b>${e.l}</b></td><td style="color:#52514e">${e.d}</td></tr>`).join("");
+    let ah=`<tr><th>Day</th><th>Shopper</th><th>Segment</th><th>Action</th><th>Detail</th></tr>`,rows=[];
+    for(let d=t;d>=Math.max(0,t-1)&&rows.length<14;d--){
+      const evd=SIM.days[d].events.filter(e=>["CLICKED","BROWSED","CARTED","BOUGHT","BOUNCED","EXPERIENCED","NEED_ACTIVATED","NEED_SATISFIED"].includes(e.type));
+      for(let i=evd.length-1;i>=0&&rows.length<14;i--){const e=evd[i];const s=SIM.shoppers.find(x=>x.off===e.off);
+        rows.push(`<tr class="click" data-inspect="${e.off}"><td class="num">d${d+1}</td><td><b>${s.name} ${padO(e.off)}</b></td>
+          <td style="color:#52514e">${s.seg.name}</td><td class="mono">${e.type}</td>
+          <td style="color:#52514e">${e.type==="BOUGHT"?PRODUCT.name+" $"+e.price.toFixed(2):e.type==="EXPERIENCED"?"sat "+e.sat.toFixed(2):e.type==="NEED_ACTIVATED"?"urgency "+e.strength:e.subject}</td></tr>`)}
+    }
+    document.getElementById("d5act").innerHTML=ah+rows.join("");
+  }
+  function render(t){
+    document.getElementById("d5status").textContent=CLOCK.done?"COMPLETE":(CLOCK.playing?"RUNNING":"PAUSED");
+    document.getElementById("d5status").classList.toggle("done",CLOCK.done);
+    timeline(t);tiles(t);charts(t);tables(t);tr.sync();
+  }
+  render(CLOCK.tick);
+  return {show(){render(CLOCK.tick)},
+    onClock(ev){
+      if(ev.type==="advance"||ev.type==="seek"||ev.type==="complete")render(CLOCK.tick);
+      else if(ev.type==="frame")timeline(CLOCK.tick);
+      else render(CLOCK.tick);
+    }};
+});
+</script>
+
+<!-- ==================== PREREQ CHECK ==================== -->
+<section id="tab-prereqs">
+  <div class="doc">
+    <p class="eyebrow">Verified against shipped code · 2026-08-18 · branch = origin/main</p>
+    <h1 style="font-size:26px">Prerequisite check — the live UI is barely blocked at all</h1>
+    <p class="lede" style="margin-top:8px">Phase 3/4 shipped more live surface than PLAN.md's Phase-5 text assumes.
+      Below is what the frontend can read today, what needs a small additive endpoint, and the two items that need
+      Atishay's ack.</p>
+
+    <h2>1 · What the frontend can already read live</h2>
+    <ul>
+      <li><strong>HTTP, shipped</strong> (<code>runner/api.py</code>, via <code>python -m shopsim.runner serve</code>):
+        <code>GET /runs</code> (registry rows incl. status + run_index), <code>GET /runs/{id}/progress</code>
+        (atomic per tick: tick, ticks, status, per-phase wall-clocks), <code>GET /runs/{id}/results</code> (404 until complete).</li>
+      <li><strong>On disk every tick</strong> (not yet over HTTP): <code>events.jsonl</code> — fsync'd per tick, every
+        funnel event with shopper id / subject / cause_creative / price, plus NEED lifecycle records and TICK_COMPLETE
+        markers (free tick bucketing); <code>results_state_&#123;tick&#125;.json</code> — the full ResultsAccumulator
+        every tick: funnel by segment, CTR by day, per-creative + per-page funnels, goal split,
+        <strong>preference-drift series per concept×segment (a live PREFERS sweep already runs every tick)</strong>,
+        reference-price trajectory, motif stats.</li>
+      <li><strong>HydraMem mid-run reads</strong> (Bolt, second process — the exact pattern already ships in
+        <code>export-fixtures</code>): <code>get_shopper_worldview</code> (beliefs + confidence + provenance sentences),
+        <code>get_preference_history</code> (cause-stamped chain incl. SEED), <code>get_belief_history</code>,
+        <code>get_trace</code> (motif paths + scalars).</li>
+    </ul>
+
+    <h2>2 · What is post-run only</h2>
+    <p>Final <code>results.json</code> (but its content is derivable mid-run:
+      <code>ResultsAccumulator.from_state().results(manifest)</code> renders the full C3 shape from any tick's snapshot —
+      verified that <code>results()</code> never touches the constructor-only params) and the cross-arm
+      <code>comparison.json</code> written after all arms finish.</p>
+
+    <h2>3 · Minimal backend additions (~200–250 lines in api.py + ~15 in results.py, all additive)</h2>
+    <div class="wide"><table>
+      <tr><th>Endpoint</th><th>Purpose</th><th>Reuses</th></tr>
+      <tr><td><code>GET /runs/{id}/manifest</code></td><td>t0 / tick_seconds / ticks / seed — the frontend clock derivation</td><td><code>_run_file</code></td></tr>
+      <tr><td><code>GET /runs/{id}/events?after=&lt;byte&gt;</code></td><td>JSONL tail for LIVE polling and REPLAY paging; drops a trailing partial line; returns <code>{records, next, eof}</code></td><td>byte seek, no scan</td></tr>
+      <tr><td><code>GET /runs/{id}/results-live</code></td><td>latest results_state → full C3 shape mid-run (+<code>live_extras.belief_avg</code>); live and final views become shape-identical</td><td><code>from_state().results()</code></td></tr>
+      <tr><td><code>GET /runs/{id}/config</code></td><td>raw + effective schedule/promo/wave windows — the scheduled-Market-Events source</td><td><code>RunConfig</code> helpers</td></tr>
+      <tr><td><code>GET /runs/{id}/population</code></td><td>segment per offset + 13 persona names (identity only — no traits/coeffs, Law 12/15)</td><td><code>generate_population</code> recompute, cached</td></tr>
+      <tr><td><code>GET /runs/{id}/shoppers/{offset}/…</code></td><td>worldview · preference-history/{concept} · belief-history · trace/{stimulus}</td><td>the <code>_export_shoppers</code> pattern; per-run HydraMem + lock</td></tr>
+      <tr><td><code>GET/POST /experiments</code>(+<code>/{name}</code>)</td><td>list, arm status ("arm 2/3 running"), launch via detached <code>python -m shopsim.experiments run</code>; 409 while one runs (registry RMW is not concurrent-safe)</td><td><code>load_spec</code>, pid + log files</td></tr>
+      <tr><td><code>POST /experiments/ingest-ads</code></td><td>image upload → ingest CLI; loud 4xx if OPENAI_API_KEY unset</td><td><code>shopsim.experiments.ingest</code></td></tr>
+    </table></div>
+    <p><strong>Belief sweep</strong> (the one engine change): a third statement per shopper in the existing
+      <code>end_tick_sweep</code> batch reads live HOLDS beliefs → <code>belief_avg["trust:{brand}:{seg}"]</code> series in
+      results_state (round-trips with <code>.get()</code>, never enters C3 keys — Phase-6's <code>belief_*</code>
+      placeholders stay Atishay's). Powers live "avg brand trust".</p>
+
+    <h2>4 · Polling vs SSE — polling wins</h2>
+    <p>Ticks land every ~5–8 s at demo scale (78.4 s measured for 200×14). 2 s polls of three small atomic files,
+      with results-live fetched only when <code>progress.tick</code> advances. No SSE/WebSockets — nothing at this
+      cadence justifies them for a hackathon.</p>
+
+    <h2>5 · Is anything blocking Phase 5?</h2>
+    <p><strong>No.</strong> Two items need Atishay's ack at the next sync (his lane), then everything above is additive:</p>
+    <ul class="checklist">
+      <li>CONTRACT v3.5-draft: the endpoint set above added to <code>runner/api.py</code> (his file, read-only additions + the launch POST that spawns the engine — Law 8 intact: the dashboard still never writes the graph).</li>
+      <li>CONTRACT v3.5-draft: the ~15-line belief sweep in <code>runner/results.py::end_tick_sweep</code> (overlaps his Phase-6 belief_drift work — flagged, never merged silently).</li>
+    </ul>
+    <h3>Gotchas found (planned around, not blockers)</h3>
+    <ul>
+      <li>Preference before→after values are <em>not</em> in events.jsonl (supersessions are recomputed, never logged) —
+        the live feed budgets ≤ 8 <code>preference-history</code> fetches/tick for featured shoppers.</li>
+      <li><code>results_state</code> keeps only the last 2 ticks — results-live must glob-max and retry-lower on the
+        deletion race; replay never needs old snapshots (final results carry every cumulative series).</li>
+      <li><code>run_config.json</code> lives in <code>runs/experiments/&lt;label&gt;/</code>, not per-run dirs —
+        <code>/config</code> resolves via the registry row's label.</li>
+      <li>Repeated demo runs degrade HydraDB write throughput as the store grows — keep the documented store-reset
+        ritual before the video take.</li>
+    </ul>
+    <h3>Mock API surface in this artifact</h3>
+    <p>Every design here calls data shaped like those endpoints; the boot script exposes <code>window.mockApi</code>
+      with the same names. Two live samples from this page's mock market:</p>
+    <details><summary style="cursor:pointer;color:var(--accent-ink)">mockApi.getEvents(after) → sample records</summary>
+      <div class="wide"><pre class="mono" id="prSample1" style="font-size:11px;background:var(--surface);border:1px solid var(--hair);border-radius:8px;padding:12px"></pre></div></details>
+    <details><summary style="cursor:pointer;color:var(--accent-ink)">mockApi.getWorldview(42) → Maya's payload (golden chain)</summary>
+      <div class="wide"><pre class="mono" id="prSample2" style="font-size:11px;background:var(--surface);border:1px solid var(--hair);border-radius:8px;padding:12px"></pre></div></details>
+  </div>
+</section>
+
+<!-- ==================== REVISED PLAN ==================== -->
+<section id="tab-plan">
+  <div class="doc">
+    <p class="eyebrow">Proposed · replaces PLAN.md Phase 5 after a design is picked</p>
+    <h1 style="font-size:26px">Revised Phase 5 — live market first, on the real stack</h1>
+    <p class="lede" style="margin-top:8px">Production targets real HydraMem + the real runner API + real experiment
+      adapters from the start; mocks stay for unit tests and this artifact. Ordered so a working live demo exists as
+      early as possible.</p>
+    <div class="note-box"><span class="mono">CONFIGURE → RUN → LIVE MARKET (pulse · floor · activity · drift · events)
+      → RUN COMPLETE → FULL RESULTS → SHOPPER EXPLORER → RECOMMENDATIONS</span><br>
+      <span style="color:var(--ink-2)">macro→micro: MARKET “what is happening” → SEGMENTS “who responds” → SHOPPER
+      “what did this person do” → WORLDVIEW “how have they changed” → TRACE “why this decision”.</span></div>
+    <div class="wide"><table>
+      <tr><th style="width:14%">Sub-phase</th><th style="width:10%">Est.</th><th>Build items</th></tr>
+      <tr><td><strong>5.0 Design artifact</strong></td><td>done</td><td>This page. <strong>Decision made 2026-08-18: V2 · The Trading Terminal</strong> (Terminal base + Floor liveness, no particles; Broadcast = story-mode toggle; Living Graph = deepened inspector feature — see tab 1). Production starts after a quick V2 glance.</td></tr>
+      <tr><td><strong>5.1 Live data plane</strong></td><td>~3–4 h</td><td>The endpoint set + belief sweep (see Prereq tab) + <code>tests/test_api_live.py</code> (byte-tail partial-line guard; results-live == from_state().results(); population == prepare()'s segment_by_offset; 409-when-busy; one real-store shopper-endpoint test) + CONTRACT v3.5-draft entry.</td></tr>
+      <tr><td><strong>5.2 Web skeleton + data layer</strong></td><td>~3 h</td><td>Next.js 14 app router + TS + Tailwind + zustand in <code>/web</code>. Routes: <code>/</code> (runs+experiments), <code>/launch</code>, <code>/market/[runId]</code> (ONE command-center route, LIVE vs REPLAY by status), <code>/experiments/[name]</code>, <code>/runs/[runId]/results</code>; inspector = drawer with <code>?shopper=</code> URL state. <code>lib/market-clock.ts</code> + LiveDriver (poll, follow-head) + ReplayDriver (page events once, index by TICK_COMPLETE, slice cumulative series; ×0.5–×16 + scrub). <code>lib/detectors.ts</code>: threshold rules in one exported const, rule text rendered in the UI — same code live and replay. Proxy rewrite <code>/api/sim/*</code> → engine (no CORS).</td></tr>
+      <tr><td><strong>5.3 Live market</strong></td><td>~5–6 h</td><td>The chosen design's components: DayProgress, KpiRow, MarketFloor (≤200 retained identities), ActivityFeed (interestingness-ranked; real before→after via ≤8 history fetches/tick), PulsePanel (needs pressure, belief_avg trust, fatigue, CTR), DriftCharts, EventRail. Checkpoint: launch a 200×14 ad_test, watch live end-to-end, reopen as replay, scrub.</td></tr>
+      <tr><td><strong>5.4 Launcher</strong></td><td>~2–3 h</td><td>4 spec types, seed/ticks/population, scenario packs (marathon-season), promo toggle, page-A/B pair, creatives table + image dropzone → ingest-ads. Refusals surfaced verbatim (409 busy, missing key, P1 stubs).</td></tr>
+      <tr><td><strong>5.5 Shopper explorer</strong></td><td>~4 h</td><td>Four panels on the shopper endpoints: diary · worldview (belief cards: value + confidence bar + provenance sentence) · preference timeline (cause chips incl. SEED) · goals &amp; experience (deadline countdown) — plus motif why-trace as paths. Acceptance: the golden-chain shopper renders digit-exact. Replay: as-of filter chains by t/valid_to.</td></tr>
+      <tr><td><strong>5.6 Results + comparison</strong></td><td>~3 h</td><td>C3 views reuse the live components (shape-identical by construction); comparison.json views; synced multi-arm replay — N ReplayDrivers, one clock, paired-offset highlighting (shared seed = same population).</td></tr>
+      <tr><td><strong>5.7 Recommendations + polish</strong></td><td>~2–3 h</td><td>Grade-1 rules with cited numbers (need-on/off conversion multiple, fatigue onset exposure count, rotate-concepts, winner-by-segment, bounce delta, ref-price erosion). docker-compose engine+web services; demo script.</td></tr>
+    </table></div>
+    <h3>Cut-line if slipping (in order)</h3>
+    <p>5.7 recommendations → synced side-by-side (keep tabbed arm replay) → design flourishes (keep KPI/feed/charts core)
+      → launcher image upload (keep text creatives).</p>
+    <h3>Decisions already locked</h3>
+    <ul>
+      <li>Dual LIVE + REPLAY driver — one MarketClock, two sources.</li>
+      <li>Ad-test arms watched sequentially live; multi-creative side-by-side is synced replay after arms finish.</li>
+      <li>Belief sweep added, flagged to Atishay (CONTRACT v3.5-draft) — never merged silently.</li>
+      <li>Designs calibrated to 200 shoppers × 14–30 days; the floor animates retained identities, never anonymous decoration.</li>
+      <li><strong>2026-08-18 design pick:</strong> V2 Trading Terminal (Terminal × Floor, zero particle theater — nothing moves without a real value change). Broadcast = story-mode toggle only. Living Graph ships all four depth levers: decision replay (new <code>GET /runs/{id}/shoppers/{offset}/decision-preview/{stimulus}</code> — pure <code>appraise()</code> + a public <code>stage_probabilities()</code> helper in choice.py), version rails, as-of-day scrubbing, belief-vs-truth strip (cut-order: divergence → scrubbing).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== V2 · THE TRADING TERMINAL (fused) ==================== -->
+<style>
+#tab-v2 .v2-floor{display:grid;grid-template-columns:1fr 340px;gap:10px;margin-bottom:12px}
+@media (max-width:1000px){#tab-v2 .v2-floor{grid-template-columns:1fr}}
+#tab-v2 .v2-heropanel{position:relative}
+#tab-v2 .v2-hero{padding:2px 8px 6px;cursor:crosshair}
+#tab-v2 .v2-tip{position:absolute;pointer-events:none;background:#0b0b0b;color:#fcfcfb;font-family:var(--mono);
+  font-size:10.5px;border-radius:6px;padding:6px 10px;z-index:6;line-height:1.7;white-space:nowrap;
+  box-shadow:0 4px 14px rgba(11,11,11,.25)}
+#tab-v2 .v2-tip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+#tab-v2 .v2-gates{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 12px 4px}
+#tab-v2 .v2-gate{border:1px solid #e1e0d9;border-top:3px solid var(--gc);border-radius:6px;padding:7px 10px 6px;background:#fff}
+#tab-v2 .v2-gate.off{opacity:.4}
+#tab-v2 .v2-gate .gn{font-weight:700;font-size:12.5px}
+#tab-v2 .v2-gate .gm{font-family:var(--mono);font-size:10px;color:#898781;margin-top:2px;display:flex;gap:8px;align-items:center}
+#tab-v2 .v2-gate .gm b{color:#0b0b0b;font-size:11.5px}
+#tab-v2 .v2-flow{padding:6px 12px 4px}
+#tab-v2 .v2-frow{display:flex;align-items:center;gap:9px;margin:8px 0}
+#tab-v2 .v2-frow .fl{width:56px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:#52514e;text-align:right;flex:none}
+#tab-v2 .v2-frow .ftrack{flex:1;height:16px;background:#efefe9;border-radius:3px;display:flex;gap:2px;padding:0;overflow:hidden}
+#tab-v2 .v2-frow .fseg{height:100%;width:0%;transition:width .7s cubic-bezier(.2,.8,.2,1)}
+#tab-v2 .v2-frow .fnum{width:44px;font-family:var(--mono);font-size:11.5px;font-weight:700;text-align:right;flex:none}
+#tab-v2 .v2-frow .fdelta{width:52px;flex:none;font-family:var(--mono);font-size:10px;color:#006300;opacity:0;transition:opacity .3s}
+#tab-v2 .v2-frow .fdelta.on{opacity:1;animation:v2flash .9s ease}
+@keyframes v2flash{0%{color:#0b0b0b}100%{color:#006300}}
+#tab-v2 .v2-movers{padding:4px 12px 12px}
+#tab-v2 .v2-movers .mh{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:#898781;margin:6px 0 6px}
+#tab-v2 .v2-mchips{display:flex;flex-wrap:wrap;gap:6px;min-height:26px}
+#tab-v2 .v2-mchip{font-family:var(--mono);font-size:10.5px;border:1px solid #e1e0d9;border-radius:4px;
+  padding:2.5px 8px;background:#fff;color:#0b0b0b;animation:v2in .3s ease}
+#tab-v2 .v2-mchip b{font-weight:700}
+#tab-v2 .v2-mchip .st{font-weight:700;margin-left:5px}
+#tab-v2 .v2-mchip:hover{border-color:#2a78d6}
+@keyframes v2in{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+#tab-v2 .v2-tape{font-family:var(--mono);font-size:10.8px;line-height:1.8;max-height:432px;overflow-y:auto;
+  scrollbar-width:thin;padding:4px 12px 10px}
+#tab-v2 .v2-tape .tl-line{display:block;width:100%;text-align:left;border-bottom:1px dashed #e9e8e0;padding:2px 0;color:#0b0b0b}
+#tab-v2 .v2-tape .tl-line:hover{background:#f2f6fc}
+#tab-v2 .v2-tape .d{color:#898781;margin-right:7px}
+#tab-v2 .v2-tape .who{color:#1c5cab;font-weight:700}
+#tab-v2 .v2-tape .up{color:#006300}
+#tab-v2 .v2-tape .dn{color:#a03516}
+#tab-v2 .v2-tape .alert{border-left:3px solid #c98500;background:#fdf8ec;padding:3px 8px;margin:5px 0;border-radius:3px;
+  border-bottom:none;display:block}
+#tab-v2 .v2-tape .alert.serious{border-left-color:#d03b3b;background:#fbf0ee}
+#tab-v2 .v2-tape .alert.sched{border-left-color:#2a78d6;background:#f0f5fc}
+#tab-v2 .v2-tape .alert.info{border-left-color:#0ca30c;background:#eef7f0}
+#tab-v2 .v2-tape .alert .ah{font-size:9px;letter-spacing:.14em;color:#898781}
+#tab-v2 .v2-tape .alert .an{font-weight:700;font-family:var(--sans);font-size:12px}
+#tab-v2 .v2-tape .alert .ad{font-family:var(--sans);font-size:11px;color:#52514e}
+#tab-v2 .v2-tape .alert .rule{font-size:9.5px;color:#898781;margin-top:1px}
+#tab-v2 .v2-storybtn{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;
+  border:1px solid #c3c2b7;border-radius:6px;padding:4px 12px;color:#52514e}
+#tab-v2 .v2-storybtn.on{border-color:#a03516;color:#a03516;background:#fbf0ee}
+#tab-v2 .v2-story{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;
+  background:rgba(11,11,11,.38);padding:20px}
+#tab-v2 .v2-story.on{display:flex}
+#tab-v2 .v2-scard{background:#fcfcfb;border:1px solid #e1e0d9;border-radius:12px;max-width:660px;width:100%;
+  padding:26px 30px 22px;position:relative;box-shadow:0 12px 40px rgba(11,11,11,.25)}
+#tab-v2 .v2-scard .se{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:#898781}
+#tab-v2 .v2-scard h2{font-size:27px;font-weight:800;margin:6px 0 2px}
+#tab-v2 .v2-scard .ss{color:#52514e;font-size:13px;margin-bottom:16px}
+#tab-v2 .v2-scard .sbar{height:14px;background:#efefe9;border-radius:7px;position:relative;overflow:hidden;max-width:480px}
+#tab-v2 .v2-scard .sbar .was{position:absolute;inset:0 auto 0 0;background:#c9c6ba;border-radius:7px}
+#tab-v2 .v2-scard .sbar .now{position:absolute;inset:0 auto 0 0;background:#006300;border-radius:7px;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+#tab-v2 .v2-scard .sbar .now.dn{background:#a03516}
+#tab-v2 .v2-scard .svals{font-family:var(--mono);font-size:13.5px;font-weight:700;margin-top:6px}
+#tab-v2 .v2-scard .scause{font-size:13px;color:#52514e;margin-top:12px;font-style:italic}
+#tab-v2 .v2-scard .sx{position:absolute;top:10px;right:14px;font-size:19px;color:#898781;padding:4px 8px}
+#tab-v2 .v2-scard .sx:hover{color:#0b0b0b}
+#tab-v2 .v2-scard .sopen{font-family:var(--mono);font-size:11px;border:1px solid #c3c2b7;border-radius:6px;
+  padding:4px 11px;color:#52514e;margin-top:16px}
+#tab-v2 .v2-scard .sopen:hover{border-color:#0b0b0b;color:#0b0b0b}
+#tab-v2 .v2-sbanner{position:absolute;top:-46px;left:0;right:0;text-align:center}
+#tab-v2 .v2-sbanner span{display:inline-block;background:#16151d;color:#f2f1f6;font-family:var(--mono);
+  font-size:11.5px;letter-spacing:.1em;border-radius:6px;padding:6px 16px}
+#tab-v2 .v2-sdots{display:flex;gap:5px;margin-top:14px}
+#tab-v2 .v2-sdots i{width:7px;height:7px;border-radius:50%;background:#c9c6ba}
+#tab-v2 .v2-sdots i.on{background:#0b0b0b}
+</style>
+<section id="tab-v2">
+<div class="d5-root">
+  <div class="d5-head">
+    <div class="d5-run"><b>ad-test · ecostride-vs-apex-vs-cloudwalk</b> · seed 415 · 200 shoppers · arm 1/3 · formula mind</div>
+    <div class="d5-status" id="v2status">RUNNING</div>
+    <button class="v2-storybtn" id="v2storybtn" aria-pressed="false">STORY ▸</button>
+    <div class="tr" id="v2tr"></div>
+  </div>
+  <div class="d5-tiles" id="v2tiles"></div>
+  <div class="v2-floor">
+    <div class="panel v2-heropanel">
+      <div class="ph" style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap">
+        <span>THE RACE · CTR BY DAY · PER CREATIVE — CLICK OR DRAG TO SCRUB · ▮ PROMO · ▨ WAVE · ▼ SCHEDULED · ● DETECTED</span>
+        <span id="v2tlday" class="num" style="color:#0b0b0b;font-size:12px"></span></div>
+      <div class="v2-gates" id="v2gates"></div>
+      <div id="v2hero" class="v2-hero"></div>
+      <div id="v2tip" class="v2-tip" hidden></div>
+    </div>
+    <div class="panel">
+      <div class="ph">THE TAPE · EVERY LINE IS A REAL EVENT</div>
+      <div class="v2-tape" id="v2tape" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="d5-row2">
+    <div class="panel">
+      <div class="ph">FUNNEL FLOW · WIDTHS = CUMULATIVE COUNTS · SEGMENTS = CREATIVES</div>
+      <div class="v2-flow" id="v2flow"></div>
+      <div class="v2-movers"><div class="mh">MOVED TODAY · REAL SHOPPERS WHO ADVANCED · CLICK TO INSPECT</div>
+        <div class="v2-mchips" id="v2movers"></div></div>
+    </div>
+    <div class="panel"><div class="ph">PAGE A/B · BOUNCE RATE</div><div class="pc" id="v2pages"></div></div>
+    <div class="panel"><div class="ph">MARKET EVENTS · LEDGER</div><div class="pc" style="overflow-x:auto;max-height:250px;overflow-y:auto"><table id="v2events"></table></div></div>
+  </div>
+  <div class="d5-sm" id="v2small"></div>
+  <div class="panel d5-note"><b>V2 · The Trading Terminal — hero-first revision.</b> <b>THE RACE is the centerpiece</b>:
+    the CTR-by-day line chart at full scale, drawing forward as each tick lands — the wearout arcs, promo re-spikes,
+    and the creative race ARE the market's story. It absorbed the master timeline's job: scrub by clicking/dragging
+    anywhere on it; promo/wave bands, scheduled ▼ and detected ● markers live on the chart; while a day is in flight
+    the last segment draws dashed (in production: computed from the real live event tail) and solidifies at
+    TICK_COMPLETE. Everything else supports: tape right, funnel flow + movers demoted below, small multiples,
+    <b>STORY</b> toggle for the demo. The inspector carries the deepened graph (decision replay shaped like
+    <code>/decision-preview</code> — now a REAL, shipped, tested endpoint — plus the version rail). Nothing on this
+    screen moves without a real value change.</div>
+  <div class="v2-story" id="v2story" aria-hidden="true">
+    <div class="v2-scard" id="v2scard"></div>
+  </div>
+</div>
+</section>
+<script>
+registerDesign("v2",function(){
+  const root=document.getElementById("tab-v2");
+  document.getElementById("v2tr").innerHTML=transportHTML("x").replace('class="x"','style="display:contents"');
+  const tr=wireTransport(root);
+  const CRC={eco:"#1baf7a",perf:"#2a78d6",comf:"#eb6834"};
+  const STAGES=[["SAW",.45],["CLICKED",.62],["BROWSED",.78],["CARTED",.9],["BOUGHT",1]];
+  let storyOn=false,storyIdx=-1;
+  /* ---- persistent flow DOM (so widths transition instead of rebuilding) ---- */
+  document.getElementById("v2gates").innerHTML=CREATIVES.map(c=>
+    `<div class="v2-gate" id="v2g-${c.key}" style="--gc:${c.color}"><div class="gn">${c.name}</div>
+     <div class="gm"><span>CTR <b id="v2gc-${c.key}">—</b></span><span id="v2gx-${c.key}">0 imp</span><span id="v2gs-${c.key}"></span></div></div>`).join("");
+  document.getElementById("v2flow").innerHTML=STAGES.map(s=>
+    `<div class="v2-frow"><div class="fl">${s[0]}</div><div class="ftrack">${
+      CREATIVES.map(c=>`<div class="fseg" id="v2fs-${s[0]}-${c.key}" style="background:${CRC[c.key]};opacity:${s[1]}"></div>`).join("")
+    }</div><div class="fnum num" id="v2fn-${s[0]}">0</div><div class="fdelta" id="v2fd-${s[0]}"></div></div>`).join("");
+  function cumsUpTo(t){
+    const cums={};CREATIVES.forEach(c=>cums[c.key]={SAW:0,CLICKED:0,BROWSED:0,CARTED:0,BOUGHT:0});
+    for(let i=0;i<=t;i++)SIM.days[i].events.forEach(e=>{
+      let key=null;
+      if(e.type==="SAW"||e.type==="CLICKED"){const cr=CREATIVES.find(c=>c.id===e.subject);key=cr&&cr.key}
+      else if(e.cause_creative){const cr=CREATIVES.find(c=>c.id===e.cause_creative);key=cr&&cr.key}
+      if(key&&cums[key][e.type]!=null)cums[key][e.type]++});
+    return cums;
+  }
+  function updateFlow(t){
+    const cums=cumsUpTo(t);
+    const total=Math.max(1,CREATIVES.reduce((a,c)=>a+cums[c.key].SAW,0));
+    STAGES.forEach(s=>{
+      let stageTotal=0,today=0;
+      CREATIVES.forEach(c=>{
+        const n=cums[c.key][s[0]];stageTotal+=n;
+        document.getElementById(`v2fs-${s[0]}-${c.key}`).style.width=(100*n/total).toFixed(2)+"%";
+      });
+      SIM.days[t].events.forEach(e=>{if(e.type===s[0])today++});
+      document.getElementById("v2fn-"+s[0]).textContent=stageTotal;
+      const d=document.getElementById("v2fd-"+s[0]);
+      if(today>0){d.textContent="+"+today+" today";d.classList.remove("on");void d.offsetWidth;d.classList.add("on")}
+      else{d.classList.remove("on")}
+    });
+    CREATIVES.forEach(c=>{
+      const g=document.getElementById("v2g-"+c.key);g.classList.toggle("off",t<c.start);
+      const row=SIM.series.ctrByCreative[c.key][t];
+      document.getElementById("v2gc-"+c.key).textContent=row.ctr==null?"—":(100*row.ctr).toFixed(1)+"%";
+      document.getElementById("v2gx-"+c.key).textContent=cums[c.key].SAW+" imp";
+      document.getElementById("v2gs-"+c.key).innerHTML=sparkSVG(SIM.series.ctrByCreative[c.key].map(r=>r.ctr),t,CRC[c.key],54,16);
+    });
+  }
+  function updateMovers(t){
+    const day=SIM.days[t],prev=t>0?SIM.days[t-1].stageCum:new Uint8Array(200);
+    const movers=[];
+    for(let i=0;i<200;i++){const cur=day.stageCum[i];
+      if(cur>prev[i]&&cur>=2)movers.push({i,cur,d:cur-prev[i]})}
+    movers.sort((a,b)=>b.cur-a.cur||b.d-a.d);
+    document.getElementById("v2movers").innerHTML=movers.slice(0,12).map(m=>{
+      const s=SIM.shoppers[m.i];
+      return `<button class="v2-mchip" data-inspect="${s.off}"><b>${s.name} ${padO(s.off)}</b>
+        <span class="st" style="color:${m.cur===5?"#9a6b00":"#1c5cab"}">→ ${STAGE_NAMES[m.cur].toUpperCase()}</span></button>`}).join("")
+      ||'<span style="font-family:var(--mono);font-size:10.5px;color:#898781">no stage advances yet today</span>';
+  }
+  function updateTape(t){
+    let html="";
+    const ev=SIM.eventsAt(t);
+    ev.det.forEach(e=>html+=`<span class="alert ${e.sev}"><span class="ah">DAY ${t+1} · DETECTED</span><span class="an" style="display:block">${e.label}</span><span class="ad" style="display:block">${e.detail}</span><span class="rule" style="display:block">rule: ${e.rule}</span></span>`);
+    ev.sched.forEach(e=>html+=`<span class="alert sched"><span class="ah">DAY ${t+1} · SCHEDULED</span><span class="an" style="display:block">${e.label}</span><span class="ad" style="display:block">${e.detail}</span></span>`);
+    for(let d=t;d>=Math.max(0,t-2);d--){
+      if(d<t)html+=`<span class="tl-line" style="color:#c3c2b7">── day ${d+1} ──</span>`;
+      SIM.days[d].feed.forEach(f=>{const s=SIM.shoppers.find(x=>x.off===f.off);
+        const dir=f.dir<0?"dn":"up",arrow=f.dir<0?"▼":"▲";
+        html+=`<button class="tl-line" data-inspect="${f.off}"><span class="d">d${d+1}</span><span class="who">${s.name.toUpperCase()} ${padO(f.off)}</span>
+          <span class="${dir}"> ${f.line} ${arrow}</span><span style="color:#898781"> · ${f.cause}</span></button>`});
+    }
+    document.getElementById("v2tape").innerHTML=html;
+  }
+  /* ---- THE RACE: hero CTR chart with absorbed timeline duties ---- */
+  const HERO_SERIES=[["eco","EcoStride"],["perf","Apex"],["comf","CloudWalk"]];
+  function hero(t){
+    const el=document.getElementById("v2hero");
+    const w=el.clientWidth||960,h=380,p={t:24,r:122,b:22,l:46};
+    const iw=w-p.l-p.r,ih=h-p.t-p.b,N=SIM.TICKS;
+    const X=d=>p.l+iw*d/(N-1);
+    const S=HERO_SERIES.map(([k,label])=>({k,label,color:CRC[k],
+      data:SIM.series.ctrByCreative[k].map(r=>r.ctr)}));
+    const vis=S.flatMap(s=>s.data.slice(0,t+1)).filter(v=>v!=null);
+    const yMax=Math.max(0.02,...vis)*1.18;
+    const Y=v=>p.t+ih*(1-v/yMax);
+    const playingMid=CLOCK.playing&&CLOCK.frac<1&&t>0;
+    const solidTo=playingMid?t-1:t;
+    const frac=CLOCK.playing?CLOCK.frac:1;
+    const px=playingMid?X(t-1)+(X(t)-X(t-1))*frac:X(t);
+    let g="";
+    [[3,4],[8,9],[12,13]].forEach(b=>g+=`<rect x="${X(b[0]).toFixed(1)}" y="${p.t}" width="${(X(Math.min(b[1],N-1))-X(b[0])).toFixed(1)}" height="${ih}" fill="#f6e5c4" opacity=".5"/>`);
+    g+=`<rect x="${X(6).toFixed(1)}" y="${p.t}" width="${(X(9)-X(6)).toFixed(1)}" height="${ih}" fill="#dcefe6" opacity=".55"/>`;
+    for(let i=0;i<=4;i++){const y=p.t+ih*i/4,v=yMax*(1-i/4);
+      g+=`<line x1="${p.l}" x2="${w-p.r}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#efefe9"/>`;
+      g+=`<text x="${p.l-7}" y="${(y+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#898781" font-family="ui-monospace,Menlo,monospace">${(100*v).toFixed(1)}%</text>`}
+    for(let d=0;d<N;d++)g+=`<text x="${X(d).toFixed(1)}" y="${h-5}" text-anchor="middle" font-size="9.5" fill="${d===t?"#0b0b0b":"#c3c2b7"}" font-weight="${d===t?"700":"400"}" font-family="ui-monospace,Menlo,monospace">${d+1}</text>`;
+    SIM.scheduled.forEach(e=>g+=`<path d="M ${(X(e.t)-4).toFixed(1)} 5 L ${(X(e.t)+4).toFixed(1)} 5 L ${X(e.t).toFixed(1)} 12 Z" fill="#1c5cab"><title>d${e.t+1} · ${e.label} — ${e.detail}</title></path>`);
+    SIM.detected.forEach(e=>{const c={warning:"#c98500",serious:"#d03b3b",info:"#0ca30c"}[e.sev]||"#2a78d6";
+      g+=`<circle cx="${X(e.t).toFixed(1)}" cy="7" r="4.5" fill="${e.t<=t?c:"#e1e0d9"}"><title>d${e.t+1} · ${e.label} — rule: ${e.rule}</title></circle>`});
+    const labels=[];
+    S.forEach(s=>{
+      let d="",started=false;const pts=[];
+      s.data.forEach((v,i)=>{if(i>solidTo||v==null)return;
+        d+=(started?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1);started=true;pts.push([i,v])});
+      if(started){
+        const first=pts[0],last=pts[pts.length-1];
+        g+=`<path d="${d} L ${X(last[0]).toFixed(1)} ${(p.t+ih).toFixed(1)} L ${X(first[0]).toFixed(1)} ${(p.t+ih).toFixed(1)} Z" fill="${s.color}" opacity="0.06"/>`;
+        g+=`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`;
+      }
+      let endY=null,endV=null;
+      if(started){const last=pts[pts.length-1];endY=Y(last[1]);endV=last[1];
+        if(!playingMid)g+=`<circle cx="${X(last[0]).toFixed(1)}" cy="${endY.toFixed(1)}" r="3.6" fill="${s.color}"/>`}
+      if(playingMid&&s.data[t]!=null&&s.data[t-1]!=null){
+        const vI=s.data[t-1]+(s.data[t]-s.data[t-1])*frac,yI=Y(vI);
+        g+=`<path d="M ${X(t-1).toFixed(1)} ${Y(s.data[t-1]).toFixed(1)} L ${px.toFixed(1)} ${yI.toFixed(1)}" fill="none" stroke="${s.color}" stroke-width="2" stroke-dasharray="4 4" opacity=".85"/>`;
+        g+=`<circle cx="${px.toFixed(1)}" cy="${yI.toFixed(1)}" r="4" fill="#fcfcfb" stroke="${s.color}" stroke-width="2"/>`;
+        endY=yI;endV=vI;
+      }
+      if(endY!=null)labels.push({y:endY,color:s.color,
+        text:`${s.label} ${endV==null?"—":(100*endV).toFixed(1)+"%"}${playingMid?" ~":""}`});
+    });
+    labels.sort((a,b)=>a.y-b.y);                       /* de-overlap end labels */
+    for(let i=1;i<labels.length;i++)labels[i].y=Math.max(labels[i].y,labels[i-1].y+15);
+    labels.forEach(l=>g+=`<text x="${w-p.r+10}" y="${(l.y+3.5).toFixed(1)}" font-size="11.5" font-weight="700" fill="${l.color}" font-family="ui-monospace,Menlo,monospace">${l.text}</text>`);
+    g+=`<line x1="${px.toFixed(1)}" x2="${px.toFixed(1)}" y1="${p.t-6}" y2="${p.t+ih}" stroke="#0b0b0b" stroke-width="1.4"/><circle cx="${px.toFixed(1)}" cy="${p.t-6}" r="3" fill="#0b0b0b"/>`;
+    el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" role="img" aria-label="CTR by day per creative — the race">${g}</svg>`;
+    el.dataset.pl=p.l;el.dataset.pr=p.r;
+    document.getElementById("v2tlday").textContent="DAY "+(t+1)+" / "+SIM.TICKS+(CLOCK.done?" · RUN COMPLETE":"");
+  }
+  const heroEl=document.getElementById("v2hero");
+  let heroDrag=false;
+  function heroDay(e){
+    const r=heroEl.getBoundingClientRect();
+    const pl=+heroEl.dataset.pl||46,pr=+heroEl.dataset.pr||122;
+    const f=(e.clientX-r.left-pl)/(r.width-pl-pr);
+    return Math.max(0,Math.min(SIM.TICKS-1,Math.round(f*(SIM.TICKS-1))));
+  }
+  heroEl.addEventListener("mousedown",e=>{heroDrag=true;CLOCK.pause();CLOCK.seek(heroDay(e))});
+  window.addEventListener("mouseup",()=>{heroDrag=false});
+  heroEl.addEventListener("mousemove",e=>{
+    if(heroDrag){CLOCK.seek(heroDay(e));return}
+    const d=heroDay(e),tip=document.getElementById("v2tip");
+    const rows=HERO_SERIES.map(([k,l])=>{
+      const v=d<=CLOCK.tick?SIM.series.ctrByCreative[k][d].ctr:null; /* never leak the future */
+      return `<div><i style="background:${CRC[k]}"></i>${l} ${v==null?"—":(100*v).toFixed(1)+"%"}</div>`}).join("");
+    tip.innerHTML=`<div style="color:#c3c2b7">day ${d+1}${d>CLOCK.tick?" · not yet simulated":""}</div>`+rows;
+    const pr=heroEl.parentElement.getBoundingClientRect();
+    tip.style.left=Math.min(e.clientX-pr.left+14,pr.width-170)+"px";
+    tip.style.top=(e.clientY-pr.top-8)+"px";
+    tip.hidden=false;
+  });
+  heroEl.addEventListener("mouseleave",()=>{document.getElementById("v2tip").hidden=true});
+  function tiles(t){
+    const k=SIM.days[t].kpis,prev=t>0?SIM.days[t-1].kpis:null;
+    const d=(cur,pr,fm)=>pr==null?"":(cur-pr===0?"— flat":((cur-pr>0?"▲ +":"▼ ")+fm(Math.abs(cur-pr))+" today"));
+    document.getElementById("v2tiles").innerHTML=[
+      ["IMPRESSIONS",fmt.int(k.imp),d(k.imp,prev&&prev.imp,fmt.int),"d"],
+      ["CLICKS",fmt.int(k.clicks),d(k.clicks,prev&&prev.clicks,fmt.int),"d"],
+      ["BLENDED CTR",fmt.pct(k.ctr),sparkSVG(SIM.series.ctr.map(r=>r.ctr),t,"#2a78d6",96,20),"spark"],
+      ["CARTS",fmt.int(k.carts),d(k.carts,prev&&prev.carts,fmt.int),"d"],
+      ["BUYS",fmt.int(k.buys),d(k.buys,prev&&prev.buys,fmt.int),"d"],
+      ["REVENUE",fmt.usd(k.revenue),d(k.revenue,prev&&prev.revenue,v=>"$"+v.toFixed(0)),"d"],
+      ["ACTIVE NEEDS",fmt.int(k.needs),sparkSVG(SIM.series.needs,t,"#1baf7a",96,20,{min:0}),"spark"],
+      ["AVG TRUST",k.trust==null?"—":k.trust.toFixed(3),sparkSVG(SIM.series.trust,t,"#2a78d6",96,20),"spark"],
+    ].map(x=>`<div class="panel d5-tile"><div class="l">${x[0]}</div><div class="v">${x[1]}</div>
+      ${x[3]==="spark"?x[2]:`<div class="d">${x[2]||"&nbsp;"}</div>`}</div>`).join("");
+  }
+  function charts(t){
+    const ps={[PAGES.consistent]:{V:0,B:0},[PAGES.violation]:{V:0,B:0}};
+    for(let i=0;i<=t;i++)SIM.days[i].events.forEach(e=>{
+      if(e.type==="VISITED"&&ps[e.subject])ps[e.subject].V++;
+      if(e.type==="BOUNCED"&&ps[e.subject])ps[e.subject].B++});
+    const rate=p=>{const n=p.V+p.B;return n?p.B/n:null};
+    document.getElementById("v2pages").innerHTML=[["consistent 4000001",rate(ps[PAGES.consistent]),"#2a78d6"],
+      ["violation 4000002",rate(ps[PAGES.violation]),"#d03b3b"]].map(r=>
+      `<div style="margin:12px 0"><div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:#52514e">
+        <span>${r[0]}</span><b style="color:#0b0b0b">${r[1]==null?"—":(100*r[1]).toFixed(1)+"%"}</b></div>
+       <div style="height:12px;background:#efefe9;border-radius:2px;overflow:hidden;margin-top:4px">
+        <div style="height:100%;width:${r[1]==null?0:(100*r[1]).toFixed(1)}%;background:${r[2]};transition:width .5s"></div></div></div>`).join("");
+    let eh=`<tr><th>Day</th><th>Kind</th><th>Event</th></tr>`;
+    const evs=[];
+    SIM.scheduled.forEach(e=>{if(e.t<=t)evs.push({t:e.t,k:"sched",kl:"SCHED",l:e.label})});
+    SIM.detected.forEach(e=>{if(e.t<=t)evs.push({t:e.t,k:e.sev,kl:"DETECT",l:e.label})});
+    evs.sort((a,b)=>b.t-a.t);
+    document.getElementById("v2events").innerHTML=eh+evs.map(e=>
+      `<tr><td class="num">d${e.t+1}</td><td><span class="evk ${e.k}">${e.kl}</span></td><td><b>${e.l}</b></td></tr>`).join("");
+    const sm=[
+      ["ECO PREFERENCE · BY SEGMENT GROUP",el=>lineChart(el,{h:105,upto:t,gridY:2,yLabels:true,grid:"#efefe9",mut:"#898781",min:.3,max:.75,yFmt:v=>v.toFixed(2),
+        series:[{data:SIM.series.driftEco[0],color:"#1baf7a",label:"eco"},{data:SIM.series.driftEco[1],color:"#2a78d6"},{data:SIM.series.driftEco[2],color:"#eb6834"}]})],
+      ["AVG BRAND TRUST · SHOECO",el=>lineChart(el,{h:105,upto:t,gridY:2,yLabels:true,grid:"#efefe9",mut:"#898781",min:.4,max:.8,yFmt:v=>v.toFixed(2),
+        series:[{data:SIM.series.trust,color:"#2a78d6",fill:true}]})],
+      ["ACTIVE NEEDS",el=>lineChart(el,{h:105,upto:t,gridY:2,yLabels:true,grid:"#efefe9",mut:"#898781",min:0,yFmt:v=>v.toFixed(0),
+        bands:[[6,9,"#dcefe6"]],series:[{data:SIM.series.needs,color:"#1baf7a",fill:true}]})],
+      ["REFERENCE PRICE vs SHELF",el=>lineChart(el,{h:105,upto:t,gridY:2,yLabels:true,grid:"#efefe9",mut:"#898781",min:29,max:41,yFmt:v=>"$"+v.toFixed(0),
+        bands:[[3,4,"#f6e5c4"],[8,9,"#f6e5c4"],[12,13,"#f6e5c4"]],
+        series:[{data:SIM.series.shelf,color:"#898781",dash:"3 3"},{data:SIM.series.ref,color:"#c98500",fill:true}]})],
+      ["MESSAGE FATIGUE · MEAN TOP-CREATIVE EXPOSURES",el=>lineChart(el,{h:105,upto:t,gridY:2,yLabels:true,grid:"#efefe9",mut:"#898781",min:0,max:6,yFmt:v=>v.toFixed(1),
+        series:[{data:SIM.series.fatigue.map(v=>v*6),color:"#eb6834",fill:true}]})],
+      ["DISCOUNT PREFERENCE · DEAL SEGMENTS (PROMO ADDICTION)",el=>lineChart(el,{h:105,upto:t,gridY:2,yLabels:true,grid:"#efefe9",mut:"#898781",min:.4,max:.8,yFmt:v=>v.toFixed(2),
+        bands:[[3,4,"#f6e5c4"],[8,9,"#f6e5c4"],[12,13,"#f6e5c4"]],
+        series:[{data:SIM.series.driftDiscount,color:"#c98500",fill:true}]})],
+    ];
+    document.getElementById("v2small").innerHTML=sm.map((s,i)=>`<div class="panel"><div class="ph">${s[0]}</div><div class="pc" id="v2sm${i}"></div></div>`).join("");
+    sm.forEach((s,i)=>s[1](document.getElementById("v2sm"+i)));
+  }
+  /* ---- story mode ---- */
+  function renderStory(t,idx){
+    const st=SIM.days[t].feed.slice(0,3);
+    const card=document.getElementById("v2scard");
+    const ev=SIM.eventsAt(t);const first=ev.sched[0]||ev.det[0];
+    const banner=first?`<div class="v2-sbanner"><span>DAY ${t+1} — ${first.label.toUpperCase()}</span></div>`:"";
+    if(!st.length){card.innerHTML=banner+`<button class="sx" id="v2sx" aria-label="Close">×</button>
+      <div class="se">DAY ${t+1} · MARKET DESK</div><h2>A quiet tick</h2>
+      <div class="ss">${SIM.days[t].events.length} events landed without a standout state change.</div>`;wireStoryClose();return}
+    const f=st[Math.min(idx,st.length-1)];
+    const s=SIM.shoppers.find(x=>x.off===f.off);
+    const m=f.line.match(/([\d.]+) → ([\d.]+)/);
+    let bar="";
+    if(m){const a=+m[1],b=+m[2],dn=b<a;
+      bar=`<div class="sbar"><div class="was" style="width:${(100*a).toFixed(1)}%"></div>
+        <div class="now ${dn?"dn":""}" id="v2sbar" style="width:${(100*a).toFixed(1)}%"></div></div>
+        <div class="svals num">${a.toFixed(3)} <span style="color:#898781">→</span> <span style="color:${dn?"#a03516":"#006300"}">${b.toFixed(3)} ${dn?"▼":"▲"}</span></div>`;
+    } else bar=`<div class="svals num" style="font-size:19px">${f.line}</div>`;
+    card.innerHTML=banner+`<button class="sx" id="v2sx" aria-label="Close">×</button>
+      <div class="se">DAY ${t+1} · TOP STORY · ${s.seg.name.replace(/_/g," ").toUpperCase()}</div>
+      <h2>${f.title}: ${s.name} ${padO(f.off)}</h2>
+      <div class="ss">shopper ${1000000+f.off} · ${s.trustW!=null?"trust belief in ShoeCo, "+provSentence(s):"no brand belief yet — abstention"}</div>
+      ${bar}
+      <div class="scause">"Cause on the record: ${f.cause}."</div>
+      <button class="sopen" data-inspect="${f.off}">OPEN FULL PROFILE →</button>
+      <div class="v2-sdots">${st.map((_,i)=>`<i class="${i===Math.min(idx,st.length-1)?"on":""}"></i>`).join("")}</div>`;
+    if(m&&!REDUCED)requestAnimationFrame(()=>{const b2=document.getElementById("v2sbar");if(b2)b2.style.width=(100*+m[2]).toFixed(1)+"%"});
+    wireStoryClose();
+  }
+  function wireStoryClose(){const x=document.getElementById("v2sx");if(x)x.onclick=toggleStory}
+  function toggleStory(){
+    storyOn=!storyOn;storyIdx=-1;
+    document.getElementById("v2story").classList.toggle("on",storyOn);
+    const b=document.getElementById("v2storybtn");
+    b.classList.toggle("on",storyOn);b.textContent=storyOn?"STORY ▪":"STORY ▸";b.setAttribute("aria-pressed",String(storyOn));
+    if(storyOn)renderStory(CLOCK.tick,0);
+  }
+  document.getElementById("v2storybtn").addEventListener("click",toggleStory);
+  /* ---- render orchestration ---- */
+  function render(t){
+    document.getElementById("v2status").textContent=CLOCK.done?"COMPLETE":(CLOCK.playing?"RUNNING":"PAUSED");
+    document.getElementById("v2status").classList.toggle("done",CLOCK.done);
+    hero(t);tiles(t);updateFlow(t);updateMovers(t);updateTape(t);charts(t);
+    if(storyOn){storyIdx=-1;renderStory(t,0)}
+    tr.sync();
+  }
+  render(CLOCK.tick);
+  return {show(){render(CLOCK.tick)},
+    onClock(ev){
+      if(ev.type==="advance"||ev.type==="seek"||ev.type==="complete")render(CLOCK.tick);
+      else if(ev.type==="frame"){hero(CLOCK.tick);
+        if(storyOn){const idx=Math.min(2,Math.floor(CLOCK.frac*3));if(idx!==storyIdx){storyIdx=idx;renderStory(CLOCK.tick,idx)}}}
+      else render(CLOCK.tick);
+    }};
+});
+</script>
+
+</main>
+
+<div id="inspector" role="dialog" aria-modal="true" aria-label="Shopper inspector">
+  <div class="scrim" data-close></div>
+  <div class="panel">
+    <button class="ins-x" data-close aria-label="Close">×</button>
+    <div id="insBody"></div>
+  </div>
+</div>
+
+<script>
+/* ============ mockApi — named and shaped like the production endpoints ============ */
+window.mockApi={
+  getRuns:()=>[{run_id:"r013-ecostride-vs-apex-c2000003",arm:"c2000003",label:"ecostride-vs-apex",seed:415,status:CLOCK.done?"complete":"running",run_index:13}],
+  getProgress:()=>({run_id:"r013-ecostride-vs-apex-c2000003",tick:CLOCK.tick,ticks:SIM.TICKS,status:CLOCK.done?"complete":"running"}),
+  getManifest:()=>({t0:1774000000,tick_seconds:86400,ticks:SIM.TICKS,seed:415,run_index:13,arm:"c2000003"}),
+  getEvents:(after)=>{const recs=[];let n=0;
+    for(let t=0;t<=CLOCK.tick;t++)SIM.days[t].events.forEach(e=>{if(n++>=(after||0))recs.push(e)});
+    return {records:recs.slice(0,50),next:(after||0)+Math.min(50,recs.length),eof:CLOCK.done&&recs.length<=50}},
+  getResultsLive:()=>({tick:CLOCK.tick,status:CLOCK.done?"complete":"running",
+    results:{ctr_by_day:SIM.series.ctr.slice(0,CLOCK.tick+1),
+      preference_drift:[{concept:5003,segment:"eco-leaning",series:SIM.series.driftEco[0].slice(0,CLOCK.tick+1)}],
+      reference_price_trajectory:SIM.series.ref.slice(0,CLOCK.tick+1).map((v,i)=>({tick:i,mean_reference_price:v,current_price:SIM.series.shelf[i]})),
+      funnel_by_creative:SIM.funnelByCreative},
+    live_extras:{belief_avg:{"trust:6001:all":SIM.series.trust.slice(0,CLOCK.tick+1)}}}),
+  getConfig:()=>({raw:{ticks:SIM.TICKS,seed:415},effective:{promos:[[3,4],[8,9],[12,13]],waves:[{cat:5504,from:6,to:9,mult:4}],
+    flights:CREATIVES.map(c=>({creative_id:c.id,start_tick:c.start}))}}),
+  getPopulation:()=>({segments:SEGMENTS.map(s=>({segment_id:s.id,name:s.name,share:s.share})),
+    shoppers:SIM.shoppers.map(s=>({offset:s.off,shopper_id:1000000+s.off,segment_id:s.seg.id}))}),
+  getWorldview:(off)=>{const s=SIM.shoppers.find(x=>x.off===off);if(!s)return null;
+    return {shopper_id:1000000+off,
+      beliefs:s.trustW==null?[]:[{aspect:"trust",about_id:6001,value:+s.trustW.toFixed(4),evidence:+s.trustE.toFixed(2),
+        confidence:+conf(s.trustE).toFixed(4),provenance_sentence:provSentence(s)}],
+      preferences:[{concept:5003,w:+s.ecoW.toFixed(4),evidence:+s.ecoE.toFixed(2),source:s.prefHist.length>1?"learned":"prior",
+        cause_kind:s.prefHist.slice(-1)[0].cause}],
+      active_needs:s.need?[{category:5504,strength:s.need.strength,urgency:s.need.urgency,budget_cap:s.need.cap}]:[],habits:[]}},
+  getPreferenceHistory:(off)=>{const s=SIM.shoppers.find(x=>x.off===off);
+    return s?s.prefHist.map(h=>({t:h.t,w:+h.w.toFixed(4),cause_kind:h.cause,source:h.cause==="SEED"?"prior":"learned"})):[]},
+};
+/* prereq tab live samples */
+(function(){
+  const s1=document.getElementById("prSample1"),s2=document.getElementById("prSample2");
+  if(s1)s1.textContent=JSON.stringify(SIM.days[0].events.slice(2,7),null,1);
+  if(s2)s2.textContent=JSON.stringify(mockApi.getWorldview(42),null,1);
+  /* deep-link: #d1..#d5, #prereqs, #plan, #overview */
+  const h=location.hash.replace("#","");
+  if(h&&document.getElementById("tab-"+h))showTab(h);
+})();
+</script>
