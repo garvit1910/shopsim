@@ -1,0 +1,12 @@
+{
+  "comment": "Default promo windows for Nisolo pricing runs. Depths here are placeholders: the ladder builder (build.leveled_promos) overrides every cycle's discount_pct per arm, so what matters is the WINDOWS. Product 3000101 (Huarache 2.0 Women's, $109) is the hero — it is what the 'Up to 40% Off' creative offers.",
+  "product_promos": [
+    {
+      "product_id": 3000101,
+      "cycles": [
+        {"cycle": 1, "start_tick": 4, "end_tick": 7, "discount_pct": 0.25},
+        {"cycle": 2, "start_tick": 12, "end_tick": 15, "discount_pct": 0.4}
+      ]
+    }
+  ]
+}

@@ -148,6 +148,14 @@ def test_perception_writer_round_trip(mock, demo_dir):
         cache0 = mem.cache
         cache0.build(mem._now)
         for cid, meta in cache0.creatives.items():
+            if cid not in perceived:
+                # Another brand's creative. LISTS hangs off ONE global catalog
+                # anchor, so the ObjectiveCache enumerates every catalog ever
+                # ingested into this store — since Phase 5.8 that includes
+                # Nisolo (2000101+). This test owns the demo brand only; the
+                # guard keeps it from indexing (and, worse, deleting) edges
+                # that belong to a catalog it has no perception for.
+                continue
             authored_claims[cid] = meta
             for concept in set(meta["claims"]) | set(perceived[cid].claims_dict):
                 mem.client.run_stmt(cypher.delete_edge("CLAIMS", cid, concept))

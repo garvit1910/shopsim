@@ -1,0 +1,42 @@
+{
+  "creative_id": 2000102,
+  "descriptor": {
+    "body": "Added visible foam cushioning for extra comfort. Redesigned for updated sizing accuracy. A more durable outsole built for a lifetime of wear. Hand-woven by artisans, in leather that softens as you break it in.",
+    "brand_id": 6100,
+    "creative_id": 2000102,
+    "headline": "Huarache 2.0: benefits & features.",
+    "image_sha256": "fb9cdf4bcd999e67087f9a7e8f3dbadd0a54cea17e67ad7810c5e4a1be03ec63",
+    "name": "Huarache 2.0 \u2014 Rebuilt",
+    "offer_product_ids": [
+      3000102
+    ]
+  },
+  "hash": "7172f1cf9d981ffe398603183f6f0ec8908dcfbf8279e773fc5d2d31ee20067a",
+  "model": "gpt-4o-mini",
+  "output": {
+    "claimed_discounts": [],
+    "claims": [
+      {
+        "concept": "CUSHIONING",
+        "strength": 0.7
+      },
+      {
+        "concept": "COMFORT",
+        "strength": 0.7
+      },
+      {
+        "concept": "DURABILITY",
+        "strength": 0.7
+      },
+      {
+        "concept": "HANDCRAFTED",
+        "strength": 0.5
+      },
+      {
+        "concept": "OTHER",
+        "strength": 0.5
+      }
+    ]
+  },
+  "prompt_version": "p1-img1"
+}

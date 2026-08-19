@@ -1,0 +1,106 @@
+{
+ "comment": "Phase 6.2 golden run: seeded arrivals are switched OFF (every arrival_rates_per_tick row is empty) so exactly ONE need exists in the whole run \u2014 offset 1's scripted ReplaceRunningShoes. That is what makes the need-on/need-off split, and every number derived from it, checkable by hand.",
+ "segments": [
+  {
+   "segment_id": 1001,
+   "name": "eco_enthusiast"
+  },
+  {
+   "segment_id": 1002,
+   "name": "performance_athlete"
+  },
+  {
+   "segment_id": 1003,
+   "name": "bargain_hunter"
+  },
+  {
+   "segment_id": 1004,
+   "name": "comfort_seeker"
+  },
+  {
+   "segment_id": 1005,
+   "name": "style_conscious"
+  },
+  {
+   "segment_id": 1006,
+   "name": "casual_browser"
+  },
+  {
+   "segment_id": 1007,
+   "name": "trail_adventurer"
+  },
+  {
+   "segment_id": 1008,
+   "name": "marathon_trainer"
+  },
+  {
+   "segment_id": 1009,
+   "name": "ortho_comfort"
+  },
+  {
+   "segment_id": 1010,
+   "name": "fashion_forward"
+  },
+  {
+   "segment_id": 1011,
+   "name": "brand_skeptic"
+  },
+  {
+   "segment_id": 1012,
+   "name": "deal_stacker"
+  },
+  {
+   "segment_id": 1013,
+   "name": "quality_investor"
+  }
+ ],
+ "arrival_rates_per_tick": {
+  "1001": {},
+  "1002": {},
+  "1003": {},
+  "1004": {},
+  "1005": {},
+  "1006": {},
+  "1007": {},
+  "1008": {},
+  "1009": {},
+  "1010": {},
+  "1011": {},
+  "1012": {},
+  "1013": {}
+ },
+ "need_defaults": {
+  "strength_range": [
+   0.5,
+   0.9
+  ],
+  "deadline_ticks_range": [
+   4,
+   8
+  ],
+  "budget_cap_by_category": {
+   "5500": 70.0,
+   "5501": 110.0,
+   "5502": 45.0,
+   "5503": 20.0,
+   "5504": 90.0,
+   "5505": 60.0,
+   "5506": 40.0,
+   "5507": 150.0,
+   "5508": 50.0,
+   "5509": 130.0
+  }
+ },
+ "waves": [],
+ "scripted": [
+  {
+   "name": "golden_need",
+   "shopper_id": 1000001,
+   "category_id": 5504,
+   "activate_tick": 0,
+   "strength": 0.8,
+   "budget_cap": 90.0,
+   "deadline_tick": 3
+  }
+ ]
+}

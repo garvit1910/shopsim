@@ -1,0 +1,348 @@
+{
+  "comment": "Nisolo personas \u2014 the 13 demo-brand segments with coeffs.budget scaled x2.2 for a PREMIUM catalog ($109-295 vs the demo brand's $35-60). Two absolute-dollar gates make this mandatory, not cosmetic: choice.py hard-blocks BUY when price > budget_left, and damps it x0.25 when price > active_need.budget_cap. Left at value-tier numbers, almost nothing in this catalog is purchasable and the funnel reads as broken. Anchored on ~$461 average annual US footwear spend across 3.4 pairs (~$136/pair) plus a ~9.7% sustainability premium \u2014 see eval/market-research.md section 6. Ordering and spread are preserved, so the deal-driven segments (bargain_hunter, deal_stacker) still land BELOW the $250 Chelsea boot and $295 tote: that constraint is what makes the discount ladder informative rather than decorative. demo-brand keeps its own value-tier file.",
+  "trait_sd_default": 0.08,
+  "prior_sd": 0.08,
+  "theta_jitter_sd": 0.15,
+  "segments": [
+    {
+      "segment_id": 1001,
+      "name": "eco_enthusiast",
+      "archetype": "lifestyle buyer / sustainability-first (market-research \u00a74)",
+      "share": 0.09,
+      "prior_means": {
+        "5003": 0.65,
+        "5004": 0.55,
+        "5019": 0.5,
+        "5009": 0.45
+      },
+      "traits": {
+        "trust_orientation": 0.5,
+        "deal_proneness": 0.4,
+        "novelty_seeking": 0.5
+      },
+      "coeffs": {
+        "impulsivity": 1.0,
+        "price_sensitivity": 0.5,
+        "budget": [
+          308,
+          62
+        ]
+      },
+      "theta_adjust": {}
+    },
+    {
+      "segment_id": 1002,
+      "name": "performance_athlete",
+      "archetype": "serious runner: technical performance attributes",
+      "share": 0.08,
+      "prior_means": {
+        "5000": 0.7,
+        "5006": 0.55,
+        "5005": 0.55,
+        "5024": 0.45
+      },
+      "traits": {
+        "trust_orientation": 0.55,
+        "deal_proneness": 0.35,
+        "novelty_seeking": 0.55
+      },
+      "coeffs": {
+        "impulsivity": 0.9,
+        "price_sensitivity": 0.4,
+        "budget": [
+          396,
+          77
+        ]
+      },
+      "theta_adjust": {}
+    },
+    {
+      "segment_id": 1003,
+      "name": "bargain_hunter",
+      "archetype": "price-driven deal hunter",
+      "share": 0.11,
+      "prior_means": {
+        "5011": 0.7,
+        "5012": 0.65,
+        "5013": 0.5
+      },
+      "traits": {
+        "trust_orientation": 0.45,
+        "deal_proneness": 0.8,
+        "novelty_seeking": 0.4
+      },
+      "coeffs": {
+        "impulsivity": 1.1,
+        "price_sensitivity": 0.85,
+        "budget": [
+          198,
+          40
+        ]
+      },
+      "theta_adjust": {}
+    },
+    {
+      "segment_id": 1004,
+      "name": "comfort_seeker",
+      "archetype": "casual runner: comfort and flexibility first",
+      "share": 0.1,
+      "prior_means": {
+        "5001": 0.7,
+        "5006": 0.55,
+        "5028": 0.4
+      },
+      "traits": {
+        "trust_orientation": 0.55,
+        "deal_proneness": 0.5,
+        "novelty_seeking": 0.35
+      },
+      "coeffs": {
+        "impulsivity": 1.0,
+        "price_sensitivity": 0.6,
+        "budget": [
+          242,
+          48
+        ]
+      },
+      "theta_adjust": {}
+    },
+    {
+      "segment_id": 1005,
+      "name": "style_conscious",
+      "archetype": "fashion leader",
+      "share": 0.09,
+      "prior_means": {
+        "5017": 0.7,
+        "5022": 0.5,
+        "5010": 0.45
+      },
+      "traits": {
+        "trust_orientation": 0.5,
+        "deal_proneness": 0.45,
+        "novelty_seeking": 0.7
+      },
+      "coeffs": {
+        "impulsivity": 1.05,
+        "price_sensitivity": 0.55,
+        "budget": [
+          286,
+          57
+        ]
+      },
+      "theta_adjust": {}
+    },
+    {
+      "segment_id": 1006,
+      "name": "casual_browser",
+      "archetype": "sociable follower / low-intent mass",
+      "share": 0.11,
+      "prior_means": {
+        "5001": 0.45,
+        "5012": 0.45,
+        "5017": 0.4
+      },
+      "traits": {
+        "trust_orientation": 0.5,
+        "deal_proneness": 0.5,
+        "novelty_seeking": 0.5
+      },
+      "coeffs": {
+        "impulsivity": 1.2,
+        "price_sensitivity": 0.65,
+        "budget": [
+          220,
+          44
+        ]
+      },
+      "theta_adjust": {
+        "CLICK": 0.5
+      }
+    },
+    {
+      "segment_id": 1007,
+      "name": "trail_adventurer",
+      "archetype": "outdoor/trail: grip, waterproofing, durability",
+      "share": 0.06,
+      "prior_means": {
+        "5027": 0.65,
+        "5008": 0.6,
+        "5002": 0.6
+      },
+      "traits": {
+        "trust_orientation": 0.55,
+        "deal_proneness": 0.4,
+        "novelty_seeking": 0.5
+      },
+      "coeffs": {
+        "impulsivity": 0.95,
+        "price_sensitivity": 0.5,
+        "budget": [
+          330,
+          66
+        ]
+      },
+      "theta_adjust": {}
+    },
+    {
+      "segment_id": 1008,
+      "name": "marathon_trainer",
+      "archetype": "weekend runner training up: cushioning + innovation, committed buyer",
+      "share": 0.05,
+      "prior_means": {
+        "5000": 0.65,
+        "5006": 0.65,
+        "5018": 0.5,
+        "5023": 0.4
+      },
+      "traits": {
+        "trust_orientation": 0.6,
+        "deal_proneness": 0.3,
+        "novelty_seeking": 0.6
+      },
+      "coeffs": {
+        "impulsivity": 0.85,
+        "price_sensitivity": 0.35,
+        "budget": [
+          440,
+          88
+        ]
+      },
+      "theta_adjust": {
+        "BUY": -0.2
+      }
+    },
+    {
+      "segment_id": 1009,
+      "name": "ortho_comfort",
+      "archetype": "fit-driven: arch support, wide sizes",
+      "share": 0.06,
+      "prior_means": {
+        "5026": 0.7,
+        "5025": 0.6,
+        "5001": 0.6,
+        "5016": 0.4
+      },
+      "traits": {
+        "trust_orientation": 0.6,
+        "deal_proneness": 0.4,
+        "novelty_seeking": 0.3
+      },
+      "coeffs": {
+        "impulsivity": 0.9,
+        "price_sensitivity": 0.55,
+        "budget": [
+          264,
+          53
+        ]
+      },
+      "theta_adjust": {}
+    },
+    {
+      "segment_id": 1010,
+      "name": "fashion_forward",
+      "archetype": "conspicuous fashion consumer: novelty + exclusivity",
+      "share": 0.05,
+      "prior_means": {
+        "5017": 0.75,
+        "5022": 0.6,
+        "5018": 0.5
+      },
+      "traits": {
+        "trust_orientation": 0.45,
+        "deal_proneness": 0.4,
+        "novelty_seeking": 0.8
+      },
+      "coeffs": {
+        "impulsivity": 1.15,
+        "price_sensitivity": 0.5,
+        "budget": [
+          352,
+          70
+        ]
+      },
+      "theta_adjust": {}
+    },
+    {
+      "segment_id": 1011,
+      "name": "brand_skeptic",
+      "archetype": "low-trust: proof, warranties, returns",
+      "share": 0.07,
+      "prior_means": {
+        "5002": 0.55,
+        "5016": 0.55,
+        "5015": 0.5
+      },
+      "traits": {
+        "trust_orientation": 0.25,
+        "deal_proneness": 0.45,
+        "novelty_seeking": 0.35
+      },
+      "coeffs": {
+        "impulsivity": 0.95,
+        "price_sensitivity": 0.7,
+        "budget": [
+          242,
+          48
+        ]
+      },
+      "theta_adjust": {
+        "CLICK": 0.4
+      }
+    },
+    {
+      "segment_id": 1012,
+      "name": "deal_stacker",
+      "archetype": "sensation-seeking promo chaser",
+      "share": 0.06,
+      "prior_means": {
+        "5011": 0.75,
+        "5013": 0.6,
+        "5012": 0.6,
+        "5014": 0.45
+      },
+      "traits": {
+        "trust_orientation": 0.4,
+        "deal_proneness": 0.9,
+        "novelty_seeking": 0.45
+      },
+      "coeffs": {
+        "impulsivity": 1.1,
+        "price_sensitivity": 0.9,
+        "budget": [
+          176,
+          35
+        ]
+      },
+      "theta_adjust": {}
+    },
+    {
+      "segment_id": 1013,
+      "name": "quality_investor",
+      "archetype": "buy-it-for-life: premium, durability, craft",
+      "share": 0.07,
+      "prior_means": {
+        "5010": 0.65,
+        "5002": 0.65,
+        "5021": 0.45,
+        "5016": 0.5
+      },
+      "traits": {
+        "trust_orientation": 0.65,
+        "deal_proneness": 0.25,
+        "novelty_seeking": 0.4
+      },
+      "coeffs": {
+        "impulsivity": 0.85,
+        "price_sensitivity": 0.3,
+        "budget": [
+          484,
+          97
+        ]
+      },
+      "theta_adjust": {
+        "CLICK": 0.3,
+        "BUY": -0.1
+      }
+    }
+  ]
+}

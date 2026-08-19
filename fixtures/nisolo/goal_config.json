@@ -1,0 +1,162 @@
+{
+  "comment": "Nisolo goal config. Arrival rates are re-keyed onto the categories Nisolo actually sells (5500 casual shoes, 5502 sandals, 5506 accessories): demo-brand's rates are running-shoe heavy (5504) and a need in a category with no products can never convert, so carrying them over would silently evaporate most demand. budget_cap_by_category is set from the observed price bands, since a cap below the shelf price damps BUY x0.25. See eval/market-research.md section 6.",
+  "segments": [
+    {
+      "segment_id": 1001,
+      "name": "eco_enthusiast"
+    },
+    {
+      "segment_id": 1002,
+      "name": "performance_athlete"
+    },
+    {
+      "segment_id": 1003,
+      "name": "bargain_hunter"
+    },
+    {
+      "segment_id": 1004,
+      "name": "comfort_seeker"
+    },
+    {
+      "segment_id": 1005,
+      "name": "style_conscious"
+    },
+    {
+      "segment_id": 1006,
+      "name": "casual_browser"
+    },
+    {
+      "segment_id": 1007,
+      "name": "trail_adventurer"
+    },
+    {
+      "segment_id": 1008,
+      "name": "marathon_trainer"
+    },
+    {
+      "segment_id": 1009,
+      "name": "ortho_comfort"
+    },
+    {
+      "segment_id": 1010,
+      "name": "fashion_forward"
+    },
+    {
+      "segment_id": 1011,
+      "name": "brand_skeptic"
+    },
+    {
+      "segment_id": 1012,
+      "name": "deal_stacker"
+    },
+    {
+      "segment_id": 1013,
+      "name": "quality_investor"
+    }
+  ],
+  "arrival_rates_per_tick": {
+    "1001": {
+      "5500": 0.04,
+      "5502": 0.01,
+      "5506": 0.01
+    },
+    "1002": {
+      "5500": 0.07,
+      "5502": 0.01,
+      "5506": 0.01
+    },
+    "1003": {
+      "5500": 0.04,
+      "5502": 0.01,
+      "5506": 0.01
+    },
+    "1004": {
+      "5500": 0.03,
+      "5502": 0.02
+    },
+    "1005": {
+      "5500": 0.03,
+      "5502": 0.01,
+      "5506": 0.04
+    },
+    "1006": {
+      "5500": 0.02,
+      "5502": 0.01
+    },
+    "1007": {
+      "5500": 0.05,
+      "5502": 0.02
+    },
+    "1008": {
+      "5500": 0.07,
+      "5502": 0.01,
+      "5506": 0.02
+    },
+    "1009": {
+      "5500": 0.04,
+      "5502": 0.02
+    },
+    "1010": {
+      "5500": 0.03,
+      "5502": 0.01,
+      "5506": 0.05
+    },
+    "1011": {
+      "5500": 0.03,
+      "5502": 0.01
+    },
+    "1012": {
+      "5500": 0.04,
+      "5502": 0.01,
+      "5506": 0.02
+    },
+    "1013": {
+      "5500": 0.05,
+      "5502": 0.01
+    }
+  },
+  "need_defaults": {
+    "strength_range": [
+      0.5,
+      0.9
+    ],
+    "deadline_ticks_range": [
+      4,
+      8
+    ],
+    "budget_cap_by_category": {
+      "5500": 175.0,
+      "5501": 260.0,
+      "5502": 130.0,
+      "5503": 40.0,
+      "5504": 190.0,
+      "5505": 150.0,
+      "5506": 320.0,
+      "5507": 260.0,
+      "5508": 120.0,
+      "5509": 280.0
+    }
+  },
+  "waves": [
+    {
+      "name": "sale_season",
+      "category_id": 5500,
+      "start_tick": 6,
+      "end_tick": 9,
+      "rate_multiplier": 4.0,
+      "note": "the demo lever: a scheduled arrival burst in everyday shoes, the category Nisolo's sale creatives push"
+    }
+  ],
+  "scripted": [
+    {
+      "name": "maya_replace_running_shoes",
+      "shopper_id": 1000042,
+      "category_id": 5500,
+      "activate_tick": 8,
+      "strength": 0.8,
+      "budget_cap": 200.0,
+      "deadline_tick": 13,
+      "note": "Maya beat 4, repointed to everyday shoes (5500) for the Nisolo catalog; twin control 1000041 gets no scripted need (beat 9)"
+    }
+  ]
+}

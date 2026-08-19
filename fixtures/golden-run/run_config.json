@@ -1,0 +1,61 @@
+{
+ "comment": "Phase 6.2 golden run (PLAN.md: 'tiny golden run \u2014 5 shoppers, 3 ticks, one full evidence chain \u2014 with hand-checked numbers asserted in tests'). ScriptedMind decides and the REAL consolidate() digests \u2014 the Phase-3 hybrid \u2014 so the fixture carries genuine belief/EXPECTS/reference-price series. The flight is staggered so exactly one creative is live per day and each mechanism appears once: 2000003 runs days 1-2, then same-brand 2000001 takes day 3. Offset 1 carries the only need in the run (seeded arrivals are switched off in the companion goal_config): day 1 it clicks and browses \u2014 the BUY gate cannot fire before PRICE_SEEN has taught it a reference price \u2014 day 2 it buys, and at lag 1 the delivery lands on day 3, so SAW -> CLICKED -> VISITED/PRICE_SEEN/BROWSED -> CARTED -> BOUGHT -> NEED_SATISFIED -> EXPERIENCED all fit inside three ticks. The other four shoppers have no need and start clicking on day 2 once adstock crosses the stand-in's 0.6 threshold, which is what gives the need-on/need-off split its contrast. 2000001 and 2000003 share the ECO_FRIENDLY claim under one brand, so brand_semantic_fatigue fires on day 3 and the report's brand_msg channel is exercised end to end. Both rows carry the seeded 4000001/4000002 split \u2014 every page visit belongs to the A/B, so violations.bounce_delta is a real within-run number. Seed 58 is chosen for that split: at seed 57 all five shoppers landed on the same variant. The promo schedule is the demo brand's, whose first window opens at tick 3, so the hero product is defined (reference_price_trajectory is populated) while the shelf never moves off $39.00. Social is off, so this fixture doubles as the byte-neutrality proof for the opt-in social layer.",
+ "label": "golden-run",
+ "seed": 58,
+ "mind": {
+  "decide": "scripted",
+  "consolidate": "formula"
+ },
+ "ticks": 3,
+ "t0": 1755000000,
+ "tick_seconds": 86400,
+ "population": {
+  "size": 5,
+  "personas": "fixtures/demo-brand/personas.json"
+ },
+ "catalog_dir": "fixtures/demo-brand",
+ "perception_cache": "fixtures/perception-cache",
+ "exposure": {
+  "frequency_cap_per_tick": 1,
+  "frequency_cap_72h": 4,
+  "schedule": [
+   {
+    "creative_id": 2000001,
+    "start_tick": 2,
+    "end_tick": 2,
+    "reach_prob": 1.0,
+    "page_ids": [
+     4000001,
+     4000002
+    ]
+   },
+   {
+    "creative_id": 2000003,
+    "start_tick": 0,
+    "end_tick": 1,
+    "reach_prob": 1.0,
+    "page_ids": [
+     4000001,
+     4000002
+    ]
+   }
+  ]
+ },
+ "goals": {
+  "config": "fixtures/golden-run/goal_config.json",
+  "overrides": {}
+ },
+ "fulfillment": {
+  "lag_ticks": 1,
+  "sat_noise_sd": 0.08
+ },
+ "promos": {
+  "schedule": "fixtures/demo-brand/promo_schedule.json",
+  "enabled": true
+ },
+ "arms": [
+  {
+   "name": "golden"
+  }
+ ]
+}

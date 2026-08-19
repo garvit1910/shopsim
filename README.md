@@ -29,14 +29,31 @@ row — no schema change.
 ## Repo layout
 
 ```
-engine/    Python 3.11 — HydraMem, sim runner, minds, contracts (shared enums, evidence.py)
+engine/    Python 3.11 — HydraMem, sim runner, minds, analytics, contracts (shared enums, evidence.py)
 web/       Next.js dashboard (Phase 5)
 infra/     HydraDB run config + docker compose (Atishay)
 eval/      Calibration & face-validity evals F1–F15 (Phase 7)
-fixtures/  Demo brand assets + canned DecisionContexts + scripted-run fixtures
+fixtures/  Demo brand assets + canned DecisionContexts + scripted-run + golden-run fixtures
 CONTRACT.md  The three inter-lane contracts (C1/C2/C3) — versioned; changes need a call
 PLAN.md      Master build plan v4
 ```
+
+## One run, one report
+
+```bash
+cd engine
+uv run python -m shopsim.runner run --config ../fixtures/golden-run/run_config.json
+uv run python -m shopsim.analytics report --run <run id> \
+    --config ../fixtures/golden-run/run_config.json
+```
+
+`results.json` is the C3 MetricsReport: the funnel and its bootstrap confidence
+intervals (resampled over shoppers, because one person's events are one
+correlated story), CTR by day and by creative, the three fatigue channels,
+preference drift, belief drift with confidence, the goal-conversion split, and
+`provenance_coverage` — the share of subjective versions carrying a cause.
+`SAW` never appears among those causes: exposure teaches expectations, not
+taste. `--no-graph` skips the belief sweep when you must not wait on the store.
 
 ## Setup (skeleton — final commands land in Phase 9)
 

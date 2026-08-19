@@ -44,6 +44,7 @@ from .results import ResultsAccumulator
 from .runstore import build_manifest, write_json_atomic
 from .steps import (
     DECIDE_STREAM,
+    CreativeStats,
     FulfillmentQueue,
     GoalConfig,
     GoalState,
@@ -67,6 +68,7 @@ class RunnerState:
     # offset -> (product, page, cause_creative, carted_tick)
     carts: dict[int, tuple[int, int, int, int]] = field(default_factory=dict)
     fulfil: FulfillmentQueue = field(default_factory=FulfillmentQueue)
+    alloc: CreativeStats = field(default_factory=CreativeStats)
 
     def rebuild_from_records(self, records: list[dict], t0: int, tick_seconds: int,
                              page_of) -> None:
@@ -83,6 +85,9 @@ class RunnerState:
                 continue
             offset = shopper_offset(rec["shopper_id"])
             tick = (rec["t"] - t0) // tick_seconds
+            # allocation weights are a pure function of the SAW/CLICKED log,
+            # so resume/branch re-derive the same schedule rescale (v3.6-draft)
+            self.alloc.apply_record(rec)
             if rtype == EventType.SAW.value:
                 self.saw.record(offset, tick, rec["subject"])
             elif rtype == EventType.CARTED.value:
@@ -122,6 +127,7 @@ class SimRunner:
         # DEFAULT objects, so populations and minds are byte-identical
         appraisal_params, choice_params, stage_bases = cfg.calibration()
         specs = load_segment_specs(cfg.personas_path)
+        self._boot("population")
         self.shoppers = generate_population(PopulationConfig(
             seed=cfg.seed, population_size=cfg.population_size,
             segments=specs, run_index=self.run_index,
@@ -129,6 +135,7 @@ class SimRunner:
         self.by_offset = {shopper_offset(s.shopper_id): s for s in self.shoppers}
         self.segment_by_offset = {o: s.segment_id for o, s in self.by_offset.items()}
 
+        self._boot("perception")
         perceived, calls = perceive_catalog(
             cfg.catalog_dir, cache_dir=cfg.perception_cache, call=_no_llm)
         assert calls == 0
@@ -148,6 +155,7 @@ class SimRunner:
                         f"schedule {cid}: page_ids entry {pgid} is not a known page")
         self.page_of = partial(steps.page_for, cfg.seed, self.splits, self.pages)
 
+        self._boot("catalog")
         self.goal_cfg = GoalConfig.load(cfg.goal_config_path)
         promo_on, promo_path, promo_inline = cfg.promos_for(self.arm)
         if not promo_on:
@@ -165,10 +173,22 @@ class SimRunner:
         self.mem = HydraMem(run_index=self.run_index, event_log=self.log)
 
         if seed_graph:
+            self._boot("stimuli")
             self.mem.ingest_catalog(cfg.catalog_dir, now=cfg.t0, include_stimuli=False)
             write_stimuli(self.mem.client, cfg.catalog_dir, perceived)
-            seed_population(self.mem, self.shoppers, t=cfg.t0 - cfg.tick_seconds)
+            self._boot("seed_population")
+            # v3.8-draft: the social graph is drawn from (seed, "social",
+            # population) over OFFSETS, so it is identical across run blocks;
+            # cfg.social is None unless a config opts in, and then no
+            # TRUSTS_PERSON statement is emitted at all.
+            social_edges = None
+            if cfg.social is not None:
+                from ..population.factory import social_graph
+                social_edges = social_graph(cfg.population_size, cfg.seed, cfg.social)
+            seed_population(self.mem, self.shoppers, t=cfg.t0 - cfg.tick_seconds,
+                            social_edges=social_edges)
             self.mem.cache._built_at = None
+        self._boot("manifest")
         write_json_atomic(self.run_dir / "manifest.json", self.manifest)
 
         def make_mind(kind: str):
@@ -184,9 +204,16 @@ class SimRunner:
         drift_concepts = sorted({
             c for row in self.schedule
             for c in (self.view.facts(row.creative_id).claims if self.view.facts(row.creative_id) else ())})
+        # v3.8-draft: the run's own seeded A/B pairs (declared page_ids order)
+        # feed the within-run violations.bounce_delta; choice_params and
+        # w_social are measurement inputs for the fatigue and social channels.
+        page_pairs = [list(v[:2]) for _cid, v in sorted(self.splits.items())
+                      if len(v) >= 2]
         self.results = ResultsAccumulator(
             arm=self.arm.name, segment_by_offset=self.segment_by_offset,
-            drift_concepts=drift_concepts, hero_product=hero)
+            drift_concepts=drift_concepts, hero_product=hero,
+            page_pairs=page_pairs, choice_params=choice_params,
+            w_social=getattr(appraisal_params, "w_social", 0.0))
 
     def _load_list_prices(self) -> dict[int, float]:
         import csv
@@ -221,8 +248,18 @@ class SimRunner:
             self._run_tick(tick, state)
             self._write_progress(tick, wall_start, status="running")
 
-        results = self.results.results(self.manifest)
+        # Phase 6 (CONTRACT v3.8-draft): the finalize pass turns the live
+        # skeleton into the full MetricsReport — bootstrap CIs over the
+        # per-shopper vectors, plus one read-only belief/provenance sweep. It
+        # can only fail on the graph, and a failed sweep degrades to a note
+        # rather than losing a finished run.
+        from ..analytics.report import finalize_results
+        results, notes = finalize_results(
+            self.results, self.manifest, mem=self.mem, now=cfg.now_at(cfg.ticks - 1))
         write_json_atomic(self.run_dir / "results.json", results)
+        if notes and not self.quiet:
+            for note in notes:
+                print(f"[{self.arm.name}] metrics note: {note}")
         self._write_progress(cfg.ticks - 1, wall_start, status="complete")
         return results
 
@@ -256,9 +293,19 @@ class SimRunner:
             steps.promo_step(mem.client, self.promo, self.list_prices, tick, now)
         lap("promo")
 
-        # 2. exposure draws
+        # 2. exposure draws — with allocation on, the day's reach per creative
+        # is rescaled by its trailing smoothed CTR BEFORE the draws. Only the
+        # thresholds move: the (seed,"expose",offset,tick) substream, the
+        # one-draw-per-active-row order, and the cap checks are untouched, so
+        # the stream stays state-independent and resume-identical (v3.6-draft).
+        schedule = self.schedule
+        alloc_cfg = cfg.allocation
+        if alloc_cfg is not None and alloc_cfg.enabled:
+            active = [r for r in schedule if r.start_tick <= tick <= r.end_tick]
+            shares = steps.allocation_shares(alloc_cfg, active, state.alloc)
+            schedule = steps.allocated_schedule(schedule, shares)
         exposures = steps.exposure_step(
-            seed=cfg.seed, tick=tick, schedule=self.schedule,
+            seed=cfg.seed, tick=tick, schedule=schedule,
             offsets=list(self.segment_by_offset), cap_per_tick=cfg.frequency_cap_per_tick,
             cap_72h=cfg.frequency_cap_72h, saw=state.saw,
             segment_by_offset=self.segment_by_offset)
@@ -280,7 +327,7 @@ class SimRunner:
                 a = mind.appraise(ctx, sh.traits)
                 rng = substream(cfg.seed, DECIDE_STREAM, o, tick, creative)
                 act = mind.decide(a, ctx.scalars, sh.coeffs, rng)
-                self.results.observe_decision(ctx, act, "creative")
+                self.results.observe_decision(ctx, act, "creative", tick)
                 events_by_offset.setdefault(o, []).extend(
                     expand_creative(act, sid, creative, now, run))
                 if act is Action.CLICK:
@@ -319,10 +366,20 @@ class SimRunner:
                 a = mind.appraise(ctx, sh.traits)
                 rng = substream(cfg.seed, DECIDE_STREAM, o, tick, page)
                 act = mind.decide(a, ctx.scalars, sh.coeffs, rng)
-                self.results.observe_decision(ctx, act, "page")
+                self.results.observe_decision(ctx, act, "page", tick)
+                # Expand against what the MIND saw, not what the runner
+                # remembers. decide() calls a cart "resumed" iff the cart
+                # intersects the stimulus's reference prices, and a
+                # REFERENCE_PRICE write can legitimately be evicted by the
+                # Law-14 per-tick cap (6 subjective writes, ref_price ranks
+                # below PREFERS) — a busy shopper can hold a cart the graph
+                # cannot show. Deriving the flag from ctx makes runner and
+                # mind read one truth: the cart simply stays in runner state
+                # and resumes on a later tick once the price is rewritten.
+                resumed = bool(set(ctx.scalars.cart) & set(ctx.scalars.reference_price))
                 events_by_offset.setdefault(o, []).extend(expand_page(
                     act, sid, page, product, price, info["cause"],
-                    info["resumed"], now, run))
+                    resumed, now, run))
                 if act is Action.BUY:
                     state.fulfil.record_bought(o, product, now, tick)
                     state.carts.pop(o, None)
@@ -344,6 +401,9 @@ class SimRunner:
         all_events = [e for o in sorted(events_by_offset) for e in events_by_offset[o]]
         mem.record_events(all_events)  # JSONL write-ahead + grouped edge CREATEs
         self.results.observe_events(all_events, tick)
+        # fold this tick's SAW/CLICKED in AFTER the draws: tick t's allocation
+        # saw ticks 0..t-1 only (trailing evidence, never lookahead)
+        state.alloc.observe(all_events)
         lap("episodic")
 
         # 8. consolidation — batched snapshots -> consolidate -> apply
@@ -397,6 +457,34 @@ class SimRunner:
                   f"needs live {len(state.goal.live)}")
 
     # -- progress ------------------------------------------------------------
+
+    def _boot(self, phase: str) -> None:
+        """Progress during prepare(), before manifest.json exists (v3.7-draft).
+
+        The registry row is published by RunStore.allocate() the moment the run
+        dir is made, but manifest.json is only written at the END of prepare()
+        — after population generation and graph seeding, which is seconds to
+        tens of seconds. In that window a dashboard that opened the run saw a
+        bare 404 and no way to tell "still starting" from "broken". This is the
+        only file-level signal in between.
+
+        `status: "preparing"` is additive: every consumer keys on "running" or
+        "complete", and tick -1 marks that no simulated day exists yet."""
+        if not hasattr(self, "_boot_start"):
+            self._boot_start = time.perf_counter()
+        write_json_atomic(self.run_dir / "progress.json", {
+            "run_id": self.run_dir.name,
+            "label": self.cfg.label,
+            "arm": self.arm.name,
+            "status": "preparing",
+            "phase": phase,
+            "tick": -1,
+            "ticks": self.cfg.ticks,
+            "population_size": self.cfg.population_size,
+            "phase_s": {},
+            "total_wall_s": round(time.perf_counter() - self._boot_start, 3),
+            "updated_at": time.time(),
+        })
 
     def _write_progress(self, tick: int, wall_start: float, *, status: str) -> None:
         write_json_atomic(self.run_dir / "progress.json", {

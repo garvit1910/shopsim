@@ -1,0 +1,43 @@
+{
+  "creative_id": 2000104,
+  "descriptor": {
+    "body": "Shop women's and men's styles. Build the cart, deepen the discount \u2014 on shoes made to outlast the season. Free shipping over $100.",
+    "brand_id": 6100,
+    "creative_id": 2000104,
+    "headline": "Summer Sale: 25% off $125+, 40% off $250+.",
+    "image_sha256": "5339c3adcab3550ebc70b4e6f95d93ce835b60a138f3dd11adacf5da7f6befa2",
+    "name": "Summer Sale \u2014 Spend More, Save More",
+    "offer_product_ids": [
+      3000106
+    ]
+  },
+  "hash": "27d93aac8692c75be4d601eaeeaf4e280ed27e2d3c03cce572ea536c75fd536f",
+  "model": "gpt-4o-mini",
+  "output": {
+    "claimed_discounts": [
+      {
+        "claimed_pct": 0.25,
+        "product_id": 3000106
+      },
+      {
+        "claimed_pct": 0.4,
+        "product_id": 3000106
+      }
+    ],
+    "claims": [
+      {
+        "concept": "DISCOUNT",
+        "strength": 0.9
+      },
+      {
+        "concept": "FREE_SHIPPING",
+        "strength": 0.7
+      },
+      {
+        "concept": "OTHER",
+        "strength": 0.5
+      }
+    ]
+  },
+  "prompt_version": "p1-img1"
+}

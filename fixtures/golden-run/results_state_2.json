@@ -1,0 +1,484 @@
+{
+ "state": {
+  "arm": "golden",
+  "belief_avg": {
+   "trust:6001:1001": [
+    null,
+    0.6,
+    0.6
+   ],
+   "trust:6001:1002": [
+    0.6,
+    0.60833,
+    0.63705
+   ],
+   "trust:6001:1004": [
+    null,
+    0.6,
+    0.6
+   ],
+   "trust:6001:1005": [
+    null,
+    0.6,
+    0.6
+   ],
+   "trust:6001:all": [
+    0.6,
+    0.60333,
+    0.61482
+   ]
+  },
+  "belief_conf_avg": {
+   "trust:6001:1001": [
+    null,
+    0.68182,
+    0.68182
+   ],
+   "trust:6001:1002": [
+    0.68182,
+    0.7736,
+    0.80068
+   ],
+   "trust:6001:1004": [
+    null,
+    0.68182,
+    0.68182
+   ],
+   "trust:6001:1005": [
+    null,
+    0.68182,
+    0.68182
+   ],
+   "trust:6001:all": [
+    0.68182,
+    0.71853,
+    0.72936
+   ]
+  },
+  "by_creative": {
+   "2000001": {
+    "ABANDONED": 0,
+    "BOUGHT": 0,
+    "BOUNCED": 0,
+    "BROWSED": 5,
+    "CARTED": 0,
+    "CLICKED": 5,
+    "EXPERIENCED": 0,
+    "SAW": 5,
+    "VISITED": 5
+   },
+   "2000003": {
+    "ABANDONED": 0,
+    "BOUGHT": 1,
+    "BOUNCED": 0,
+    "BROWSED": 6,
+    "CARTED": 1,
+    "CLICKED": 6,
+    "EXPERIENCED": 0,
+    "SAW": 10,
+    "VISITED": 6
+   }
+  },
+  "by_page": {
+   "4000001": {
+    "BOUNCED": 0,
+    "BROWSED": 5,
+    "VISITED": 5
+   },
+   "4000002": {
+    "BOUNCED": 0,
+    "BROWSED": 6,
+    "VISITED": 6
+   }
+  },
+  "by_shopper": {
+   "0": [
+    3,
+    2,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    2,
+    0
+   ],
+   "1": [
+    3,
+    3,
+    3,
+    0,
+    1,
+    1,
+    2,
+    1,
+    1,
+    0,
+    0,
+    0,
+    3,
+    1
+   ],
+   "2": [
+    3,
+    2,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    2,
+    0
+   ],
+   "3": [
+    3,
+    2,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    2,
+    0
+   ],
+   "4": [
+    3,
+    2,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    2,
+    0
+   ]
+  },
+  "ctr": {
+   "0": {
+    "clicks": 1,
+    "exposures": 5
+   },
+   "1": {
+    "clicks": 5,
+    "exposures": 5
+   },
+   "2": {
+    "clicks": 5,
+    "exposures": 5
+   }
+  },
+  "ctr_creative": {
+   "2000001": {
+    "2": {
+     "clicks": 5,
+     "exposures": 5
+    }
+   },
+   "2000003": {
+    "0": {
+     "clicks": 1,
+     "exposures": 5
+    },
+    "1": {
+     "clicks": 5,
+     "exposures": 5
+    }
+   }
+  },
+  "decisions_from_tick": 0,
+  "drift": {
+   "5003:1001": [
+    0.66053,
+    0.73887,
+    0.78783
+   ],
+   "5003:1002": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "5003:1004": [
+    null,
+    1.0,
+    1.0
+   ],
+   "5003:1005": [
+    null,
+    1.0,
+    1.0
+   ],
+   "5004:1001": [
+    0.54514,
+    0.54514,
+    0.65011
+   ],
+   "5004:1002": [
+    null,
+    null,
+    1.0
+   ],
+   "5004:1004": [
+    null,
+    null,
+    1.0
+   ],
+   "5004:1005": [
+    null,
+    null,
+    1.0
+   ],
+   "5005:1001": [
+    null,
+    1.0,
+    1.0
+   ],
+   "5005:1002": [
+    0.59066,
+    0.72669,
+    0.73763
+   ],
+   "5005:1004": [
+    null,
+    1.0,
+    1.0
+   ],
+   "5005:1005": [
+    null,
+    1.0,
+    1.0
+   ],
+   "5011:1001": [
+    null,
+    1.0,
+    1.0
+   ],
+   "5011:1002": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "5011:1004": [
+    null,
+    1.0,
+    1.0
+   ],
+   "5011:1005": [
+    null,
+    1.0,
+    1.0
+   ],
+   "5029:1001": [
+    null,
+    null,
+    1.0
+   ],
+   "5029:1002": [
+    null,
+    null,
+    1.0
+   ],
+   "5029:1004": [
+    null,
+    null,
+    1.0
+   ],
+   "5029:1005": [
+    null,
+    null,
+    1.0
+   ]
+  },
+  "fatigue": {
+   "0": {
+    "asset_hi_clicks": 0,
+    "asset_hi_n": 0,
+    "asset_sum": 0.0,
+    "brand_hi_clicks": 0,
+    "brand_hi_n": 0,
+    "brand_sum": 0.0,
+    "clicks": 1,
+    "concept_hi_clicks": 0,
+    "concept_hi_n": 0,
+    "concept_sum": 0.0,
+    "n": 5
+   },
+   "1": {
+    "asset_hi_clicks": 0,
+    "asset_hi_n": 0,
+    "asset_sum": 0.0,
+    "brand_hi_clicks": 0,
+    "brand_hi_n": 0,
+    "brand_sum": 0.0,
+    "clicks": 5,
+    "concept_hi_clicks": 0,
+    "concept_hi_n": 0,
+    "concept_sum": 0.0,
+    "n": 5
+   },
+   "2": {
+    "asset_hi_clicks": 0,
+    "asset_hi_n": 0,
+    "asset_sum": 0.0,
+    "brand_hi_clicks": 0,
+    "brand_hi_n": 0,
+    "brand_sum": 2.3727684182192275,
+    "clicks": 5,
+    "concept_hi_clicks": 0,
+    "concept_hi_n": 0,
+    "concept_sum": 0.0,
+    "n": 5
+   }
+  },
+  "funnel": {
+   "1001": {
+    "ABANDONED": 0,
+    "BOUGHT": 0,
+    "BOUNCED": 0,
+    "BROWSED": 2,
+    "CARTED": 0,
+    "CLICKED": 2,
+    "EXPERIENCED": 0,
+    "SAW": 3,
+    "VISITED": 2
+   },
+   "1002": {
+    "ABANDONED": 0,
+    "BOUGHT": 1,
+    "BOUNCED": 0,
+    "BROWSED": 5,
+    "CARTED": 1,
+    "CLICKED": 5,
+    "EXPERIENCED": 1,
+    "SAW": 6,
+    "VISITED": 5
+   },
+   "1004": {
+    "ABANDONED": 0,
+    "BOUGHT": 0,
+    "BOUNCED": 0,
+    "BROWSED": 2,
+    "CARTED": 0,
+    "CLICKED": 2,
+    "EXPERIENCED": 0,
+    "SAW": 3,
+    "VISITED": 2
+   },
+   "1005": {
+    "ABANDONED": 0,
+    "BOUGHT": 0,
+    "BOUNCED": 0,
+    "BROWSED": 2,
+    "CARTED": 0,
+    "CLICKED": 2,
+    "EXPERIENCED": 0,
+    "SAW": 3,
+    "VISITED": 2
+   }
+  },
+  "goal_split": {
+   "need_off": {
+    "buys": 0,
+    "decisions": 9
+   },
+   "need_on": {
+    "buys": 1,
+    "decisions": 2
+   }
+  },
+  "motifs": {
+   "brand_semantic_fatigue": {
+    "n": 5,
+    "outcomes": {
+     "CLICK": 5
+    },
+    "strength_sum": 2.3727684182192275
+   },
+   "expectation_violation": {
+    "n": 4,
+    "outcomes": {
+     "BROWSE": 4
+    },
+    "strength_sum": 0.7200000000000001
+   },
+   "goal_fit": {
+    "n": 4,
+    "outcomes": {
+     "BROWSE": 1,
+     "BUY": 1,
+     "CLICK": 2
+    },
+    "strength_sum": 3.2
+   },
+   "preference_fit": {
+    "n": 11,
+    "outcomes": {
+     "CLICK": 9,
+     "IGNORE": 2
+    },
+    "strength_sum": 8.691940383056723
+   }
+  },
+  "page_pairs": [
+   [
+    4000001,
+    4000002
+   ],
+   [
+    4000001,
+    4000002
+   ]
+  ],
+  "ref_traj": [
+   {
+    "current_price": 39.0,
+    "mean_reference_price": 39.0,
+    "n_holders": 1,
+    "tick": 0
+   },
+   {
+    "current_price": 39.0,
+    "mean_reference_price": 39.0,
+    "n_holders": 5,
+    "tick": 1
+   },
+   {
+    "current_price": 39.0,
+    "mean_reference_price": 39.0,
+    "n_holders": 5,
+    "tick": 2
+   }
+  ],
+  "revenue_by_creative": {
+   "2000003": 39.0
+  },
+  "revenue_by_shopper": {
+   "1": 39.0
+  },
+  "revenue_total": 39.0,
+  "tts": [
+   1
+  ],
+  "violations": 4
+ },
+ "tick": 2
+}

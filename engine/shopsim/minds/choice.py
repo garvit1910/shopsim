@@ -53,6 +53,15 @@ def _wearout(exposures_72h: int, params: ChoiceParams) -> float:
     return max(0.0, min(1.0, over / params.wearout_scale))
 
 
+def asset_wearout(exposures_72h: int, params: ChoiceParams = DEFAULT_CHOICE_PARAMS) -> float:
+    """The 0..1 asset-repetition level decide() subtracts (row 12), exposed as
+    a pure public helper for MEASUREMENT (CONTRACT v3.8-draft: the report's
+    fatigue `asset` channel must be the number the utility actually used, not a
+    re-derivation). Read-only — calling it creates no second entry point, the
+    same way stage_probabilities() exposes the gate math without deciding."""
+    return _wearout(exposures_72h, params)
+
+
 def _price(s: Scalars) -> float | None:
     """Sanctioned derivation; None = unknown (no reference price yet)."""
     if not s.reference_price:
@@ -87,6 +96,29 @@ def _buy_probability(
         if s.active_need is not None and price > s.active_need.budget_cap:
             p *= params.budget_cap_damp  # row 4: ×0.25 damp
     return p
+
+
+def stage_probabilities(
+    a: Appraisal,
+    s: Scalars,
+    coeffs: ChoiceCoeffs,
+    kind: str = "creative",
+    params: ChoiceParams = DEFAULT_CHOICE_PARAMS,
+) -> dict[str, float]:
+    """Pure, rng-free view of the same gate math decide() draws against
+    (CONTRACT v3.5-draft item 4 — the Phase-5 decision-preview surface).
+    Creative contexts expose the CLICK gate; page contexts the
+    BROWSE/CART/BUY gates, BUY including the budget guards (rows 4 + 16).
+    The decision path is unchanged and never calls this."""
+    if kind == "creative":
+        return {"CLICK": _gate_probability("CLICK", a, s, coeffs, params)}
+    if kind != "page":
+        raise ValueError(f"unknown stimulus kind {kind!r}")
+    return {
+        "BROWSE": _gate_probability("BROWSE", a, s, coeffs, params),
+        "CART": _gate_probability("CART", a, s, coeffs, params),
+        "BUY": _buy_probability(a, s, coeffs, params),
+    }
 
 
 def decide(

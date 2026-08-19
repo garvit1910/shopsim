@@ -204,29 +204,82 @@ Why: divergence between shelves one and three IS the track — overwrite trackin
 
 ---
 
-## Phase 5 — Garvit: Dashboard & Recommendations v3 (uses: C3 fixtures + MockHydraMem)
+## Phase 5 — Garvit: Dashboard & Recommendations v3 (uses: ~~C3 fixtures + MockHydraMem~~ **amended 2026-08-19**: built against the REAL stack from the start — the live runner API (CONTRACT v3.5-draft endpoint set), real HydraMem reads, real experiment launches; fixtures/mocks are unit-test scaffolding only. **Restructured the same day** to the SwarmAds-style shell: a numbered sidebar (01 Setup · 02 Studio · 03 Market · 04 Shoppers · 05 Learnings) + pipeline stepper replacing the two-link topbar; the Market page cut from 22 simultaneous panels to one KPI row + the allocation-river hero (the rest relocated into a collapsed drawer, nothing deleted); a **shared ad market** where uploaded ads compete for one population with daily CTR-driven reallocation (v3.6-draft); **money KPIs** (revenue simulated, spend from a researched CPM in `eval/market-research.md` §5); and an **N-arm discount ladder** answering "which discount depth does the population actually reward". **Extended 2026-08-20 as Phase 5.8** — the advertiser became real (`fixtures/nisolo/`, claims perceived off the brand's own creatives), the ads became visible end-to-end, the launch race was fixed and the ladder gained an always-on control. All conventions in CONTRACT.md **v3.7-draft**, pending Atishay's ack.)
 
 *Plain words: the owner's cockpit — and the crown jewel: click one shopper and watch a person form. Their beliefs with confidence bars and receipts, their tastes as a timeline of cause-stamped changes, the need that made today different from last week, and the exact graph paths that explain the decision.*
 
-**Build items:** 5.1 run launcher (experiment type, uploads, audience sliders, scenario pack, seeds). 5.2 results views: funnels per arm, segment heatmap, CTR-by-day, promo chart, fatigue-split chart (asset vs brand-message vs concept P1), preference-drift chart, goal-conversion split (P(buy | need) vs P(buy | none)), LTV/repeat toggle (P1). 5.3 shopper drill-down, four panels: diary timeline · worldview (belief cards: value + confidence bar + "from 2 visits, 1 purchase" provenance; expectations) · preference timeline (supersession chain with cause chips: "CLICK ad X · +0.05") · goals & experience (active-needs chip with countdown; experience feed) — plus the motif-path why-trace; social ring (P1). 5.4 recommendations: Grade 1 mined rules over MetricsReport, now incl. motif/goal findings ("conversions with an active need present converted 6×"; "brand-message fatigue onset at 4 exposures — rotate concepts"); Grade 2 interviews (P1: prompt = persona + that shopper's DecisionContext; answers may cite only retrieved facts).
+**Build items:** 5.1 run launcher (experiment type, uploads, audience sliders, scenario pack, seeds) — *shipped as `/studio`: a brand/catalog picker over the server-side allowlist (`GET /catalogs`), real ad cards, image upload → ingest → **poll `/ads-manifest` → launch with the ingested catalog** (the wiring gap that silently ran the stock brand), four spec types, and a live ETA as you edit days/shoppers*. 5.2 results views: funnels per arm, segment heatmap, CTR-by-day, promo chart, fatigue-split chart (asset vs brand-message vs concept P1), preference-drift chart, goal-conversion split (P(buy | need) vs P(buy | none)), LTV/repeat toggle (P1) — *shipped as `/runs/[id]/results` (segment×stage heatmap, CTR-by-creative, motif stats, page A/B, preference drift, 6 small multiples) plus the live Market page; **fatigue is derived client-side from the event stream**, not from the C3 `fatigue_split` key (still Phase 6); LTV/repeat remains P1*. 5.3 shopper drill-down, four panels: diary timeline · worldview (belief cards: value + confidence bar + "from 2 visits, 1 purchase" provenance; expectations) · preference timeline (supersession chain with cause chips: "CLICK ad X · +0.05") · goals & experience (active-needs chip with countdown; experience feed) — plus the motif-path why-trace; social ring (P1) — *shipped as `components/Inspector.tsx` over the v3.5-draft shopper endpoints, incl. **decision replay** through the pure `/decision-preview` (real appraisal + `stage_probabilities`, with a need-off counterfactual) and preference version rails*. 5.4 recommendations: Grade 1 mined rules over MetricsReport, now incl. motif/goal findings ("conversions with an active need present converted 6×"; "brand-message fatigue onset at 4 exposures — rotate concepts"); Grade 2 interviews (P1: prompt = persona + that shopper's DecisionContext; answers may cite only retrieved facts) — *shipped as `web/lib/recommendations.ts`: up to 6 rule-based cards, each carrying the cited numbers it fired on; Grade 2 remains P1*.
 
 **Checkpoints**
-- [ ] Entire UI drivable on fixtures with the engine stubbed.
-- [ ] The fixture story shopper renders coherently across all four panels; motifs render as paths.
-- [ ] Preference timeline shows the golden chain with cause chips.
+- [x] ~~Entire UI drivable on fixtures with the engine stubbed.~~ **amended 2026-08-19**: the UI is drivable against the live engine API — index, studio, market, results and experiment pages all read real endpoints; `npm run build` clean.
+- [x] The story shopper renders coherently across all four panels; motifs render as paths. *(Verified 2026-08-18 on the demo brand — Maya #0042: decision replay P(buy) 0.345 vs 0.152 need-removed, motif paths, abstention on a null belief. **Not yet re-verified against the Nisolo catalog.**)*
+- [ ] Preference timeline shows the golden chain with cause chips. *(Rails + cause chips render; the golden chain itself is a demo-brand fixture and has not been re-pinned on Nisolo.)*
 - [ ] 5 interview answers spot-checked: zero facts outside that shopper's context (P1).
-- [ ] ≥ 3 sensible Grade-1 recommendations from fixture metrics.
+- [x] ≥ 3 sensible Grade-1 recommendations from fixture metrics. *(`web/lib/recommendations.ts` mines 6 rules — need-wave timing, creative rotation, promo addiction, budget shift, landing-page alignment, drift — each rendered with the numbers that triggered it. How many fire is run-dependent.)*
+
+**Phase-5.8 — the real brand (2026-08-19, later)**
+- [x] **The ads are visible.** `/config` reduced every creative to `{id: name}` and no endpoint served ad copy, so the UI's ceiling was a name and a colour chip — text ads literally rendered as a grey "TEXT AD" box. New `CreativeCard` surface + `AdCard`/`AdRoster`: image, headline, body, perceived-claim chips, offer and price, on the market page, Studio, the CTR multiples and the river legend.
+- [x] **The brand is real.** `fixtures/nisolo/` — Nisolo's own five campaign creatives, real products at real prices ($109–295), perceived once by the multimodal eye and frozen. The "Up to 40% Off" creative's discount is **read off the image**, never authored; a test fails if that stops being true. `fixtures/demo-brand/` is byte-untouched.
+- [x] **Premium recalibration.** Budgets ×2.2 and `budget_cap_by_category` from the observed price bands, or the absolute-dollar gates in `choice.py` block nearly every purchase; arrival rates re-keyed onto the categories Nisolo sells. Cited in `eval/market-research.md` §6. *(Verified: a 60×6 smoke run buys at $109/$150/$250.)*
+- [x] **The launch no longer looks broken.** The registry publishes a run before `prepare()` writes its manifest; `waitForFirstRun` matched on label alone and `loadStatic` awaited the manifest unguarded, so a healthy run rendered `manifest.json not found` with no recovery but a reload. Now: new-run detection, a non-fatal manifest with a boot poller, an additive `"preparing"` status naming the phase, and an ETA countdown fed by `GET /engine/pace` that rolls forward +2:00 rather than stalling at zero.
+- [x] **The ladder answers the question.** Pick 1–3 ads, pick depths; a **0% control always runs**, the discounted products are derived from the ads you picked (previously hardcoded to one unrelated product), and the verdict reports each depth against the control, per ad. *(Verified on a real 3-arm run: full price won at $777 vs $733/$690 — the same six shoppers bought at every depth, so the discount was pure margin loss plus $37 of reference-price erosion.)*
+- [x] **Engine pace is the schedule.** Measured: the same 200×60 shape ran 18.5 s/tick on a fresh store and 112 s/tick on a loaded one, consolidation 60–80% of every tick. The store-reset ritual is in `infra/README.md`; Studio defaults dropped to 150×24 so a run finishes while you watch it.
+- [ ] Demo capture on a freshly reset store.
+
+**Phase-5 restructure additions (2026-08-19)**
+- [x] Uploaded ads actually reach the simulation — Studio ingests, polls `/ads-manifest`, and launches with the manifest's catalog + perception cache + creative ids. *(Before: `buildSpec()` emitted none of those, so uploads were perceived and then silently ignored while the stock demo catalog ran.)*
+- [x] Shared ad market + adaptive allocation, deterministic and resume-identical. *(tests/test_allocation.py; the exposure substream, draw order and cap checks are untouched — only reach thresholds move.)*
+- [x] Purchase revenue in results (`revenue {total, by_creative}`), live via `/results-live`; ad spend stays a labeled dashboard assumption, never engine truth.
+- [x] Pricing discount ladder (`discount_levels`) → one arm per depth + a revenue verdict with a reference-price-erosion warning.
+- [ ] End-to-end demo capture on a wiped store (5 ads × 60 days, then the ladder).
 
 ---
 
-## Phase 6 — Atishay: Analytics & MetricsReport v3 (uses: Phase-3 scripted runs · parallel to 4–5)
+## Phase 6 — Atishay: Analytics & MetricsReport v3 (uses: Phase-3 scripted runs · parallel to 4–5) — **amended 2026-08-20**: roughly two thirds of 6.1's *metric emission* already landed inside Phases 3–5, because the live dashboard needed those series before Phase 6 was scheduled. What remains is the genuinely statistical half (CIs, the belief distributions, the fatigue split) plus the 6.2 golden run. Ownership unchanged — this is a status note, not a handover. **Closed the same day** (Garvit, with Atishay's phases untouched): the statistical half shipped as `engine/shopsim/analytics/`, the placeholders became authoritative and the UI now reads them, the 6.2 golden is committed at `fixtures/golden-run/`, and the P1 social layer was pulled forward as an opt-in, byte-neutral-when-off addition. Conventions in CONTRACT.md **v3.8-draft**, pending Atishay's ack.
 
 **Build items:** 6.1 funnels per arm × segment with bootstrap CIs; CTR-by-day; drop-off localization; reference-price trajectories; fatigue split (asset wearout vs brand-message vs concept P1); preference-drift curves (learned w over time per concept × segment); goal stats (conversion split, time-to-satisfaction); belief metrics (confidence distribution, drift, provenance coverage = % of subjective versions carrying a cause); violation counts + bounce delta; motif prevalence by outcome; repeat-purchase/LTV per arm (P1); social lift (P1). Emit MetricsReport per C3. 6.2 tiny golden run (5 shoppers, 3 ticks, one full evidence chain) with hand-checked numbers asserted in tests.
 
+**Status as of 2026-08-20 — what `results.json` actually emits today**
+
+*Already populated* (shipped early, in the phase noted; verified against
+`runs/r033-nisolo-smoke-market/results.json`):
+
+| 6.1 item | key | landed in |
+|---|---|---|
+| funnels per arm × segment | `funnel` | Phase 3 |
+| CTR-by-day | `ctr_by_day` | Phase 3 |
+| CTR per creative per day | `ctr_by_creative_by_day` | Phase 4.1a |
+| drop-off localization | `funnel_by_creative`, `funnel_by_page` (+`bounce_rate`) | Phase 4.1a |
+| reference-price trajectories | `reference_price_trajectory` | Phase 3 / 4.2 |
+| preference-drift curves | `preference_drift` | Phase 3 |
+| goal stats (split + time-to-satisfaction) | `goal_stats` | Phase 3 |
+| motif prevalence by outcome | `motif_stats` | Phase 3 |
+| violation counts | `violations.count` | Phase 3 |
+
+*Beyond the original C3 list* (added because the dashboard needed them):
+**`revenue {total, by_creative}`** (v3.6-draft — purchase money is simulated
+truth; ad spend deliberately stays a labelled dashboard assumption);
+**`belief_avg`** trust sweep, carried through `results_state` →
+`/results-live.live_extras` and *not* emitted into the C3 skeleton so the
+Phase-6 `belief_*` keys stay free (v3.5-draft); and **cross-arm analytics in
+`comparison.json`** — the ad_test per-creative table, and the pricing ladder's
+per-rung `creatives[]` + `vs_control` + `control_level`/`best_vs_control`
+(v3.7-draft).
+
+*Closed 2026-08-20 — the real Phase 6 work (CONTRACT v3.8-draft, new package `engine/shopsim/analytics/`):*
+- [x] `ci` — bootstrap confidence intervals on the funnels, **clustered on shoppers** (a person's events are one correlated story, so the offset is the independent unit — the accumulator now keeps a per-offset count vector for exactly this). 2,000 percentile replicates seeded from `(seed, "ci", scope, metric)`; keys are `<metric>` per arm and `<metric>:<segment>` per segment. A ratio with an empty denominator gets no interval rather than a fabricated one.
+- [x] `fatigue_split` — three PARALLEL channels measured at decision time from the context the mind actually saw: `asset` (`choice.asset_wearout`, the same number the utility subtracted), `brand_msg` (the `brand_semantic_fatigue` motif), `concept` (`concept_saturation`, retrieved but behaviourally inert at P0 — said so, not hidden). Per tick: mean level plus the CTR of high- vs low-fatigue decisions, which answers F12 directly. **The UI now reads the field**: the fatigue panel plots the engine channels and falls back to the client derivation, visibly labelled, only for runs recorded before this; `detectors.ts` gained a measured rule that replaces the CTR-decay heuristic wherever a channel exists.
+- [x] `belief_confidence_dist`, `belief_drift`, `provenance_coverage` — the belief metrics. Drift and its new confidence twin come free from the v3.5 sweep's existing `live_holds` read; the distribution and coverage come from one read-only end-of-run sweep (~4 statements/shopper, parallel). `provenance_coverage` is a summary dict, not a bare float, and states its own scope (PREFERS over full version history, beliefs over live versions). Its `cause_kinds` histogram is **F7 as a metric**: on the golden it reads `{BOUGHT 1, BROWSED 25, EXPERIENCED 3}` — SAW never appears.
+- [x] `violations.bounce_delta` — the per-run counterpart: pooled B−A over the run's own seeded `page_ids` splits, in declared order. Cross-arm deltas stay in `comparison.json`.
+- [x] repeat-purchase / LTV per arm (P1) — realized revenue per buyer over the simulated window, no projection. **Social lift (P1) with the layer built**: `population.social` draws a seeded Watts-Strogatz small world (degree ≈ 4, weights U(0.4, 0.9), substream `(seed,"social",population)`) and writes `TRUSTS_PERSON`; `AppraisalParams.w_social` (default 0.0) feeds the `social_proof` motif's valence into credibility per registry row 20. **Opt-in and byte-neutral when off** — absent config ⇒ zero social statements, and the Phase-6 golden re-runs unchanged, which is the proof. `social_lift` carries `causal: false` when w_social is 0, because a gap measured through an inert channel is correlation.
+- [x] **6.2 golden run** — `fixtures/golden-run/`: 5 shoppers × 3 ticks on the demo brand, ScriptedMind deciding and the real `consolidate()` digesting, one full evidence chain inside three ticks (SAW → CLICKED → VISITED/PRICE_SEEN/BROWSED → CARTED → BOUGHT → NEED_SATISFIED → EXPERIENCED). `tests/test_golden_run.py` checks the committed artifacts with **no database** — re-deriving the funnel from `events.jsonl` and recomputing every pure metric from the snapshot — and `tests/real/test_golden_run_real.py` re-runs it on the live store for the same report back.
+
 **Checkpoints**
-- [ ] MetricsReport validates against C3.v3; drift + goal + confidence metrics populated.
-- [ ] Golden-run numbers — including the evidence blend — match hand computation exactly.
-- [ ] One command from run directory → full report.
+- [x] MetricsReport validates against C3.v3; drift + goal + confidence metrics populated. *(2026-08-20: every C3 key carries a value on `fixtures/golden-run/results.json` — `belief_confidence_dist` (10 bins/aspect), `belief_drift` (value + confidence series), `provenance_coverage` (1.0), `ci`, `fatigue_split`, `bounce_delta`, `repeat_ltv_by_arm`; `social_lift` is `null` on a social-free run by design and real on a social one. `validate_results` gained row-shape checks for each and still accepts every pre-Phase-6 file, including the frozen `fixtures/scripted-run-1/results.json`.)*
+- [x] Golden-run numbers — including the evidence blend — match hand computation exactly. *(The blend stays pinned by `test_evidence.py`/`test_consolidate.py`/`test_golden_chain_real.py`; the whole-run report is now pinned too — 19 DB-free assertions in `tests/test_golden_run.py`, each carrying the arithmetic that produces it, plus 4 live-stack assertions. Same-seed determinism re-verified across two run blocks: byte-identical under the run_index normalization.)*
+- [x] One command from run directory → full report. *(`python -m shopsim.analytics report --run <id|dir> [--config CFG] [--write] [--no-graph] [--json]`. Verified on a fresh run and on `runs/r033-nisolo-smoke-market`, where it degrades honestly — it names the blocks a pre-Phase-6 snapshot cannot support instead of inventing them.)*
+
+*Operational finding worth carrying forward (pinned, not fixed — `evidence.py` is frozen by hash, Law 13):* `blend()` starts a concept the shopper has never held at `(w=0, E=0)`, so the **first** behavioral event on it sets `w = PREF_TARGET = 1.0` outright — with no prior evidence, the observation is all the evidence there is. Shoppers who held a prior (E0 = 2) blend normally. This is why a preference-drift series can read a flat `1.0`, and it predates Phase 6 (visible in `fixtures/scripted-run-1` and every Phase-5 run). `tests/test_golden_run.py::test_first_learned_version_of_an_unheld_concept_saturates` pins it deliberately, so a future cold-start rule change fails loudly rather than silently reshaping every drift chart.
 
 ---
 
@@ -309,6 +362,7 @@ Humane error states throughout. 8.4 Grade-3 recommendations if time (P2): auto-b
 - [ ] Every README command copy-pastes and runs.
 - [ ] Video ≤ 3:00, audible, captioned, works logged-out.
 - [ ] Submitted with buffer; git log clean; no Adcero code.
+- [ ] **Store reset before the capture** (`infra/README.md`). Measured 2026-08-19: the *same* 200×60 shape ran 18.5 s/tick on a fresh store and 112 s/tick on a loaded one — consolidation is 60–80% of every tick and slows as the graph grows. A flagship run started on a full store is hours, not minutes. This is the single likeliest way to lose the demo window.
 
 ---
 

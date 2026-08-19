@@ -1,0 +1,46 @@
+{
+  "creative_id": 2000105,
+  "descriptor": {
+    "body": "Sustainable shoes and accessories that do it all. A five-layer memory foam insole with built-in arch support, gripped rubber sole savers, and Leather Working Group certified leather that ages well.",
+    "brand_id": 6100,
+    "creative_id": 2000105,
+    "headline": "Timeless design. Everyday function. Next-level comfort.",
+    "image_sha256": "386446a475a04bcf1cc0412befd3ed17c9a7b4075d7e2abd172e69709eeace47",
+    "name": "Does It All",
+    "offer_product_ids": [
+      3000105
+    ]
+  },
+  "hash": "6a9ec731bb167336a97934543f4eff572131474fc44d069e62b761560242a852",
+  "model": "gpt-4o-mini",
+  "output": {
+    "claimed_discounts": [],
+    "claims": [
+      {
+        "concept": "COMFORT",
+        "strength": 0.8
+      },
+      {
+        "concept": "ARCH_SUPPORT",
+        "strength": 0.7
+      },
+      {
+        "concept": "GRIP",
+        "strength": 0.6
+      },
+      {
+        "concept": "ECO_FRIENDLY",
+        "strength": 0.7
+      },
+      {
+        "concept": "STYLE",
+        "strength": 0.5
+      },
+      {
+        "concept": "DURABILITY",
+        "strength": 0.5
+      }
+    ]
+  },
+  "prompt_version": "p1-img1"
+}

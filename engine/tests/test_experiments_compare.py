@@ -1,6 +1,8 @@
 """Phase 4: cross-arm comparison reports (CONTRACT v3.4-draft) — cross-arm
 deltas live in comparison.json, never in a single run's results.json."""
 
+import pytest
+
 from shopsim.experiments.compare import build_comparison
 
 
@@ -97,3 +99,100 @@ def test_scenario_comparison_goal_stats():
     assert cmp["scenario"]["arms"]["wave_on"]["bought_total"] == 7
     assert cmp["scenario"]["arms"]["wave_off"]["bought_total"] == 2
     assert cmp["experiment"]["arms"] == ["wave_off", "wave_on"]
+
+
+# -- ladder vs control (v3.7-draft) -----------------------------------------
+
+
+def _ladder_raw(levels):
+    return {"experiment": {"type": "pricing", "name": "ladder", "spec": {
+        "discount_levels": levels,
+        "promo": {"product_promos": [{"product_id": 3000101, "cycles": [
+            {"cycle": 1, "start_tick": 2, "end_tick": 5, "discount_pct": 0.0}]}]},
+    }}}
+
+
+def _arm_results(arm, *, revenue, bought, by_creative):
+    return {
+        "funnel": {arm: {"1001": {"BOUGHT": bought}}},
+        "funnel_by_creative": {str(cid): {"SAW": v["saw"], "CLICKED": v["clicked"],
+                                          "BROWSED": 0, "CARTED": 0, "BOUGHT": v["bought"]}
+                               for cid, v in by_creative.items()},
+        "revenue": {"total": revenue,
+                    "by_creative": {str(cid): v["revenue"] for cid, v in by_creative.items()}},
+        "reference_price_trajectory": [],
+        "goal_stats": {},
+    }
+
+
+def test_ladder_reports_every_depth_against_the_control():
+    """The launcher always sends a 0% arm, so each depth can be read as a
+    change from running the same ads at full price."""
+    raw = _ladder_raw([0.0, 0.2, 0.4])
+    results = {
+        "d0": _arm_results("d0", revenue=400.0, bought=4, by_creative={
+            2000103: {"saw": 100, "clicked": 10, "bought": 2, "revenue": 218.0},
+            2000105: {"saw": 100, "clicked": 8, "bought": 2, "revenue": 182.0}}),
+        "d20": _arm_results("d20", revenue=560.0, bought=6, by_creative={
+            2000103: {"saw": 100, "clicked": 14, "bought": 4, "revenue": 380.0},
+            2000105: {"saw": 100, "clicked": 8, "bought": 2, "revenue": 180.0}}),
+        "d40": _arm_results("d40", revenue=300.0, bought=5, by_creative={
+            2000103: {"saw": 100, "clicked": 16, "bought": 4, "revenue": 260.0},
+            2000105: {"saw": 100, "clicked": 7, "bought": 1, "revenue": 40.0}}),
+    }
+    section = build_comparison(raw, results)["pricing"]
+
+    assert section["control_level"] == 0.0
+    assert [r["level"] for r in section["ladder"]] == [0.0, 0.2, 0.4]
+    # 20% earns the most; 40% discounts past the point of paying for itself
+    assert section["best_level"] == 0.2
+
+    d20 = next(r for r in section["ladder"] if r["level"] == 0.2)
+    assert d20["vs_control"]["control_arm"] == "d0"
+    assert d20["vs_control"]["revenue_delta"] == 160.0
+    assert d20["vs_control"]["revenue_lift_pct"] == 40.0
+    assert d20["vs_control"]["bought_delta"] == 2
+
+    # per-ad: the sale creative gained, the lifestyle one was flat
+    by_ad = d20["vs_control"]["by_creative"]
+    assert by_ad["2000103"]["revenue_delta"] == 162.0
+    assert by_ad["2000103"]["bought_delta"] == 2
+    assert by_ad["2000105"]["revenue_delta"] == -2.0
+    assert by_ad["2000103"]["ctr_delta"] == pytest.approx(0.04)
+
+    # the control compares against itself: all zeros, never None
+    control = next(r for r in section["ladder"] if r["level"] == 0.0)
+    assert control["vs_control"]["revenue_delta"] == 0.0
+
+
+def test_ladder_without_a_control_still_reports_depths():
+    """A hand-written spec may omit 0%. The section must degrade rather than
+    crash — it simply has nothing to compare against."""
+    raw = _ladder_raw([0.2, 0.4])
+    results = {
+        "d20": _arm_results("d20", revenue=100.0, bought=1, by_creative={
+            2000103: {"saw": 10, "clicked": 2, "bought": 1, "revenue": 100.0}}),
+        "d40": _arm_results("d40", revenue=90.0, bought=1, by_creative={
+            2000103: {"saw": 10, "clicked": 3, "bought": 1, "revenue": 90.0}}),
+    }
+    section = build_comparison(raw, results)["pricing"]
+    assert section["control_level"] is None
+    assert section["best_level"] == 0.2
+    assert all("vs_control" not in r for r in section["ladder"])
+
+
+def test_ladder_rows_carry_per_creative_funnels():
+    raw = _ladder_raw([0.0, 0.3])
+    results = {
+        "d0": _arm_results("d0", revenue=50.0, bought=1, by_creative={
+            2000103: {"saw": 40, "clicked": 4, "bought": 1, "revenue": 50.0}}),
+        "d30": _arm_results("d30", revenue=80.0, bought=2, by_creative={
+            2000103: {"saw": 40, "clicked": 6, "bought": 2, "revenue": 80.0}}),
+    }
+    section = build_comparison(raw, results)["pricing"]
+    rung = next(r for r in section["ladder"] if r["level"] == 0.3)
+    row = rung["creatives"][0]
+    assert row["creative"] == 2000103
+    assert (row["SAW"], row["CLICKED"], row["BOUGHT"]) == (40, 6, 2)
+    assert row["ctr"] == pytest.approx(0.15)
+    assert row["revenue"] == 80.0

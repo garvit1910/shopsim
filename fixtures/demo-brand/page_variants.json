@@ -1,5 +1,5 @@
 {
-  "comment": "Page A/B descriptors -> SHOWS edges. 4000002 deliberately hides the DISCOUNT (5011) claimed by creative 2000003: EXPECTS minus SHOWS = expectation_violation at the page decision (matches the Appendix-B motif path).",
+  "comment": "Page A/B descriptors -> SHOWS edges. 4000002 deliberately hides the DISCOUNT (5011) claimed by creative 2000003: EXPECTS minus SHOWS = expectation_violation at the page decision (matches the Appendix-B motif path). 4000003-4000005 added 2026-08-19 (Phase 5): landing pages for the other three products the stock creatives offer. Before them only 3000001 had a page, so creatives 2000002/2000004/2000005 dead-ended at CLICK and could never convert — in a SHARED market that let a high-CTR ad win the whole budget while earning zero revenue. Each shows its product's catalog.csv attributes plus the concepts its creative claims, i.e. all three are CONSISTENT pages; 4000002 remains the only violating variant.",
   "page_variants": [
     {
       "page_id": 4000001,
@@ -12,6 +12,24 @@
       "product_id": 3000001,
       "variant": "violating",
       "shows_concept_ids": [5003, 5004, 5005, 5001]
+    },
+    {
+      "page_id": 4000003,
+      "product_id": 3000003,
+      "variant": "consistent",
+      "shows_concept_ids": [5001, 5017, 5028]
+    },
+    {
+      "page_id": 4000004,
+      "product_id": 3000004,
+      "variant": "consistent",
+      "shows_concept_ids": [5000, 5006, 5026]
+    },
+    {
+      "page_id": 4000005,
+      "product_id": 3000006,
+      "variant": "consistent",
+      "shows_concept_ids": [5017, 5005, 5012]
     }
   ]
 }

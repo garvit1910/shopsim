@@ -53,9 +53,13 @@ def test_skeleton_is_c3_valid_and_populated():
     assert "preference_fit" in results["motif_stats"]
     assert results["motif_stats"]["preference_fit"]["prevalence_by_outcome"] == {
         "BROWSE": 1, "BUY": 1}
-    # typed-empty Phase-6 keys are present
-    assert results["fatigue_split"] == {"asset": [], "brand_msg": []}
+    # Phase-6 keys (v3.8-draft): the three fatigue channels exist as channels
+    # even with no creative decisions observed; the finalize-only blocks stay
+    # the typed-empty placeholders until analytics.report fills them.
+    assert set(results["fatigue_split"]) == {"asset", "brand_msg", "concept"}
+    assert all(v == [] for v in results["fatigue_split"].values())
     assert results["belief_confidence_dist"] == [] and results["ci"] == {}
+    assert results["provenance_coverage"] is None
 
 
 def test_state_round_trips_exactly():
@@ -80,3 +84,79 @@ def test_validator_catches_missing_and_mistyped():
     broken = dict(results)
     broken["run_manifest"] = {"seed": 1}
     assert any("run_manifest" in p for p in validate_results(broken))
+
+
+# -- revenue (CONTRACT v3.6-draft item 3) -----------------------------------
+
+
+def test_revenue_sums_bought_prices_and_attributes_to_the_causing_creative():
+    acc = make_acc()
+    sid0, sid1 = make_sid(0, 0), make_sid(0, 1)
+    acc.observe_events([
+        Event(EventType.SAW, sid0, T0, 0, 2000003),
+        Event(EventType.BOUGHT, sid0, T0, 0, 3000001,
+              props=(("price", 33.15), ("cause_creative", 2000003))),
+        Event(EventType.BOUGHT, sid1, T0, 0, 3000002,
+              props=(("price", 41.85), ("cause_creative", 2000004))),
+    ], tick=0)
+    acc.observe_events([
+        Event(EventType.BOUGHT, sid0, T0 + DAY, 0, 3000001,
+              props=(("price", 10.00), ("cause_creative", 2000003))),
+    ], tick=1)
+
+    assert acc.revenue_total == 85.00
+    assert acc.revenue_by_creative == {"2000003": 43.15, "2000004": 41.85}
+
+    out = acc.results(MANIFEST)
+    assert out["revenue"] == {"total": 85.00,
+                              "by_creative": {"2000003": 43.15, "2000004": 41.85}}
+    validate_results(out)
+
+
+def test_revenue_ignores_non_purchase_events():
+    acc = make_acc()
+    sid = make_sid(0, 0)
+    acc.observe_events([
+        Event(EventType.SAW, sid, T0, 0, 2000003),
+        Event(EventType.CLICKED, sid, T0, 0, 2000003),
+        Event(EventType.CARTED, sid, T0, 0, 3000001,
+              props=(("cause_creative", 2000003),)),
+        Event(EventType.PRICE_SEEN, sid, T0, 0, 3000001,
+              props=(("price", 39.0), ("cause_creative", 2000003))),
+    ], tick=0)
+    assert acc.revenue_total == 0.0
+    assert acc.revenue_by_creative == {}
+
+
+def test_revenue_round_trips_through_results_state():
+    acc = make_acc()
+    observe_some(acc)
+    revived = ResultsAccumulator.from_state(
+        json.loads(json.dumps(acc.state())),
+        segment_by_offset={0: 1001, 1: 1008},
+        drift_concepts=[5003], hero_product=3000001)
+    assert revived.revenue_total == acc.revenue_total
+    assert revived.revenue_by_creative == acc.revenue_by_creative
+    assert revived.results(MANIFEST) == acc.results(MANIFEST)
+
+
+def test_pre_v36_snapshots_still_resume():
+    """A results_state written before the revenue keys existed must load."""
+    acc = make_acc()
+    observe_some(acc)
+    old = json.loads(json.dumps(acc.state()))
+    del old["revenue_total"], old["revenue_by_creative"]
+    revived = ResultsAccumulator.from_state(
+        old, segment_by_offset={0: 1001, 1: 1008},
+        drift_concepts=[5003], hero_product=3000001)
+    assert revived.revenue_total == 0.0
+    assert revived.revenue_by_creative == {}
+
+
+def test_validator_accepts_results_without_revenue():
+    """Additive key: pre-v3.6 results.json files stay valid."""
+    acc = make_acc()
+    observe_some(acc)
+    out = acc.results(MANIFEST)
+    del out["revenue"]
+    validate_results(out)

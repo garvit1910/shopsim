@@ -105,7 +105,9 @@ def cmd_resume(args) -> int:
         runner.results = ResultsAccumulator.from_state(
             snap["state"], segment_by_offset=runner.segment_by_offset,
             drift_concepts=runner.results.drift_concepts,
-            hero_product=runner.results.hero_product)
+            hero_product=runner.results.hero_product,
+            choice_params=runner.results.choice_params,
+            w_social=runner.results.w_social)
 
     state = RunnerState()
     state.rebuild_from_records(clean, cfg.t0, cfg.tick_seconds, runner.page_of)

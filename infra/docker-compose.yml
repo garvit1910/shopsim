@@ -1,7 +1,31 @@
-# HydraDB local dev (Phase 0.2) — seed of the Phase-9 compose file (adds engine + web).
-# Bring up via ./up.sh (pre-creates store/cache dirs + auth token; compose can't).
-# Digest pinned per PLAN decision 9; bump deliberately, never implicitly.
+# HydraDB local dev (Phase 0.2) + engine/web seeds (Phase 5.7 → finalized in
+# Phase 9). Bring up via ./up.sh (pre-creates store/cache dirs + auth token;
+# compose can't). Digest pinned per PLAN decision 9; bump deliberately, never
+# implicitly. `docker compose up hydradb` alone keeps the Phase-0 behavior;
+# `--profile full` adds engine (runner API :8000) + web (terminal :3000).
 services:
+  engine:
+    profiles: ["full"]
+    build: { context: .., dockerfile: infra/engine.Dockerfile }
+    depends_on: [hydradb]
+    environment:
+      SHOPSIM_HYDRA_URI: bolt://hydradb:7687
+      SHOPSIM_HYDRA_TOKEN_FILE: /repo/infra/hydradb-data/auth-token
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../fixtures:/repo/fixtures
+      - ../runs:/repo/runs
+      - ./hydradb-data:/repo/infra/hydradb-data:ro
+  web:
+    profiles: ["full"]
+    build: { context: ../web }
+    depends_on: [engine]
+    environment:
+      SIM_API_URL: http://engine:8000
+    ports:
+      - "3000:3000"
   hydradb:
     image: ghcr.io/hydra-db/hydradb@sha256:db78309a233be54662db29744047e985a39b51c45a270d1a1f47c31a62cdb709
     user: "${DOCKER_UID:-501}:${DOCKER_GID:-20}"

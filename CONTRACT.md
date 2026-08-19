@@ -1,10 +1,16 @@
 # CONTRACT.md — the three inter-lane contracts
 
-**Version: 3.4-draft** (3.3 flagged to Garvit 2026-08-17 and built on by
-Phase 4; 3.4-draft adds the experiment-adapter conventions — additive only,
-no C1/C2/C3 signature, enum, taxonomy, ENTRY_POINTS-row or evidence.py
-change, plus one C1 scalar bug-fix (cart re-derivation) — see change log;
-pending Atishay's ack at the next sync)
+**Version: 3.8-draft** (3.3 flagged to Garvit 2026-08-17 and built on by
+Phase 4; 3.4-draft added the experiment-adapter conventions, 3.5-draft the
+live dashboard data plane, 3.6-draft the shared ad market + pricing ladder, 3.7-draft the creative-text
+read surface + the Nisolo brand fixture, 3.8-draft the Phase-6 analytics that
+fill C3's remaining placeholders + the opt-in social layer —
+all additive only, no C1/C2/C3 signature, enum, taxonomy, ENTRY_POINTS-row or
+evidence.py change, plus one C1 scalar bug-fix in 3.4 (cart re-derivation) —
+see change log; **3.4-draft through 3.8-draft all pending Atishay's
+ack at the next sync**. Note: this header sat at 3.4-draft while the
+3.5-draft change-log entry was already written — the bump was missed then and
+is corrected here.)
 **Change rule:** any contract or registry change = 5-minute call + version bump here, with a line in the change log at the bottom. `context.scalars` keeps the old v3 MemoryPacket byte-for-byte (first nine fields) — that back-compat is why ScriptedMind and the Phase-3 runner survive every architecture change.
 
 Code is the enforcement layer: everything in this file has a single importable
@@ -223,9 +229,35 @@ social_lift?
 ci{metric: [lo, hi]}
 ```
 
+**Concrete shapes** (Phase 3 fixed the first eight; Phase 6 / v3.8-draft fixed
+the rest, which had been typed-but-empty since Phase 3):
+
+```
+fatigue_split{channel: [{tick, n, mean, high_n, high_ctr, low_n, low_ctr}]}
+    channels: asset | brand_msg | concept
+belief_drift[{aspect, about, segment|"all", series[], confidence_series[]}]
+belief_confidence_dist[{aspect, bin_lo, bin_hi, count}]         10 bins/aspect
+provenance_coverage{coverage, prefers{versions, learned_versions, with_cause,
+    coverage, cause_kinds{}}, beliefs{versions, with_provenance, coverage},
+    belief_scope} | null
+ci{"<metric>"|"<metric>:<segment>": [lo, hi]}
+    metrics: ctr · browse_rate · cart_rate · buy_rate · buy_per_exposure ·
+             p_buy_need_on · p_buy_need_off
+repeat_ltv_by_arm[{arm, buyers, buys, repeat_buyers, repeat_rate,
+    buys_per_buyer, revenue_total, revenue_per_buyer}]
+social_lift{p_buy_social_on, p_buy_social_off, lift, decisions_on,
+    decisions_off, w_social, causal, note} | null
+violations{count, bounce_delta}    bounce_delta = within-run pooled B - A
+```
+
+Additive keys beyond the C3 list, in emission order:
+`funnel_by_creative` · `funnel_by_page` · `ctr_by_creative_by_day` (v3.4-draft)
+· `revenue{total, by_creative}` (v3.6-draft).
+
 Stand-in: committed fixture files from a ScriptedMind run land in
 `/fixtures/scripted-run-1/` (Atishay, out of Phase 3). Garvit builds the entire
-dashboard on those fixtures.
+dashboard on those fixtures. The Phase-6 golden — 5 shoppers x 3 ticks, one
+full evidence chain, every number hand-checked — is `/fixtures/golden-run/`.
 
 ---
 
@@ -570,3 +602,353 @@ props), consolidate purity (skips until a Mind implementation exists).
      promo-addiction scenario). ScriptedMind never CARTs, so every committed
      fixture is bit-for-bit unaffected; pinned by
      `tests/test_cart_rederivation.py`.
+- **3.5-draft** (2026-08-18, Garvit — Phase 5, the live dashboard; additive
+  only: no C1/C2/C3 signature, enum, taxonomy, ENTRY_POINTS-row or
+  evidence.py change; the three Phase-3 endpoints and every results.json/C3
+  key are byte-identical; pending Atishay's ack at the next sync):
+  1. **Dashboard API surface** (`runner/api.py`, same read-only FastAPI):
+     `GET /runs/{id}/manifest` · `/events?after=<byte>&limit=` (JSONL tail by
+     byte offset; a trailing partial line is dropped and re-served next poll;
+     `after` beyond the file restarts at 0 — resume truncation) ·
+     `/results-live` (latest `results_state_{k}.json` rendered through
+     `ResultsAccumulator.from_state().results()` — the FULL C3 shape at tick
+     k, plus `live_extras.belief_avg` from item 3, kept OUT of the C3
+     skeleton so the Phase-6 `belief_*` keys stay untouched) · `/config`
+     (raw run_config + an `effective` block computed with the shipped
+     `RunConfig` helpers: per-arm schedule, promo windows, goal overrides +
+     waves) · `/population` (deterministic `generate_population` recompute —
+     identity + segment ONLY; traits/coeffs/budget never leave the server,
+     Law 12/15) · `/shoppers/{offset}/{worldview | preference-history/{c} |
+     belief-history | trace/{s}}` (the `export-fixtures` read pattern,
+     per-run HydraMem + lock, reads as-of the last completed tick) ·
+     `GET/POST /experiments`(+`/{name}`, `/ingest-ads`). The one POST spawns
+     `python -m shopsim.experiments run` detached (pid + log files) — Law 8
+     intact: the dashboard never writes the graph; the engine subprocess is
+     the admitted writer. **Launches are serialized (409 while any run is
+     live)** because `RunStore.allocate`'s registry read-modify-write is not
+     concurrent-safe.
+  2. **`GET .../decision-preview/{stimulus_id}`** — the "why" surface: the
+     REAL `get_decision_context` → the REAL `appraise()` (traits from the
+     deterministic population recompute, server-side only) → the new pure
+     helper `minds.choice.stage_probabilities()` (item 4). When
+     `active_need` is present the response adds a labeled counterfactual
+     (same context, `active_need` nulled + goal_fit motifs stripped,
+     re-appraised). No rng anywhere; two calls are byte-identical.
+  3. **Belief sweep** (`runner/results.py::end_tick_sweep`): a third
+     statement per shopper in the existing `run_grouped` batch (live HOLDS);
+     mean trust-belief value per brand × segment lands in a new accumulator
+     field `belief_avg` keyed `"trust:{brand}:{seg}"` / `"trust:{brand}:all"`
+     (same per-tick list + None-padding convention as `drift`).
+     `results_state` round-trips it via `.get` (pre-3.5 snapshots still
+     resume); `results()` does NOT emit it — C3 and the Phase-6 placeholders
+     are untouched. Powers the live "avg brand trust" pulse.
+  4. **`minds/choice.py::stage_probabilities(a, s, coeffs, kind, params)`**
+     (public, pure, rng-free): the per-gate advance probabilities `decide()`
+     draws against — creative → CLICK; page → BROWSE/CART/BUY (BUY includes
+     the budget guards). The decision path is unchanged and never calls it.
+
+- **3.6-draft** (2026-08-19, Garvit — Phase 5 restructure: the shared ad
+  market, adaptive allocation, purchase revenue, and the pricing ladder;
+  additive conventions only, no C1/C2/C3 signature, enum, taxonomy,
+  ENTRY_POINTS-row or evidence.py change; pending Atishay's ack at the next
+  sync):
+  1. **`ad_test` spec key `market {shared, allocation}`** — `shared: true`
+     inverts 4.1's design: instead of one arm per creative (paired, isolated
+     populations), the builder emits ONE arm named `market` carrying every
+     creative row, so the ads compete for the same shoppers under the same
+     frequency caps and a single `results.json` holds all N creatives.
+     Isolation buys a clean causal read; the shared market buys a real
+     auction — both are now expressible, and the key is absent by default so
+     every existing `ad_test` spec builds byte-identically. Unknown
+     `market`/`allocation` keys are refused the way `parse_calibration`
+     refuses them (a typo must never be silently swallowed into a run whose
+     `config_hash` then claims it was honored). `floor_share` is bounded to
+     `[0, 1/N)`.
+  2. **Adaptive allocation** (`exposure.allocation {enabled, prior_exposures,
+     prior_clicks, floor_share, power}`, parsed by
+     `runner/config.parse_allocation`, hash-covered because it rides in
+     `raw`). Per tick, before the draws: each active row's `reach_prob` is
+     rescaled by `N × share`, where `share` comes from the creative's
+     trailing smoothed CTR `((clicks+prior_clicks)/(exposures+prior_exposures))
+     ** power`, floored at `floor_share` and normalized to 1.
+     **The exposure step itself is untouched**: the
+     `(seed, "expose", offset, tick)` substream, the one-draw-per-active-row
+     order, and the cap checks are byte-identical — only the thresholds move.
+     Uniform shares reproduce the unallocated schedule exactly, so day 0 (a
+     pure prior) and a disabled config are the pre-3.6 path. The stats are a
+     pure function of the SAW/CLICKED log (`steps.CreativeStats`, rebuilt
+     from the JSONL in `RunnerState.rebuild_from_records`), never persisted,
+     so resume and branch re-derive identical allocations; tick t's weights
+     see ticks 0..t-1 only (trailing, no lookahead).
+  3. **results.json additive key `revenue {total, by_creative}`**
+     (`runner/results.py`). `BOUGHT` already carries `price` and
+     `cause_creative`, so purchase revenue is a real simulated quantity —
+     accumulated in `ResultsAccumulator`, round-tripped through
+     `results_state` via `.get` (pre-3.6 snapshots still resume), and
+     therefore live through `/results-live` for free. `validate_results`
+     checks it only when present, the same rule the 3.4 keys follow. Ad SPEND
+     is deliberately NOT here: it needs an assumed CPM, so it stays in the
+     dashboard (`web/lib/economics.ts`, sourced in
+     `eval/market-research.md` §5) and never masquerades as engine truth.
+  4. **`pricing` spec key `discount_levels []`** — replaces the
+     promo_off/promo_on pair with a ladder: one arm per depth named
+     `d<pct>`, built ASCENDING for the same reason the off arm ran first
+     (`PRICED_AT` is shared objective state read as-of `t`, so the
+     shallowest arm aligns the shelf and the deepest discount runs last),
+     every arm still running the promo hook. `build.leveled_promos(promos,
+     pct)` generalizes `zeroed_promos` (which is now its 0.0 rung). Absent
+     key ⇒ the existing two-arm path.
+  5. **Read-only endpoints** `GET /experiments/{name}/ads-manifest` (ingest
+     status `ready|ingesting|none`; `ads-manifest.json` is written last by
+     `ingest_ads`, so its presence IS the completion signal; catalog and
+     perception_cache come back **repo-relative** because the manifest stores
+     absolutes and a spec resolves those keys against the repo root) and
+     `GET /experiments/{name}/ads/{creative_id}/image` (`FileResponse`
+     resolved through the materialized `creatives.json` and confined to the
+     experiment's catalog dir; 404 for text-only creatives). Experiment names
+     are collapsed to one path segment.
+  6. **comparison.json**: `_ad_section` gains a shared-market branch (all
+     rows read from the single `market` arm, plus `shared_market: true` and
+     the per-creative-per-day impression rows); `_pricing_section` gains
+     `revenue_total` per arm and, for a ladder, a `ladder[]` + `best_level` /
+     `best_arm` verdict computed once from engine data.
+  7. **Bug-fix (runner, no signature change): the resumed-cart desync.**
+     `decide()` treats a cart as resumed iff `scalars.cart` intersects the
+     stimulus's `reference_price`; the loop was instead passing its own
+     in-memory `state.carts` flag to `expand_page`. Those disagree whenever a
+     shopper's REFERENCE_PRICE write loses the **Law-14 cap** (6 subjective
+     writes/tick; `ref_price` ranks below PREFERS, so a shopper who saw two
+     creatives in one tick can hold a cart the graph cannot show) — the mind
+     then returns BROWSE while expansion demands BUY|ABANDON and the run dies
+     with "resumed-cart decision returned Action.BROWSE". The loop now derives
+     the flag from the same context the mind saw, so the two read one truth by
+     construction; an invisible cart simply stays in runner state and resumes
+     on a later tick once the price is rewritten. Pinned by
+     `tests/test_cart_rederivation.py::test_expand_page_resumed_flag_matches_decide_in_cart`.
+     *(Same family as the v3.4-draft cart re-derivation fix; surfaced by item 8
+     making non-hero products convertible for the first time.)*
+  8. **Fixture (shared, additive): `fixtures/demo-brand/page_variants.json`**
+     gains pages 4000003/4000004/4000005 for products 3000003/3000004/3000006.
+     Previously only 3000001 had a landing page, so creatives
+     2000002/2000004/2000005 dead-ended at CLICK and could never convert —
+     tolerable when each creative ran its own isolated arm, but in a SHARED
+     market it let the highest-CTR ad win the whole budget while earning zero
+     revenue. Existing ids are untouched (4000001 consistent / 4000002
+     violating remain the A/B pair), each new page is CONSISTENT (shows its
+     product's catalog attributes plus its creative's claims), and page
+     resolution for 2000001/2000003 is unchanged.
+
+- **3.7-draft** (2026-08-19, Garvit — Phase 5.8: the ads become visible, the
+  brand becomes real, and the launch stops looking broken; additive
+  conventions only, no C1/C2/C3 signature, enum, taxonomy, ENTRY_POINTS-row or
+  evidence.py change; pending Atishay's ack at the next sync):
+  1. **Creative-text read surface.** `GET /runs/{id}/creatives` and
+     `/catalogs/{key}/creatives` return a `CreativeCard`: `{creative_id,
+     brand_id, brand_name, name, headline, body, note?, image_url,
+     authored_claims[], perceived{claims[], claimed_discounts[],
+     prompt_version, model, from_image} | null, offers[{product_id, name,
+     list_price, category_id, claimed_pct, page_ids[]}]}`. `/config`'s
+     `creative_names` reduced every ad to `{id: name}`, which left the
+     dashboard structurally unable to show what an ad SAYS. Images come back
+     through `GET /runs/{id}/creatives/{cid}/image` and
+     `/catalogs/{key}/creatives/{cid}/image`, both resolved through the
+     **run's own catalog_dir** and `is_relative_to`-confined — one resolver
+     for committed brand catalogs and ingest-materialized ones alike.
+     `GET /catalogs` is a **server-side allowlist**; the client picks a key,
+     never a path, and the row carries the companion `personas`/`goal_config`
+     so a launch spec is assembled without the web app hardcoding paths.
+     **The convention this encodes: `headline`/`body` have ZERO runtime
+     effect.** They are perception input and cache-key material; behaviour
+     comes from the perceived claims (CLAIMS edges) and `claimed_pct`
+     (`appraisal.py` offer_attractiveness). The card carries authored AND
+     perceived so a reader can see which is which.
+  2. **`GET /engine/pace`** — read-only pace samples from recent complete runs
+     (`per_tick_s`, recency-weighted `per_tick_s_per_100_shoppers`). An
+     **observation, never a simulated quantity**, and the only source the
+     dashboard's ETA is allowed to use. Rationale: per-tick cost is dominated
+     by consolidation and grows with the store (measured here: the same 200×60
+     shape ran 18.5 s/tick fresh and 112 s/tick loaded), so a hardcoded
+     constant is wrong within a day.
+  3. **`progress.json` additive status `"preparing"` + `phase`** written by
+     `SimRunner.prepare()` at each milestone (population · perception ·
+     catalog · stimuli · seed_population · manifest), with `tick: -1`. The
+     registry row is published by `RunStore.allocate()` the moment the run dir
+     exists, but `manifest.json` lands only at the END of prepare() — this is
+     the only file-level signal in between, and its absence is what made a
+     healthy run render as `manifest.json not found`. Consumers keyed on
+     `"running"`/`"complete"` are unaffected.
+  4. **Optional catalog file `brands.json`** — API-only display metadata
+     (`{brand_id: {name, url, note}}`), deliberately OUTSIDE the engine's five
+     catalog-dir reads, so it can never reach `config_hash`, `view_hash`, or a
+     mind. Absent ⇒ cards fall back to `Brand <id>`.
+  5. **`fixtures/nisolo/` — a second committed brand.** Real advertiser (real
+     products, real prices, the brand's own five campaign images), simulated
+     shoppers. Perceived ONCE via the new CLI and frozen;
+     `fixtures/demo-brand/` and `fixtures/perception-cache/` are byte-untouched
+     so their manifest hashes never move. Two conventions it establishes:
+     **every offered product needs a landing page** (a page-less creative
+     dead-ends at CLICK, and in a shared market wins budget while earning
+     zero), and **a brand ships its own `personas.json`/`goal_config.json`**
+     when its price tier differs — Nisolo's $109–295 catalog needs budgets
+     scaled ×2.2 and `arrival_rates_per_tick` re-keyed onto the categories it
+     actually sells, or the absolute-dollar gates in `choice.py` block nearly
+     every purchase. Cited in `eval/market-research.md` §6.
+  6. **`python -m shopsim.experiments perceive-catalog --catalog --cache`** —
+     the only sanctioned way to mint a committed perception cache. `ingest_ads`
+     remains the path for user uploads (it materializes a copy of a base
+     catalog and appends, which is wrong for a standalone brand). Prints each
+     creative's parsed claims and claimed discounts so a human can check the
+     read before committing; re-running with the cache present makes zero
+     calls. **Never hand-edit a cache entry** — that would make "perceived,
+     not authored" false, and `tests/test_nisolo_fixture.py` fails if the
+     sale creative's discount stops coming from its image.
+  7. **comparison.json `pricing.ladder[]` gains `creatives[]` and
+     `vs_control`**, plus top-level `control_level` / `best_vs_control`.
+     Computed from data each arm already has (`funnel_by_creative`,
+     `revenue.by_creative`) — no new engine state, all `.get`-guarded.
+     Convention: **a 0.0 rung is always present** (UI-enforced), because a
+     discount depth means nothing without a full-price control.
+     `leveled_promos(…, 0.0)` remains `zeroed_promos`. Note the asymmetry the
+     control makes visible: perceived claims override authored ones, so in the
+     0% arm a sale creative **still claims its discount** while the shelf sits
+     at list price — that is the expectation-violation mechanic, and the
+     control is labelled "same ads, no actual price cut", never "no discount".
+  8. **Three bug fixes**, each with a pinning test:
+     (a) `/experiments/{name}/ads/{cid}/image` 500'd on **every real ingested
+     catalog** — `ingest.py` writes `{"comment":…, "creatives":[…]}` while the
+     reader iterated the dict and called `.get` on string keys; the existing
+     test wrote a bare list, so it never exercised the real shape. Now read
+     via `_creative_rows`, which accepts both.
+     (b) `POST /experiments/ingest-ads` checked `os.environ` only, refusing a
+     repo whose `<repo>/.env.local` works — the CLI resolved it and the API
+     did not. Both now call the new public `perceive.resolve_api_key()`.
+     (c) `_safe_name` raised `HTTPException` while `fastapi` was imported only
+     inside `create_app`, so that path would have `NameError`d into a 500
+     instead of a 422.
+
+- **3.8-draft** (2026-08-20, Phase 6 — analytics & MetricsReport; additive
+  conventions only, no C1/C2/C3 signature, enum, taxonomy, ENTRY_POINTS-row or
+  evidence.py change; every default is a no-op and the committed
+  `fixtures/scripted-run-1` results.json still validates unchanged; pending
+  Atishay's ack at the next sync):
+  1. **`results.json` IS the MetricsReport, finalized.** The Phase-3 skeleton's
+     typed-empty keys are now filled, split by what each needs:
+     *accumulator-resident* (live through `/results-live`, exact on resume) —
+     `fatigue_split`, `belief_drift`, `violations.bounce_delta`,
+     `repeat_ltv_by_arm`, `social_lift`; *finalize-only* (needs the segment map
+     or a graph read) — `ci`, `belief_confidence_dist`, `provenance_coverage`.
+     `ResultsAccumulator.results(manifest, extras=None)` gained the optional
+     second argument; with `extras=None` the finalize-only keys stay exactly
+     the placeholders Phase 3 shipped, which is what `/results-live` needs
+     (that path rebuilds the accumulator with no segment map and no graph
+     handle). New package `engine/shopsim/analytics/`: `metrics.py` (pure,
+     numpy only), `report.py` (finalize + post-hoc), `__main__.py` (the CLI).
+  2. **New accumulator state, all `.get`-guarded in `from_state`** so pre-v3.8
+     snapshots still resume: `by_shopper` (a positional int vector per OFFSET,
+     fields in `results.py::BY_SHOPPER_FIELDS`), `revenue_by_shopper`,
+     `fatigue` (per-tick channel sums), `belief_conf_avg` (same keys as the
+     v3.5 `belief_avg`, filled from the same `live_holds` read — zero extra
+     statements), `page_pairs`. A run whose snapshot predates this carries no
+     bootstrap unit; the report says so instead of inventing intervals.
+  3. **The bootstrap clusters on SHOPPERS.** One person's exposures, clicks and
+     purchases are one correlated story, so the resampling unit is the offset,
+     not the event. 2,000 percentile replicates, alpha 0.05, rng seeded from
+     `(seed, CI_STREAM, scope, metric_index)` where CI_STREAM is
+     `int.from_bytes(b"ci")` — offsets and segment ids only, never an absolute
+     shopper id, so a crash/resume in a DIFFERENT run block still hashes
+     identically (`test_runner_real.py::norm_results_hash`). Keys are
+     `"<metric>"` for the arm and `"<metric>:<segment>"` per segment; a ratio
+     whose denominator is empty gets no interval rather than a fabricated one.
+  4. **Fatigue is measured at decision time**, from the context the mind
+     actually saw — never re-derived from the event log. Three PARALLEL
+     channels, not a decomposition: `asset` from
+     `minds.choice.asset_wearout(exposures_72h, params)` (a new public alias of
+     the private `_wearout`, exposed for MEASUREMENT the way v3.5 exposed
+     `stage_probabilities` — registry row 12 is unchanged and no second entry
+     point exists), `brand_msg` from the `brand_semantic_fatigue` motif's
+     strength, `concept` from `concept_saturation` (retrieved today,
+     behaviourally inert at P0 — the payload does not pretend otherwise).
+     Creative-stage decisions only, since the CTR columns are the point.
+     `metrics.FATIGUE_HIGH = 0.5` splits high from low; on the asset channel
+     with default ChoiceParams that is `exposures_72h >= 4`, which is where the
+     dashboard's own detector rule already sat.
+  5. **`provenance_coverage` becomes a summary dict**, not a bare float: the
+     headline number is worthless without the counts behind it. Scope is stated
+     in the payload — PREFERS over its FULL version history (one statement
+     returns the whole supersession chain), beliefs over the LIVE versions
+     (one statement per historical belief version would be tens of thousands on
+     a 60-tick run). `cause_kinds` is the F7 audit in metric form: SAW must
+     never appear. Note the same-tick fold rule (v3.3 item 6) stamps a version
+     with its DEEPEST cause, so CLICKED rarely appears alone.
+  6. **`violations.bounce_delta` is the WITHIN-run page-split delta** — pooled
+     `bounce_rate(B) - bounce_rate(A)` over the run's own `page_ids` splits in
+     declared order, the same B-A convention as `comparison.json`. Cross-arm
+     deltas stay in `comparison.json`; this is its per-run counterpart, and it
+     is `null` (not 0.0) when the run has no split.
+  7. **`python -m shopsim.analytics report --run <id|dir>`** — the Phase-6
+     "one command from a run directory -> full report" checkpoint. Rebuilds the
+     accumulator from the newest `results_state_*.json`, optionally sweeps the
+     graph (`--no-graph` to skip: never wait on the store mid-demo), renders a
+     text report, exits non-zero on C3 problems, and refreshes `results.json`
+     in place only with `--write`. `--config` supplies the run_config for
+     per-segment intervals (CLI runs keep theirs outside the run store).
+     Degradation is loud: each missing input drops exactly one block and adds a
+     named note.
+  8. **`SimRunner.run()` finalizes before writing `results.json`**, so a
+     completed run's file is the whole MetricsReport. A graph failure there
+     degrades to a note; it never loses a finished run.
+  9. **`fixtures/golden-run/` — the Phase 6.2 golden.** 5 shoppers x 3 ticks on
+     the demo brand (the Appendix-F anchor, byte-frozen), ScriptedMind deciding
+     and the real `consolidate()` digesting, with one full evidence chain
+     inside three ticks: SAW -> CLICKED -> VISITED/PRICE_SEEN/BROWSED -> CARTED
+     -> BOUGHT -> NEED_SATISFIED -> EXPERIENCED. `tests/test_golden_run.py`
+     checks the committed artifacts with NO database (it re-derives the funnel
+     from `events.jsonl` and recomputes every pure metric from the snapshot);
+     `tests/real/test_golden_run_real.py` re-runs the config on the live store
+     and demands the same report back under the run-block normalization. Two
+     runs in different blocks produced byte-identical reports, so the Phase-6
+     additions preserve the same-seed determinism guarantee.
+ 10. **Social layer (P1, pulled forward — opt-in and byte-neutral when off).**
+     `population.social {enabled, degree, rewire_p, weight_min, weight_max}`,
+     parsed by `runner/config.parse_social` (unknown keys refused, like
+     `parse_allocation`/`parse_calibration`); absent or `enabled: false` yields
+     `None` and NOT ONE `TRUSTS_PERSON` statement is emitted, so every existing
+     config, fixture and hash is untouched. `population/factory.social_graph`
+     draws a seeded Watts-Strogatz small world over OFFSETS from
+     `(seed, SOCIAL_STREAM)` — PLAN 2.1's degree ~ 4, weights U(0.4, 0.9) — and
+     `seed_population(..., social_edges=)` writes it in BOTH directions
+     (retrieval reads outgoing edges only). Manifest gains
+     `social_config_hash` **only when a social layer exists**, so social-free
+     manifests stay byte-identical; C3 already listed the key as optional.
+     `AppraisalParams.w_social` (default **0.0**) weights the channel:
+     `credibility += w_social * (2*valence - 1)` from the most-trusted peer's
+     `social_proof` motif, which is PLAN 2.3's wording ("credibility <- trust
+     belief ... + social_proof valence") and keeps the calibrated dimension
+     count at five. `Appraisal.social_proof` is now REPORTED whenever the motif
+     is present even at w_social 0 — retrieved, visible in the trace, and
+     behaviourally inert until a config pays for it. ENTRY_POINTS row 20 was
+     already there; this honours it rather than amending it.
+ 11. **`social_lift` says whether it is causal.** With `w_social == 0` the
+     motif is retrieved and reported but never read by `appraise()`, so the
+     on/off gap is correlation — the payload carries `causal: false` and a note
+     saying exactly that. `null` when no decision in the run carried the motif.
+ 12. **Dashboard reads the authoritative field.** `web/lib/types.ts` types
+     every Phase-6 key as optional; the MESSAGE FATIGUE small multiple plots
+     `fatigue_split.brand_msg`/`.asset` when the run has them and falls back to
+     the client-side derivation with a visible note when it does not;
+     `web/lib/detectors.ts` gains a MEASURED fatigue rule (high-cell CTR vs
+     low-cell CTR from the engine's own split) that REPLACES the CTR-decay
+     heuristic for any run carrying a channel — with the engine's measurement
+     in hand the heuristic is not a second opinion, it is a worse one. New
+     `ConfidencePanel` on the results page renders the intervals, the
+     provenance line, repeat/LTV and social lift.
+ 13. **Bug fix (pre-existing, surfaced by running the full real suite):**
+     `tests/real/test_minds_real.py::test_perception_writer_round_trip` assumed
+     the store held one catalog. `LISTS` hangs off ONE global catalog anchor, so
+     `ObjectiveCache` enumerates every catalog ever ingested — since Phase 5.8
+     that includes Nisolo (2000101+), and the test raised `KeyError` indexing
+     the demo-brand perception cache by a Nisolo creative id. Worse, had it got
+     past that it would have DELETED Nisolo's `CLAIMS`/`OFFERS` edges and
+     restored only the demo brand's. Now it skips creatives it has no
+     perception for. Nothing in Phase 6 writes catalog or stimulus edges; this
+     broke the moment a second brand touched the store on 2026-08-19.

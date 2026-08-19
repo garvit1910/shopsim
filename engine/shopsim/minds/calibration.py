@@ -46,6 +46,13 @@ class AppraisalParams:
     # F2 cold gate (unaware + no paths + no belief => engagement ≈ 0):
     cold_credibility_factor: float = 0.5
     cold_offer_factor: float = 0.25
+    # Social proof (registry row 20, P1 — CONTRACT v3.8-draft). How far a
+    # trusted peer's experience can move credibility: contribution is
+    # w_social x (2 x valence - 1), so a neutral peer signal (valence 0.5)
+    # moves nothing and the term is symmetric around it. DEFAULT 0.0 — the
+    # motif is retrieved and reported but never read, which is what keeps
+    # every pre-social run byte-identical. A social-enabled config sets it.
+    w_social: float = 0.0
 
 
 @dataclass(frozen=True)

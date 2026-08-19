@@ -20,6 +20,8 @@ import json
 import os
 from pathlib import Path
 
+import hashlib
+
 from ..eventlog import manifest_hashes
 from .config import RunConfig, canonical_json
 
@@ -98,8 +100,16 @@ def build_manifest(cfg: RunConfig, arm_name: str, run_index: int, view_hash: str
         goal_config=cfg.goal_config_path,
         latent_quality=cfg.catalog_dir / "latent_quality.csv",
     )
+    social = {}
+    if cfg.social is not None:
+        # C3 lists social_config_hash as optional, so it is ABSENT (not null)
+        # when there is no social layer: every pre-v3.8 manifest, and every
+        # social-off run, stays byte-identical (CONTRACT v3.8-draft).
+        social["social_config_hash"] = hashlib.sha256(
+            canonical_json(cfg.raw["population"]["social"]).encode()).hexdigest()
     return {
         **hashes,
+        **social,
         "config_hash": cfg.config_hash(arm_name),
         "view_hash": view_hash,
         "seed": cfg.seed,

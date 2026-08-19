@@ -65,16 +65,30 @@ def test_page_resolution_default_and_gap(cfg, view):
     pages = cfg.resolve_pages(view)
     # both scheduled creatives offer 3000001 -> the consistent variant 4000001
     assert pages == {2000001: 4000001, 2000003: 4000001}
-    # a creative whose product has no page resolves to nothing (funnel ends at CLICK)
-    raw = absolutized()
-    raw["exposure"]["schedule"].append(
-        {"creative_id": 2000005, "start_tick": 0, "end_tick": 3, "reach_prob": 0.1})
-    import tempfile
-    with tempfile.TemporaryDirectory() as d:
-        p = Path(d) / "c.json"
-        p.write_text(json.dumps(raw))
-        cfg2 = RunConfig.load(p)
-    assert 2000005 not in cfg2.resolve_pages(view)
+
+    # A creative whose products have no page resolves to nothing — its funnel
+    # ends at CLICK (CONTRACT v3.3). Every stock creative's product HAS a page
+    # since the Phase-5 fixture addition (4000003-4000005), so the gap is
+    # exercised against a view stripped of page stimuli rather than by naming
+    # a creative that happens to be uncovered today.
+    from dataclasses import replace
+
+    pageless = replace(view, stimuli={sid: f for sid, f in view.stimuli.items()
+                                      if f.kind != "page"})
+    assert cfg.resolve_pages(pageless) == {}
+
+
+def test_every_stock_creative_can_convert(cfg, view):
+    """Each demo creative must land somewhere: in a SHARED market an ad with
+    no page still wins impressions on CTR while earning nothing, which reads
+    as a broken market rather than a modelled one."""
+    from shopsim.runner.config import ScheduleRow
+
+    schedule = tuple(
+        ScheduleRow(creative_id=cid, start_tick=0, end_tick=5, reach_prob=0.2)
+        for cid in (2000001, 2000002, 2000003, 2000004, 2000005))
+    pages = cfg.resolve_pages(view, schedule=schedule)
+    assert set(pages) == {2000001, 2000002, 2000003, 2000004, 2000005}
 
 
 def test_page_override_honored(view, tmp_path):

@@ -1,0 +1,34 @@
+{
+  "creative_id": 2000101,
+  "descriptor": {
+    "body": "Certified B Corp since 2017 and Climate Neutral Certified. Leather Working Group certified hides, and a living wage for 100% of the workers in our Peru and Mexico factories. Shoes built to be worn for years, made in a way you can defend.",
+    "brand_id": 6100,
+    "creative_id": 2000101,
+    "headline": "Eco-friendly shoes for men & women.",
+    "image_sha256": "e6454f776bd2b576f2634d9572f4f4b08824992e3335506c9acf0fc8ae15c645",
+    "name": "Eco-Friendly, Head to Toe",
+    "offer_product_ids": [
+      3000104
+    ]
+  },
+  "hash": "6fe14289156ef223eeddd868ef92310f8d14b2fcaac0c969eb2f3916d550d6a1",
+  "model": "gpt-4o-mini",
+  "output": {
+    "claimed_discounts": [],
+    "claims": [
+      {
+        "concept": "ECO_FRIENDLY",
+        "strength": 1
+      },
+      {
+        "concept": "DURABILITY",
+        "strength": 0.7
+      },
+      {
+        "concept": "OTHER",
+        "strength": 0.5
+      }
+    ]
+  },
+  "prompt_version": "p1-img1"
+}
