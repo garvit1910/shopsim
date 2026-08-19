@@ -410,6 +410,16 @@ button.adcard:hover { border-color: var(--line); }
   border-left: 2px solid var(--gold); padding-left: 7px;
 }
 .adthumb { object-fit: cover; border-radius: 3px; border: 1px solid var(--hair); flex: none; }
+/* the eye rides OVER the card, never inside it — the card is itself a button */
+.adcell { position: relative; display: flex; }
+.adcell > .adcard { flex: 1; min-width: 0; }
+.adeye {
+  position: absolute; top: 6px; right: 6px; z-index: 2;
+  width: 26px; height: 26px; display: grid; place-items: center;
+  border: 1px solid var(--hair); border-radius: 6px;
+  background: rgba(10, 11, 10, .72); color: var(--ink-2);
+}
+.adeye:hover { color: var(--ink); border-color: var(--line); background: rgba(10, 11, 10, .92); }
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field > label { font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
 .fieldgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
@@ -475,6 +485,37 @@ button.adcard:hover { border-color: var(--line); }
 .scard .scause { font-size: 13px; color: var(--ink-2); margin-top: 12px; font-style: italic; }
 .scard .sx { position: absolute; top: 10px; right: 14px; font-size: 19px; color: var(--muted); padding: 4px 8px; }
 .scard .sx:hover { color: var(--ink); }
+
+/* ---------- creative viewer (the eye on a studio ad card) ---------- */
+.adview {
+  position: fixed; inset: 0; z-index: 100; display: flex; align-items: center;
+  justify-content: center; background: rgba(0, 0, 0, .72); padding: 24px;
+}
+.adview-panel {
+  width: min(560px, 96vw); max-height: 92vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.adview-head {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: 10px; letter-spacing: .18em; color: var(--muted);
+}
+.adview-count { margin-left: auto; }
+.adview-x { font-size: 19px; line-height: 1; color: var(--muted); padding: 2px 4px; }
+.adview-x:hover { color: var(--ink); }
+.adview-foot { display: flex; align-items: center; gap: 10px; }
+.adview-nav { display: flex; gap: 6px; margin-left: auto; }
+.adnav {
+  width: 30px; height: 30px; display: grid; place-items: center; font-size: 17px;
+  border: 1px solid var(--hair); border-radius: 6px; color: var(--ink-2);
+}
+.adnav:hover:not([disabled]) { border-color: var(--line); color: var(--ink); }
+/* the point of the whole feature: the creative, uncropped */
+.adcard.full { box-shadow: 0 12px 40px rgba(0, 0, 0, .6); }
+/* keep the selected ring — the lift shadow would otherwise override it */
+.adcard.full.sel { box-shadow: 0 0 0 1px var(--accent) inset, 0 12px 40px rgba(0, 0, 0, .6); }
+.adcard.full > img { height: auto; max-height: 58vh; object-fit: contain; }
+.adcard.full .adart { height: auto; min-height: 190px; }
+.adcard.full .adhead { font-size: 16px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }

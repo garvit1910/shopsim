@@ -15,6 +15,7 @@ import { api, ApiError } from "@/lib/api";
 import type { AdsManifest, CatalogSummary, CreativeCard } from "@/lib/types";
 import Stepper, { pipelineSteps } from "@/components/Stepper";
 import AdCard from "@/components/AdCard";
+import CreativeViewer from "@/components/CreativeViewer";
 
 type Mode = "market" | "ladder" | "page_ab" | "scenario";
 
@@ -47,6 +48,8 @@ export default function StudioPage() {
   const [catalogs, setCatalogs] = useState<CatalogSummary[]>([]);
   const [catalogKey, setCatalogKey] = useState("nisolo");
   const [cards, setCards] = useState<CreativeCard[]>([]);
+  /** index into `cards` of the creative open in the lightbox */
+  const [viewing, setViewing] = useState<number | null>(null);
   const [phase, setPhase] = useState<"idle" | "ingesting" | "launching">("idle");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -70,7 +73,8 @@ export default function StudioPage() {
       if (!alive) return;
       setCards(r.creatives);
       setPicked(r.creatives.map((c) => c.creative_id).slice(0, mode === "ladder" ? 2 : 5));
-    }).catch(() => alive && setCards([]));
+      setViewing(null);   // an index into the OLD catalog would point at the wrong ad
+    }).catch(() => { if (alive) { setCards([]); setViewing(null); } });
     return () => { alive = false; };
   }, [catalogKey, mode]);
 
@@ -298,10 +302,11 @@ export default function StudioPage() {
                   : "ADS CARRYING THE FUNNEL"}
               </div>
               <div className="adgrid">
-                {cards.map((c) => (
+                {cards.map((c, i) => (
                   <AdCard key={c.creative_id} card={c} compact
                     selected={picked.includes(c.creative_id)}
-                    onClick={() => toggle(c.creative_id)} />
+                    onClick={() => toggle(c.creative_id)}
+                    onPreview={() => setViewing(i)} />
                 ))}
               </div>
             </div>
@@ -446,6 +451,13 @@ export default function StudioPage() {
             : "Arms run sequentially (registry allocation is serialized — a second launch while one runs returns 409, verbatim above)."}
         </div>
       </main>
+
+      {viewing !== null && cards[viewing] && (
+        <CreativeViewer cards={cards} index={viewing} onIndex={setViewing}
+          onClose={() => setViewing(null)}
+          selected={picked.includes(cards[viewing].creative_id)}
+          onToggle={() => toggle(cards[viewing].creative_id)} />
+      )}
     </>
   );
 }
