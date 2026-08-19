@@ -135,7 +135,12 @@ def test_all_dims_bounded_on_every_fixture(mock):
             for dim in ("relevance", "credibility", "brand_message_fatigue",
                         "offer_attractiveness", "expectation_alignment"):
                 assert 0.0 <= getattr(a, dim) <= 1.0, (name, dim)
-            assert a.novelty is None and a.social_proof is None  # P1 untouched
+            assert a.novelty is None  # the novelty dim is still P1-unbuilt
+            # social_proof IS reported once the motif is present (v3.8-draft);
+            # it is bounded like every other dim and, at the default
+            # w_social = 0, changes nothing downstream — see test_social.py.
+            if a.social_proof is not None:
+                assert 0.0 <= a.social_proof <= 1.0, (name, "social_proof")
 
 
 def test_twin_fixtures_goal_gap(mock):

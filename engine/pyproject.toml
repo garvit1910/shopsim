@@ -16,7 +16,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=8.0",
+]
 # perception extra: only the live LLM call needs it — the cached path
 # (tests, CI, replays) never imports openai.
 perception = ["openai>=1.40"]
