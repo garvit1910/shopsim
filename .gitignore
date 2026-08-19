@@ -29,5 +29,6 @@ infra/hydradb-data/
 .DS_Store
 .idea/
 
-# Phase-3 run artifacts (fixtures/scripted-run-1 is the committed export)
-runs/
+# Phase-3 run artifacts (fixtures/scripted-run-1 is the committed export).
+# Root-anchored: a bare `runs/` also swallowed web/app/runs/, the results route.
+/runs/

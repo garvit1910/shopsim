@@ -8,20 +8,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import type { ExperimentSummary, RegistryRow } from "@/lib/types";
+import type { RegistryRow } from "@/lib/types";
 
 const BRAND = { name: "ShopSim", domain: "six-state shoppers on HydraDB" };
 
 export default function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const [runs, setRuns] = useState<RegistryRow[]>([]);
-  const [exps, setExps] = useState<ExperimentSummary[]>([]);
 
   useEffect(() => {
     let alive = true;
     const tick = () => {
       api.runs().then((r) => alive && setRuns(r)).catch(() => {});
-      api.experiments().then((e) => alive && setExps(e)).catch(() => {});
     };
     tick();
     const id = setInterval(tick, 5000);
@@ -31,7 +29,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const latestRun = runs.length ? runs[runs.length - 1] : null;
   const running = [...runs].reverse().find((r) => r.status === "running");
   const focus = running ?? latestRun;
-  const latestExp = exps.length ? exps[exps.length - 1] : null;
+  /** the run on screen, if the URL names one — /market/<id> or /runs/<id>/results */
+  const pathRun = path.match(/^\/(?:market|runs)\/([^/]+)/)?.[1] ?? null;
+  const reportRun = pathRun ?? focus?.run_id ?? null;
 
   const sections: { n: string; label: string; href: string; match: (p: string) => boolean }[] = [
     { n: "01", label: "Setup", href: "/", match: (p) => p === "/" },
@@ -40,7 +40,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       match: (p) => p.startsWith("/market") },
     { n: "04", label: "Shoppers", href: focus ? `/market/${focus.run_id}#shoppers` : "/studio",
       match: () => false },
-    { n: "05", label: "Learnings", href: latestExp ? `/experiments/${latestExp.name}` : (focus ? `/runs/${focus.run_id}/results` : "/"),
+    { n: "05", label: "Learnings", href: reportRun ? `/runs/${reportRun}/results` : "/",
       match: (p) => p.startsWith("/experiments") || p.includes("/results") },
   ];
 
