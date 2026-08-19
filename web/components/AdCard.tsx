@@ -27,6 +27,17 @@ export function AdThumb({ card, size = 26 }: { card?: CreativeCard | null; size?
   );
 }
 
+/** The grid crops every creative to a 104px strip — this opens the real thing. */
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M1.6 12S5.3 5.6 12 5.6 22.4 12 22.4 12 18.7 18.4 12 18.4 1.6 12 1.6 12Z" />
+      <circle cx="12" cy="12" r="3.1" />
+    </svg>
+  );
+}
+
 /** A text-only ad still deserves to look like an ad, not like a grey box
  * with the words "TEXT AD" in it. */
 function TextAdArt({ card }: { card: CreativeCard }) {
@@ -39,12 +50,17 @@ function TextAdArt({ card }: { card: CreativeCard }) {
 }
 
 export default function AdCard({
-  card, selected, onClick, compact = false, stat,
+  card, selected, onClick, onPreview, compact = false, full = false, stat,
 }: {
   card: CreativeCard;
   selected?: boolean;
   onClick?: () => void;
+  /** Renders the eye. Lives OUTSIDE the card element: with `onClick` the card
+   * is itself a <button>, and a button inside a button is invalid HTML. */
+  onPreview?: () => void;
   compact?: boolean;
+  /** The lightbox rendering — image uncropped, every detail shown. */
+  full?: boolean;
   stat?: React.ReactNode;
 }) {
   const claims = card.perceived?.claims ?? card.authored_claims;
@@ -53,8 +69,8 @@ export default function AdCard({
   const offer = card.offers[0];
   const Tag = onClick ? "button" : "div";
 
-  return (
-    <Tag className={`adcard ${selected ? "sel" : ""} ${compact ? "compact" : ""}`}
+  const el = (
+    <Tag className={`adcard ${selected ? "sel" : ""} ${compact ? "compact" : ""} ${full ? "full" : ""}`}
       onClick={onClick} {...(onClick ? { "aria-pressed": !!selected } : {})}>
       {card.image_url
         ? <img src={proxied(card.image_url)} alt={card.headline || card.name} />
@@ -102,6 +118,17 @@ export default function AdCard({
         {!compact && card.note && <div className="adnote">{card.note}</div>}
       </div>
     </Tag>
+  );
+
+  if (!onPreview) return el;
+  return (
+    <div className="adcell">
+      {el}
+      <button className="adeye" onClick={onPreview} title="See the full creative"
+        aria-label={`View creative: ${card.headline || card.name}`}>
+        <EyeIcon />
+      </button>
+    </div>
   );
 }
 
