@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import csv
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import numpy as np
@@ -288,6 +288,104 @@ def exposure_step(
             out[row.creative_id].append(offset)
             saw.record(offset, tick, row.creative_id)
     return out
+
+
+# ---------------------------------------------------------------------------
+# adaptive allocation (v3.6-draft) — rescales reach BEFORE exposure_step
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class AllocationConfig:
+    """Daily budget reallocation across a shared market's creatives.
+
+    The priors are what make day 0 uniform: with no observations every
+    creative's smoothed CTR is prior_clicks/prior_exposures, so shares come out
+    equal and the first day is exactly the unallocated run. Their STRENGTH is
+    the learning phase — 120 pseudo-exposures is ~3 days of reach at demo
+    scale (200 shoppers x 0.2), so a single lucky day cannot crown a winner;
+    measured over 60 days the winner still reaches ~50% share, it just climbs
+    smoothly instead of thrashing. Real buying platforms hold optimization
+    back the same way while a campaign is under-powered.
+
+    floor_share keeps a losing ad alive (a real buyer never zeroes a line item
+    mid-flight, and a zeroed ad can never gather the evidence to argue back)."""
+
+    enabled: bool = False
+    prior_exposures: float = 120.0  # ~3 days of reach at demo scale
+    prior_clicks: float = 6.0       # prior CTR 5%, inside the calibrated band
+    floor_share: float = 0.05
+    power: float = 2.0              # >1 concentrates; 1.0 = proportional to CTR
+
+
+@dataclass
+class CreativeStats:
+    """Cumulative SAW/CLICKED per creative. Like SawHistory, this is pure
+    event-log derivative state — rebuilt from the JSONL on resume/branch,
+    never persisted, so allocation weights re-derive bit-identically."""
+
+    exposures: dict[int, int] = field(default_factory=dict)
+    clicks: dict[int, int] = field(default_factory=dict)
+
+    def apply_record(self, rec: dict) -> None:
+        rtype = rec.get("type")
+        if rtype == EventType.SAW.value:
+            cid = rec["subject"]
+            self.exposures[cid] = self.exposures.get(cid, 0) + 1
+        elif rtype == EventType.CLICKED.value:
+            cid = rec["subject"]
+            self.clicks[cid] = self.clicks.get(cid, 0) + 1
+
+    def observe(self, events) -> None:
+        """Fold a tick's Event objects in. SAW/CLICKED carry the creative as
+        `subject` (v3 event taxonomy), so no cause_creative lookup is needed."""
+        for e in events:
+            etype = e.type.value if hasattr(e.type, "value") else e.type
+            if etype == EventType.SAW.value:
+                self.exposures[e.subject] = self.exposures.get(e.subject, 0) + 1
+            elif etype == EventType.CLICKED.value:
+                self.clicks[e.subject] = self.clicks.get(e.subject, 0) + 1
+
+    def smoothed_ctr(self, creative: int, alloc: AllocationConfig) -> float:
+        return ((self.clicks.get(creative, 0) + alloc.prior_clicks)
+                / (self.exposures.get(creative, 0) + alloc.prior_exposures))
+
+
+def allocation_shares(alloc: AllocationConfig, rows, stats: CreativeStats
+                      ) -> dict[int, float]:
+    """Budget share per active creative, summing to 1.0 and never below
+    floor_share. Pure: same (config, rows, stats) always gives the same map."""
+    active = list(rows)
+    if not active:
+        return {}
+    n = len(active)
+    weights = {r.creative_id: stats.smoothed_ctr(r.creative_id, alloc) ** alloc.power
+               for r in active}
+    total = sum(weights.values())
+    if total <= 0.0:  # degenerate (power 0 on zero weights) — fall back uniform
+        return {r.creative_id: 1.0 / n for r in active}
+    room = 1.0 - n * alloc.floor_share
+    return {cid: alloc.floor_share + room * (w / total)
+            for cid, w in weights.items()}
+
+
+def allocated_schedule(schedule, shares: dict[int, float]):
+    """Rescale each active row's reach_prob by its share of an N-way even
+    split: share == 1/N reproduces the row's configured reach exactly, so an
+    allocation that has learned nothing is byte-identical to no allocation.
+    Rows outside `shares` (inactive this tick) pass through untouched."""
+    if not shares:
+        return schedule
+    n = len(shares)
+    out = []
+    for row in schedule:
+        share = shares.get(row.creative_id)
+        if share is None:
+            out.append(row)
+            continue
+        scaled = min(1.0, max(0.0, row.reach_prob * n * share))
+        out.append(replace(row, reach_prob=scaled))
+    return tuple(out)
 
 
 def page_for(seed: int, splits: dict[int, tuple[int, ...]], pages: dict[int, int],

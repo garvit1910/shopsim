@@ -83,6 +83,17 @@ def build_ad_run_config(spec: AdExperimentSpec, root: Path) -> dict:
     paired comparison the user asked for. Arm c<id>'s results ARE that
     creative's results."""
     raw = _base_raw(spec, root)
+    if spec.market.get("shared"):
+        # v3.6-draft shared market: ONE arm, every creative row on it. The ads
+        # now compete for the same shoppers under the shared frequency caps,
+        # and one results.json carries all N creatives (the allocation river's
+        # source). allocation{} rides in exposure so config_hash covers it.
+        raw["exposure"]["schedule"] = [dict(r) for r in spec.creatives]
+        alloc = spec.market.get("allocation")
+        if alloc:
+            raw["exposure"]["allocation"] = dict(alloc)
+        raw["arms"] = [{"name": "market"}]
+        return raw
     raw["arms"] = [
         {"name": f"c{row['creative_id']}",
          "exposure_overrides": {"schedule": [row]}}
@@ -96,9 +107,15 @@ def zeroed_promos(product_promos: list[dict]) -> dict:
     discount 0.0. The hook still runs and keeps aligning the shared PRICED_AT
     shelf to list price — an off arm that SKIPPED the hook would read the on
     arm's discounts through the as-of cache (v3.4-draft pricing convention)."""
+    return leveled_promos(product_promos, 0.0)
+
+
+def leveled_promos(product_promos: list[dict], pct: float) -> dict:
+    """Same products, same cycles, every discount forced to `pct` — the ladder
+    generalization of zeroed_promos (pct 0.0 reproduces it exactly)."""
     return {"product_promos": [
         {"product_id": p["product_id"],
-         "cycles": [{**c, "discount_pct": 0.0} for c in p["cycles"]]}
+         "cycles": [{**c, "discount_pct": pct} for c in p["cycles"]]}
         for p in product_promos
     ]}
 
@@ -110,6 +127,20 @@ def build_pricing_run_config(spec: PricingExperimentSpec, root: Path) -> dict:
         promos_raw = json.loads((root / spec.promo_schedule).read_text())
     else:
         promos_raw = {"product_promos": [dict(p) for p in spec.product_promos]}
+
+    if spec.discount_levels:
+        # v3.6-draft ladder: one arm per depth, ASCENDING. Same reasoning as
+        # the promo_off/promo_on order — PRICED_AT is shared objective state
+        # read as-of t, so the shallowest arm aligns the shelf first and the
+        # deepest discount runs last. Every arm runs the promo hook.
+        raw["arms"] = [
+            {"name": f"d{round(level * 100)}",
+             "promo_overrides": {
+                 "enabled": True,
+                 "schedule_inline": leveled_promos(promos_raw["product_promos"], level)}}
+            for level in sorted(spec.discount_levels)
+        ]
+        return raw
     # BOTH arms inline their schedule: config_hash then covers the promo
     # content itself (a promo-file edit can never silently slip past a
     # resume/branch check — the promo path is not a manifest hash).

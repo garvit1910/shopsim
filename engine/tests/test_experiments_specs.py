@@ -69,6 +69,68 @@ def test_ad_spec_rejects_duplicates_and_empty():
             {"creative_id": 2000001, "reach_prob": 0.5}]))
 
 
+# -- ad_test shared market (v3.6-draft) -------------------------------------
+
+
+def shared_spec(**market):
+    return base_spec("ad_test", creatives=[
+        {"creative_id": 2000001, "reach_prob": 0.2},
+        {"creative_id": 2000003, "reach_prob": 0.2},
+        {"creative_id": 2000004, "reach_prob": 0.2},
+    ], market={"shared": True, **market})
+
+
+def test_shared_market_builds_one_arm_with_every_creative(tmp_path):
+    spec = parse_spec(shared_spec(allocation={"enabled": True}))
+    cfg = load_built(tmp_path, build_run_config(spec, REPO))
+
+    assert [a.name for a in cfg.arms] == ["market"]
+    rows = cfg.schedule_for(cfg.arm("market"))
+    assert [r.creative_id for r in rows] == [2000001, 2000003, 2000004]
+    assert all(r.start_tick == 0 and r.end_tick == 5 for r in rows)
+    assert cfg.allocation is not None and cfg.allocation.enabled
+
+
+def test_shared_market_allocation_is_config_hash_covered(tmp_path):
+    """The allocation block must ride in raw, or a resume could silently
+    change how budget moves while the hash still matches."""
+    dir_a, dir_b = tmp_path / "a", tmp_path / "b"
+    dir_a.mkdir()
+    dir_b.mkdir()
+    a = load_built(dir_a, build_run_config(
+        parse_spec(shared_spec(allocation={"enabled": True, "power": 2.0})), REPO))
+    b = load_built(dir_b, build_run_config(
+        parse_spec(shared_spec(allocation={"enabled": True, "power": 3.0})), REPO))
+    assert a.config_hash("market") != b.config_hash("market")
+
+
+def test_absent_market_key_is_the_untouched_per_creative_path(tmp_path):
+    plain = base_spec("ad_test", creatives=[
+        {"creative_id": 2000001, "reach_prob": 0.4},
+        {"creative_id": 2000003, "reach_prob": 0.4}])
+    cfg = load_built(tmp_path, build_run_config(parse_spec(plain), REPO))
+    assert [a.name for a in cfg.arms] == ["c2000001", "c2000003"]
+    assert cfg.allocation is None
+
+
+def test_shared_market_validation():
+    with pytest.raises(ValueError, match="at least 2 creatives"):
+        parse_spec(base_spec("ad_test",
+                             creatives=[{"creative_id": 2000001, "reach_prob": 0.4}],
+                             market={"shared": True}))
+    with pytest.raises(ValueError, match="unknown keys"):
+        parse_spec(shared_spec(allocaton={"enabled": True}))
+    with pytest.raises(ValueError, match="allocation: unknown keys"):
+        parse_spec(shared_spec(allocation={"enabled": True, "powr": 2.0}))
+    with pytest.raises(ValueError, match="needs market.shared"):
+        parse_spec(base_spec("ad_test", creatives=[
+            {"creative_id": 2000001, "reach_prob": 0.4},
+            {"creative_id": 2000003, "reach_prob": 0.4}],
+            market={"allocation": {"enabled": True}}))
+    with pytest.raises(ValueError, match="floor_share"):
+        parse_spec(shared_spec(allocation={"enabled": True, "floor_share": 0.4}))
+
+
 # -- pricing ---------------------------------------------------------------
 
 
@@ -215,3 +277,67 @@ def test_every_builder_embeds_calibration_and_spec(tmp_path):
         assert raw["calibration"] == materialize_calibration(spec.calibration)
         cfg = load_built(tmp_path, raw)  # RunConfig.load validates
         assert cfg.label == spec.name
+
+
+# -- pricing discount ladder (v3.6-draft) -----------------------------------
+
+
+def ladder_spec(levels, **extra):
+    return base_spec(
+        "pricing",
+        promo={"product_promos": [
+            {"product_id": 3000001,
+             "cycles": [{"cycle": 1, "start_tick": 1, "end_tick": 2, "discount_pct": 0.15},
+                        {"cycle": 2, "start_tick": 4, "end_tick": 5, "discount_pct": 0.2}]}]},
+        exposure={"schedule": [{"creative_id": 2000003, "start_tick": 0,
+                                "end_tick": 5, "reach_prob": 0.5}]},
+        discount_levels=levels, **extra)
+
+
+def test_ladder_builds_one_arm_per_level_ascending(tmp_path):
+    spec = parse_spec(ladder_spec([0.3, 0.0, 0.1]))
+    cfg = load_built(tmp_path, build_run_config(spec, REPO))
+
+    assert [a.name for a in cfg.arms] == ["d0", "d10", "d30"]
+    for arm, want in zip(cfg.arms, (0.0, 0.1, 0.3)):
+        enabled, path, inline = cfg.promos_for(arm)
+        pcts = {c["discount_pct"] for p in inline["product_promos"] for c in p["cycles"]}
+        assert pcts == {want}, f"{arm.name} should force every cycle to {want}"
+        # every arm still RUNS the hook — PRICED_AT is shared objective state
+        assert enabled and path is None
+
+
+def test_ladder_keeps_the_cycle_windows_intact(tmp_path):
+    spec = parse_spec(ladder_spec([0.0, 0.25]))
+    cfg = load_built(tmp_path, build_run_config(spec, REPO))
+    _, _, inline = cfg.promos_for(cfg.arm("d25"))
+    cycles = inline["product_promos"][0]["cycles"]
+    assert [(c["start_tick"], c["end_tick"]) for c in cycles] == [(1, 2), (4, 5)]
+
+
+def test_absent_discount_levels_is_the_untouched_two_arm_path(tmp_path):
+    plain = base_spec(
+        "pricing",
+        promo={"product_promos": [
+            {"product_id": 3000001,
+             "cycles": [{"cycle": 1, "start_tick": 1, "end_tick": 2, "discount_pct": 0.15}]}]},
+        exposure={"schedule": [{"creative_id": 2000003, "start_tick": 0,
+                                "end_tick": 5, "reach_prob": 0.5}]})
+    cfg = load_built(tmp_path, build_run_config(parse_spec(plain), REPO))
+    assert [a.name for a in cfg.arms] == ["promo_off", "promo_on"]
+
+
+def test_ladder_validation():
+    with pytest.raises(ValueError, match="at least 2 levels"):
+        parse_spec(ladder_spec([0.2]))
+    with pytest.raises(ValueError, match="distinct"):
+        parse_spec(ladder_spec([0.1, 0.1]))
+    with pytest.raises(ValueError, match=r"\[0, 0.9\]"):
+        parse_spec(ladder_spec([0.0, 0.95]))
+
+
+def test_zeroed_promos_is_the_zero_rung_of_the_ladder():
+    from shopsim.experiments.build import leveled_promos
+    promos = [{"product_id": 3000001,
+               "cycles": [{"cycle": 1, "start_tick": 1, "end_tick": 2, "discount_pct": 0.15}]}]
+    assert zeroed_promos(promos) == leveled_promos(promos, 0.0)

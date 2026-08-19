@@ -15,6 +15,8 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from . import steps
+
 
 def canonical_json(obj) -> str:
     return json.dumps(obj, separators=(",", ":"), sort_keys=True)
@@ -94,6 +96,8 @@ class RunConfig:
     schedule: tuple[ScheduleRow, ...]
     frequency_cap_per_tick: int
     frequency_cap_72h: int
+    allocation: "steps.AllocationConfig | None"
+    social: "SocialConfig | None"
     goal_config_path: Path
     goal_overrides_base: dict
     fulfillment_lag_ticks: int
@@ -149,6 +153,8 @@ class RunConfig:
             schedule=rows,
             frequency_cap_per_tick=int(exposure.get("frequency_cap_per_tick", 2)),
             frequency_cap_72h=int(exposure.get("frequency_cap_72h", 6)),
+            allocation=parse_allocation(exposure.get("allocation")),
+            social=parse_social(raw["population"].get("social")),
             goal_config_path=rp(goals.get("config", "fixtures/demo-brand/goal_config.json")),
             goal_overrides_base=dict(goals.get("overrides", {})),
             fulfillment_lag_ticks=int(fulfillment.get("lag_ticks", 2)),
@@ -313,6 +319,57 @@ class RunConfig:
             if pages:
                 out[row.creative_id] = pages[0]
         return out
+
+
+def parse_allocation(block: dict | None) -> "steps.AllocationConfig | None":
+    """exposure.allocation -> AllocationConfig (v3.6-draft). Absent/empty is
+    None, which the loop reads as "never touch the schedule" — the byte-
+    identical pre-allocation path."""
+    if not block:
+        return None
+    known = {"enabled", "prior_exposures", "prior_clicks", "floor_share", "power"}
+    bad = set(block) - known
+    if bad:
+        raise ValueError(f"exposure.allocation: unknown keys {sorted(bad)}")
+    return steps.AllocationConfig(
+        enabled=bool(block.get("enabled", False)),
+        prior_exposures=float(block.get("prior_exposures", 120.0)),
+        prior_clicks=float(block.get("prior_clicks", 6.0)),
+        floor_share=float(block.get("floor_share", 0.05)),
+        power=float(block.get("power", 2.0)),
+    )
+
+
+def parse_social(block: dict | None):
+    """population.social -> SocialConfig (CONTRACT v3.8-draft). Absent, empty,
+    or enabled:false is None, which the loop reads as "write no TRUSTS_PERSON
+    edges" — the byte-identical pre-social path. Unknown keys are refused, the
+    way parse_allocation/parse_calibration refuse them: a typo must never be
+    swallowed into a run whose config_hash then claims it was honored."""
+    if not block:
+        return None
+    from ..population.factory import SocialConfig
+
+    known = {"enabled", "degree", "rewire_p", "weight_min", "weight_max"}
+    bad = set(block) - known
+    if bad:
+        raise ValueError(f"population.social: unknown keys {sorted(bad)}")
+    if not block.get("enabled", False):
+        return None
+    cfg = SocialConfig(
+        enabled=True,
+        degree=int(block.get("degree", 4)),
+        rewire_p=float(block.get("rewire_p", 0.1)),
+        weight_min=float(block.get("weight_min", 0.4)),
+        weight_max=float(block.get("weight_max", 0.9)),
+    )
+    if cfg.degree < 1:
+        raise ValueError("population.social.degree must be >= 1")
+    if not 0.0 <= cfg.rewire_p <= 1.0:
+        raise ValueError("population.social.rewire_p must be in [0, 1]")
+    if not 0.0 <= cfg.weight_min <= cfg.weight_max <= 1.0:
+        raise ValueError("population.social weights must satisfy 0 <= min <= max <= 1")
+    return cfg
 
 
 def parse_calibration(block: dict | None):

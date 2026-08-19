@@ -62,9 +62,15 @@ class AdExperimentSpec(BaseSpec):
     """4.1: N creatives × audience × T days — ONE ARM PER CREATIVE, all arms
     sharing the seed. Identical populations, and with equal reach_prob the
     single-row exposure draws match across arms too: a clean paired design
-    with no frequency-cap competition between creatives."""
+    with no frequency-cap competition between creatives.
+
+    market {shared, allocation} (v3.6-draft) switches to the opposite design:
+    ONE arm carrying every creative row, so the ads compete for the same
+    shoppers under the shared frequency caps. Paired isolation is traded away
+    for a real market — which is the point when allocation is on."""
 
     creatives: tuple[dict, ...] = ()  # schedule-row dicts (creative_id, reach_prob, ...)
+    market: dict = field(default_factory=dict)  # {"shared": bool, "allocation": {...}}
 
 
 @dataclass(frozen=True)
@@ -72,11 +78,17 @@ class PricingExperimentSpec(BaseSpec):
     """4.2: promo schedule → PRICED_AT supersessions + PRICE_SEEN. Two arms:
     promo_off runs the SAME promo hook with every discount zeroed (PRICED_AT
     is shared objective state — the off arm must keep aligning the shelf, not
-    skip it), promo_on runs the real schedule and is orchestrated LAST."""
+    skip it), promo_on runs the real schedule and is orchestrated LAST.
+
+    discount_levels (v3.6-draft) replaces the pair with a LADDER: one arm per
+    depth, ascending, each arm overriding every cycle's discount_pct with its
+    own level. "Which discount does the population actually respond to" then
+    reads straight off the arm comparison."""
 
     promo_schedule: str | None = None  # path, or None with inline product_promos
     product_promos: tuple[dict, ...] = ()  # inline alternative to the path
     exposure: tuple[dict, ...] = ()  # schedule rows — the funnel that sees prices
+    discount_levels: tuple[float, ...] = ()  # e.g. (0.0, 0.1, 0.2, 0.3)
 
 
 @dataclass(frozen=True)
@@ -133,6 +145,52 @@ def _base_kwargs(raw: dict) -> dict:
     )
 
 
+_MARKET_KEYS = {"shared", "allocation"}
+_ALLOC_KEYS = {"enabled", "prior_exposures", "prior_clicks", "floor_share", "power"}
+
+
+def _market_problems(market: dict, n_creatives: int) -> list[str]:
+    """ad_test market{} validation (v3.6-draft). Unknown keys are refused the
+    way parse_calibration refuses them: a typo must never be silently ignored
+    into a run whose config_hash then claims it was honored."""
+    if not market:
+        return []
+    problems: list[str] = []
+    bad = set(market) - _MARKET_KEYS
+    if bad:
+        problems.append(f"market: unknown keys {sorted(bad)}")
+    shared = market.get("shared", False)
+    if not isinstance(shared, bool):
+        problems.append("market.shared must be a bool")
+    if shared and n_creatives < 2:
+        problems.append("market.shared needs at least 2 creatives — a market "
+                        "of one is just the single-arm path")
+    alloc = market.get("allocation", {})
+    if alloc:
+        if not isinstance(alloc, dict):
+            problems.append("market.allocation must be an object")
+        else:
+            bad_alloc = set(alloc) - _ALLOC_KEYS
+            if bad_alloc:
+                problems.append(f"market.allocation: unknown keys {sorted(bad_alloc)}")
+            if alloc.get("enabled") and not shared:
+                problems.append("market.allocation needs market.shared — "
+                                "isolated arms have nothing to reallocate between")
+            floor = float(alloc.get("floor_share", 0.05))
+            if not 0.0 <= floor < 1.0 / max(n_creatives, 1):
+                problems.append(
+                    f"market.allocation.floor_share must be in [0, 1/N) = "
+                    f"[0, {1.0 / max(n_creatives, 1):.3f}) for {n_creatives} "
+                    "creatives (N floors must leave room to redistribute)")
+            if float(alloc.get("power", 2.0)) < 0.0:
+                problems.append("market.allocation.power must be >= 0")
+            for key in ("prior_exposures", "prior_clicks"):
+                if float(alloc.get(key, 1.0)) <= 0.0:
+                    problems.append(f"market.allocation.{key} must be > 0 "
+                                    "(the prior is what makes day 0 uniform)")
+    return problems
+
+
 def load_spec(path: Path | str):
     raw = json.loads(Path(path).read_text())
     return parse_spec(raw)
@@ -158,7 +216,9 @@ def parse_spec(raw: dict):
         seen = [r["creative_id"] for r in creatives]
         if len(set(seen)) != len(seen):
             problems.append("ad_test creatives must be unique (one arm per creative)")
-        spec = AdExperimentSpec(**base, creatives=tuple(creatives))
+        market = dict(raw.get("market", {}))
+        problems.extend(_market_problems(market, len(creatives)))
+        spec = AdExperimentSpec(**base, creatives=tuple(creatives), market=market)
 
     elif stype == "pricing":
         promo = raw.get("promo", {})
@@ -171,9 +231,18 @@ def parse_spec(raw: dict):
         if not exposure:
             problems.append("pricing needs exposure.schedule rows — without a "
                             "funnel nobody ever sees a price")
+        levels = tuple(float(x) for x in raw.get("discount_levels", ()))
+        if levels:
+            if len(set(levels)) != len(levels):
+                problems.append("pricing discount_levels must be distinct")
+            if any(not 0.0 <= x <= 0.9 for x in levels):
+                problems.append("pricing discount_levels must each be in [0, 0.9]")
+            if len(levels) < 2:
+                problems.append("pricing discount_levels needs at least 2 levels "
+                                "(one level is just a single-arm run)")
         spec = PricingExperimentSpec(
             **base, promo_schedule=schedule, product_promos=inline,
-            exposure=exposure)
+            exposure=exposure, discount_levels=levels)
 
     elif stype == "page_ab":
         page_ids = tuple(int(p) for p in raw.get("page_ids", ()))
