@@ -126,6 +126,15 @@ def _load_env_key() -> None:
                     return
 
 
+def resolve_api_key() -> str | None:
+    """The key as the CLI sees it: env first, then <repo>/.env.local. Public
+    so callers outside this module (the runner API's ingest endpoint) check
+    the same way the ingest path does — an env-only check reports "no key"
+    on a repo whose .env.local works fine."""
+    _load_env_key()
+    return os.environ.get("OPENAI_API_KEY")
+
+
 def _image_mime(image_bytes: bytes) -> str:
     """Sniff from magic bytes — the cache never stores a filename."""
     if image_bytes[:8] == b"\x89PNG\r\n\x1a\n":

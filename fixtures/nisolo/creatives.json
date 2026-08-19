@@ -1,0 +1,77 @@
+{
+  "comment": "Nisolo — five real creatives supplied by the brand's own campaigns, one brand testing five angles: sustainability, product features, a flat sale, a tiered sale, and brand/lifestyle. Each row's `image` is byte-verbatim from the source file (the perception cache keys on sha256 of those bytes — never re-encode one). `headline`/`body` are transcribed from what each image actually says, extended with verified brand facts (see eval/market-research.md §6); they have ZERO runtime effect — they are perception input and cache-key material only. The claims below are AUTHORED FALLBACKS: ObjectiveView.from_catalog overrides them with what the multimodal eye actually perceived, which is the point of the exhibit. Every creative offers exactly ONE product so each has its own landing page and can convert (a creative whose product has no page dead-ends at CLICK, and in a shared market that lets it win budget while earning nothing).",
+  "creatives": [
+    {
+      "creative_id": 2000101,
+      "brand_id": 6100,
+      "name": "Eco-Friendly, Head to Toe",
+      "image": "images/nisolo-eco-friendly-shoes.png",
+      "headline": "Eco-friendly shoes for men & women.",
+      "body": "Certified B Corp since 2017 and Climate Neutral Certified. Leather Working Group certified hides, and a living wage for 100% of the workers in our Peru and Mexico factories. Shoes built to be worn for years, made in a way you can defend.",
+      "claims": [
+        {"concept_id": 5003, "strength": 0.9},
+        {"concept_id": 5019, "strength": 0.5},
+        {"concept_id": 5021, "strength": 0.5}
+      ],
+      "offers": [{"product_id": 3000104, "claimed_pct": 0.0}]
+    },
+    {
+      "creative_id": 2000102,
+      "brand_id": 6100,
+      "name": "Huarache 2.0 — Rebuilt",
+      "image": "images/nisolo-comfort-shoes.webp",
+      "headline": "Huarache 2.0: benefits & features.",
+      "body": "Added visible foam cushioning for extra comfort. Redesigned for updated sizing accuracy. A more durable outsole built for a lifetime of wear. Hand-woven by artisans, in leather that softens as you break it in.",
+      "claims": [
+        {"concept_id": 5006, "strength": 0.9},
+        {"concept_id": 5001, "strength": 0.8},
+        {"concept_id": 5002, "strength": 0.8},
+        {"concept_id": 5021, "strength": 0.6}
+      ],
+      "offers": [{"product_id": 3000102, "claimed_pct": 0.0}]
+    },
+    {
+      "creative_id": 2000103,
+      "brand_id": 6100,
+      "name": "Biggest Sale of the Year",
+      "image": "images/nisolo-discount.jpg",
+      "headline": "Up to 40% off — our biggest sale of the year.",
+      "body": "Best-selling huaraches, everyday sneakers and leather totes, marked down. Ethically made, responsibly priced — while sizes last.",
+      "claims": [
+        {"concept_id": 5011, "strength": 0.95},
+        {"concept_id": 5022, "strength": 0.3}
+      ],
+      "offers": [{"product_id": 3000101, "claimed_pct": 0.0}],
+      "note": "claimed_pct is deliberately 0.0: the 40% must come from PERCEPTION reading the image, not from this row. test_nisolo_fixture asserts the cached claimed_discount is >= 0.35 with prompt_version p1-img1."
+    },
+    {
+      "creative_id": 2000104,
+      "brand_id": 6100,
+      "name": "Summer Sale — Spend More, Save More",
+      "image": "images/nisolo-discount-v2.webp",
+      "headline": "Summer Sale: 25% off $125+, 40% off $250+.",
+      "body": "Shop women's and men's styles. Build the cart, deepen the discount — on shoes made to outlast the season. Free shipping over $100.",
+      "claims": [
+        {"concept_id": 5011, "strength": 0.9},
+        {"concept_id": 5013, "strength": 0.5}
+      ],
+      "offers": [{"product_id": 3000106, "claimed_pct": 0.0}],
+      "note": "NOT FULLY MODELLED: this is a cart-threshold offer (25% over $125, 40% over $250). The engine's promo model is a per-product discount_pct with no cart-total condition, so the tiered mechanic survives only as a PERCEIVED claim raising offer_attractiveness; no threshold logic runs. Surfaced verbatim on the ad card."
+    },
+    {
+      "creative_id": 2000105,
+      "brand_id": 6100,
+      "name": "Does It All",
+      "image": "images/nisolo-everyday-shoes.jpg",
+      "headline": "Timeless design. Everyday function. Next-level comfort.",
+      "body": "Sustainable shoes and accessories that do it all. A five-layer memory foam insole with built-in arch support, gripped rubber sole savers, and Leather Working Group certified leather that ages well.",
+      "claims": [
+        {"concept_id": 5017, "strength": 0.7},
+        {"concept_id": 5001, "strength": 0.8},
+        {"concept_id": 5026, "strength": 0.7},
+        {"concept_id": 5003, "strength": 0.6}
+      ],
+      "offers": [{"product_id": 3000105, "claimed_pct": 0.0}]
+    }
+  ]
+}

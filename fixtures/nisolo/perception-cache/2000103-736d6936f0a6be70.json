@@ -1,0 +1,39 @@
+{
+  "creative_id": 2000103,
+  "descriptor": {
+    "body": "Best-selling huaraches, everyday sneakers and leather totes, marked down. Ethically made, responsibly priced \u2014 while sizes last.",
+    "brand_id": 6100,
+    "creative_id": 2000103,
+    "headline": "Up to 40% off \u2014 our biggest sale of the year.",
+    "image_sha256": "1a28ed2cca23e18d3b73e1f97286ce0b3ff6cda4ea5a86f7faf3e6086eb752d4",
+    "name": "Biggest Sale of the Year",
+    "offer_product_ids": [
+      3000101
+    ]
+  },
+  "hash": "736d6936f0a6be708821cb571716fa3ec6c4b243344ed88b6e6bf4af85a22628",
+  "model": "gpt-4o-mini",
+  "output": {
+    "claimed_discounts": [
+      {
+        "claimed_pct": 0.4,
+        "product_id": 3000101
+      }
+    ],
+    "claims": [
+      {
+        "concept": "DISCOUNT",
+        "strength": 1
+      },
+      {
+        "concept": "ECO_FRIENDLY",
+        "strength": 0.5
+      },
+      {
+        "concept": "VALUE_PRICED",
+        "strength": 0.5
+      }
+    ]
+  },
+  "prompt_version": "p1-img1"
+}

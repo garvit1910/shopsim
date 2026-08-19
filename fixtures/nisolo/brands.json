@@ -1,0 +1,8 @@
+{
+  "comment": "Display metadata only. Deliberately OUTSIDE the engine's five catalog-dir reads (catalog.csv, creatives.json, page_variants.json, latent_quality.csv, images/), so it can never reach config_hash, view_hash, or a mind. The API's card builder reads it; absent, cards fall back to 'Brand <id>'.",
+  "6100": {
+    "name": "Nisolo",
+    "url": "nisolo.com",
+    "note": "Certified B Corp since 2017 · Leather Working Group certified leather · Climate Neutral Certified · 100% living wage in Tier-1 factories (Peru, Mexico)"
+  }
+}

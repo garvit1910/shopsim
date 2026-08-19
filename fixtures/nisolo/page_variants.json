@@ -1,0 +1,53 @@
+{
+  "comment": "One CONSISTENT landing page per product, so every creative's offered product has somewhere to land — a page-less product ends its creative's funnel at CLICK, and in a shared market that ad still wins impressions on CTR while earning zero. shows_concept_ids = the product's catalog attributes plus the concepts its creative claims. 4000108 is the one VIOLATING variant: the Huarache page with DISCOUNT (5011) removed, so the 'Up to 40% Off' creative's expectation is not met on the page — the expectation_violation exhibit. resolve_pages takes the LOWEST page id per product, so 4000101 wins by default and 4000108 only enters through an explicit page_ids A/B row.",
+  "page_variants": [
+    {
+      "page_id": 4000101,
+      "product_id": 3000101,
+      "variant": "consistent",
+      "shows_concept_ids": [5021, 5001, 5017, 5003, 5011]
+    },
+    {
+      "page_id": 4000102,
+      "product_id": 3000102,
+      "variant": "consistent",
+      "shows_concept_ids": [5021, 5001, 5006, 5003, 5002]
+    },
+    {
+      "page_id": 4000103,
+      "product_id": 3000103,
+      "variant": "consistent",
+      "shows_concept_ids": [5027, 5002, 5021, 5003]
+    },
+    {
+      "page_id": 4000104,
+      "product_id": 3000104,
+      "variant": "consistent",
+      "shows_concept_ids": [5017, 5001, 5010, 5003, 5019, 5021]
+    },
+    {
+      "page_id": 4000105,
+      "product_id": 3000105,
+      "variant": "consistent",
+      "shows_concept_ids": [5026, 5006, 5002, 5003, 5017, 5001]
+    },
+    {
+      "page_id": 4000106,
+      "product_id": 3000106,
+      "variant": "consistent",
+      "shows_concept_ids": [5010, 5002, 5021, 5003, 5011, 5013]
+    },
+    {
+      "page_id": 4000107,
+      "product_id": 3000107,
+      "variant": "consistent",
+      "shows_concept_ids": [5010, 5021, 5002, 5017]
+    },
+    {
+      "page_id": 4000108,
+      "product_id": 3000101,
+      "variant": "violating",
+      "shows_concept_ids": [5021, 5001, 5017, 5003]
+    }
+  ]
+}
