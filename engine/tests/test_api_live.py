@@ -7,6 +7,7 @@ graph-backed endpoints against the live store.
 
 import json
 import os
+import time
 import shutil
 from pathlib import Path
 
@@ -577,3 +578,112 @@ def test_run_creatives_reads_the_runs_own_catalog(tmp_app):
     sale = next(c for c in body["creatives"] if c["creative_id"] == 2000103)
     assert sale["image_url"] == "/runs/r010-nis-market/creatives/2000103/image"
     assert client.get(sale["image_url"]).status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# launch serialization (the guard that keeps Law 8's single writer single)
+# ---------------------------------------------------------------------------
+
+
+def _registry(runs: Path, rows: list[dict]) -> None:
+    (runs / "registry.json").write_text(json.dumps({"runs": rows}))
+
+
+VALID_SPEC = {"name": "probe", "type": "ad_test", "seed": 1, "ticks": 4,
+              "t0": 1800000000, "population": {"size": 10},
+              "creatives": [{"creative_id": 2000001, "reach_prob": 0.3}]}
+
+
+def _row(runs: Path, run_id: str, status: str, **kw) -> dict:
+    d = runs / run_id
+    d.mkdir(exist_ok=True)
+    return {"run_id": run_id, "run_index": int(run_id[1:4]), "dir": str(d),
+            "label": kw.get("label", "demo"), "arm": kw.get("arm", "a"),
+            "status": status, "kind": "run", "seed": 1, "config_hash": "x"}
+
+
+def test_engine_busy_is_free_when_nothing_is_running(tmp_app):
+    runs, client = tmp_app
+    _registry(runs, [_row(runs, "r001-demo-a", "complete")])
+    body = client.get("/engine/busy").json()
+    assert body == {"busy": False, "blocker": None}
+
+
+def test_a_running_row_with_a_live_writer_blocks_and_names_the_process(tmp_app, monkeypatch):
+    """The bug this encodes: a `shopsim.eval` run held the engine, and the
+    refusal could only say "looks live" because the pid check matched
+    `shopsim.experiments` alone."""
+    runs, client = tmp_app
+    row = _row(runs, "r002-f12-fatigue-rotation", "running", label="f12-fatigue", arm="rotation")
+    _registry(runs, [row])
+    (runs / "r002-f12-fatigue-rotation" / "progress.json").write_text(
+        json.dumps({"status": "running", "tick": 11, "ticks": 16,
+                    "updated_at": time.time()}))
+    monkeypatch.setattr("shopsim.runner.api._any_live_writer",
+                        lambda: {"pid": 4242, "command": "python -m shopsim.eval scenarios"})
+
+    blocker = client.get("/engine/busy").json()["blocker"]
+    assert blocker["stale"] is False
+    assert blocker["run_id"] == "r002-f12-fatigue-rotation"
+    assert blocker["pid"] == 4242 and "shopsim.eval" in blocker["command"]
+    assert (blocker["tick"], blocker["ticks"]) == (11, 16)
+
+    r = client.post("/experiments", json=VALID_SPEC)
+    assert r.status_code == 409
+    assert r.headers["X-Busy-Stale"] == "0"
+
+
+def test_a_slow_tick_is_not_mistaken_for_a_dead_run(tmp_app, monkeypatch):
+    """The regression that matters. Per-tick cost grows with the store: a
+    500-shopper scenario measured ~265 s/tick on 2026-08-20. Under the old
+    300 s timer this row would have been healed to 'stale' and a SECOND writer
+    admitted into a registry whose read-modify-write is not concurrent-safe."""
+    runs, client = tmp_app
+    row = _row(runs, "r003-demo-a", "running")
+    _registry(runs, [row])
+    (runs / "r003-demo-a" / "progress.json").write_text(
+        json.dumps({"status": "running", "tick": 3, "ticks": 60,
+                    "updated_at": time.time() - 420}))   # quiet for 7 minutes
+    monkeypatch.setattr("shopsim.runner.api._any_live_writer",
+                        lambda: {"pid": 7, "command": "python -m shopsim.experiments run"})
+
+    blocker = client.get("/engine/busy").json()["blocker"]
+    assert blocker is not None and blocker["stale"] is False
+    assert blocker["quiet_s"] >= 300, "the point of the test is a quiet gap past the old window"
+    assert json.loads((runs / "registry.json").read_text())["runs"][0]["status"] == "running", \
+        "a live run must never be healed to stale"
+
+
+def test_a_crashed_run_is_forceable_and_says_so(tmp_app, monkeypatch):
+    """No writer process, so the row is a leftover — this is the one case
+    where force is safe, and the only case where the UI offers it."""
+    runs, client = tmp_app
+    _registry(runs, [_row(runs, "r004-demo-a", "running")])
+    (runs / "r004-demo-a" / "progress.json").write_text(
+        json.dumps({"status": "running", "tick": 2, "ticks": 10,
+                    "updated_at": time.time() - 60}))
+    monkeypatch.setattr("shopsim.runner.api._any_live_writer", lambda: None)
+
+    blocker = client.get("/engine/busy").json()["blocker"]
+    assert blocker["stale"] is True and blocker["pid"] is None
+    r = client.post("/experiments", json=VALID_SPEC)
+    assert r.status_code == 409 and r.headers["X-Busy-Stale"] == "1"
+
+
+def test_serve_is_a_reader_and_never_counts_as_a_writer():
+    """`runner serve` IS the API process. If it matched, the API would report
+    itself as the thing blocking every launch."""
+    from shopsim.runner import api as api_mod
+
+    def fake_ps(cmd, **kw):
+        class R:
+            stdout = "  42 S    python -m shopsim.runner serve --config x.json\n"
+        return R()
+
+    import subprocess as sp
+    real = sp.run
+    try:
+        sp.run = fake_ps
+        assert api_mod._any_live_writer() is None
+    finally:
+        sp.run = real

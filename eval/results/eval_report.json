@@ -519,6 +519,35 @@
    "tier": "analytic"
   },
   {
+   "id": "F5",
+   "name": "the violating page variant bounces more",
+   "never_drop": false,
+   "note": "Same seed, same shoppers, seeded 50/50 split \u2014 the only difference is that the B variant hides a concept its own creative claimed.",
+   "numbers": {
+    "bounce_delta": 0.14118,
+    "bounce_rate_consistent": 0.42132,
+    "bounce_rate_violating": 0.5625,
+    "violations_sighted": 161,
+    "visits_consistent": 197,
+    "visits_violating": 208
+   },
+   "passed": true,
+   "series": {
+    "page_bounce": [
+     {
+      "bounce_rate": 0.42132,
+      "variant": "4000001 (consistent)"
+     },
+     {
+      "bounce_rate": 0.5625,
+      "variant": "4000002 (violating)"
+     }
+    ]
+   },
+   "threshold": "bounce_delta > 0 with at least one expectation_violation motif actually retrieved",
+   "tier": "scenario"
+  },
+  {
    "id": "F6",
    "name": "abstention: hallucinated familiarity ~ 0 when gated",
    "never_drop": false,
@@ -559,13 +588,20 @@
    "note": "Exposure touches awareness, adstock and EXPECTS only (evidence.py: SAW carries pref_weight 0.0). This audit is the thing that would catch one confused updater putting taste back on the exposure channel.",
    "numbers": {
     "forbidden_causes_seen": {},
-    "learned_versions": 35,
+    "learned_versions": 4594,
     "pooled_cause_kinds": {
-     "BOUGHT": 3,
-     "BROWSED": 28,
-     "EXPERIENCED": 4
+     "BOUGHT": 267,
+     "BROWSED": 1694,
+     "CARTED": 230,
+     "CLICKED": 2021,
+     "EXPERIENCED": 288,
+     "VISITED": 94
     },
     "runs_audited": [
+     "F12:same_concept",
+     "F5:split",
+     "F9:need_off",
+     "F9:need_on",
      "golden-run"
     ],
     "runs_without_provenance": []
@@ -618,6 +654,40 @@
    "tier": "analytic"
   },
   {
+   "id": "F9",
+   "name": "the Maya law: a goal moves BUY more than it moves CTR",
+   "never_drop": true,
+   "note": "Same seed, same population, same ad. The twin arm branches from the live arm's own log, so everything before the divergence tick is shared history rather than a re-simulation. That also makes the cross-arm ratios CONSERVATIVE: both arms' funnel counts include the identical pre-divergence prefix, which dilutes the measured uplift toward 1.0. `within_run_uplift_x` is the undiluted statement of the same claim \u2014 it compares decisions carrying an active need against decisions without one, inside a single arm.",
+   "numbers": {
+    "buy_per_exposure_need_off": 0.003932,
+    "buy_per_exposure_need_on": 0.004306,
+    "buy_uplift_x": 1.09524,
+    "buys_need_off": 21,
+    "buys_need_on": 23,
+    "ctr_need_off": 0.05879,
+    "ctr_need_on": 0.060663,
+    "ctr_uplift_x": 1.03185,
+    "within_run_p_buy_need_off": 0.05155,
+    "within_run_p_buy_need_on": 0.0922,
+    "within_run_uplift_x": 1.78855
+   },
+   "passed": false,
+   "series": {
+    "twin": [
+     {
+      "metric": "CTR",
+      "uplift_x": 1.03185
+     },
+     {
+      "metric": "BUY per exposure",
+      "uplift_x": 1.09524
+     }
+    ]
+   },
+   "threshold": "BUY uplift > CTR uplift, with BUY uplift >= 1.5x and CTR uplift >= 1.05x",
+   "tier": "scenario"
+  },
+  {
    "id": "F10",
    "name": "confidence-differential updating",
    "never_drop": false,
@@ -654,16 +724,6 @@
  ],
  "laws_not_run": [
   {
-   "id": "F5",
-   "never_drop": false,
-   "reason": "no f5-violation run on disk"
-  },
-  {
-   "id": "F9",
-   "never_drop": true,
-   "reason": "twin pair incomplete (needs both arms)"
-  },
-  {
    "id": "F12",
    "never_drop": false,
    "reason": "needs both fatigue arms"
@@ -691,6 +751,7 @@
   "plots/f3_discount_ladder.svg",
   "plots/f6_abstention.svg",
   "plots/f8_evidence_hierarchy.svg",
+  "plots/f9_twin.svg",
   "plots/funnel_reference.svg",
   "plots/rank_agreement.svg"
  ],
@@ -811,10 +872,57 @@
   "tier": "analytic",
   "worst_spearman": 0.7
  },
- "runs": [],
- "scenario_profile": null,
+ "runs": [
+  {
+   "adopted": true,
+   "arm": "same_concept",
+   "dir": "/Users/garvit/shopsim/runs/r065-f12-fatigue-same_concept",
+   "label": "f12-fatigue",
+   "population": null,
+   "run_id": "r065-f12-fatigue-same_concept",
+   "seed": 523,
+   "ticks": 16,
+   "wall_s": 1752.657
+  },
+  {
+   "adopted": true,
+   "arm": "split",
+   "dir": "/Users/garvit/shopsim/runs/r058-f5-violation-split",
+   "label": "f5-violation",
+   "population": null,
+   "run_id": "r058-f5-violation-split",
+   "seed": 311,
+   "ticks": 16,
+   "wall_s": 499.71
+  },
+  {
+   "adopted": true,
+   "arm": "need_off",
+   "dir": "/Users/garvit/shopsim/runs/r064-f9-twin-need_off",
+   "label": "f9-twin",
+   "population": null,
+   "run_id": "r064-f9-twin-need_off",
+   "seed": 419,
+   "ticks": 14,
+   "wall_s": 1242.848
+  },
+  {
+   "adopted": true,
+   "arm": "need_on",
+   "dir": "/Users/garvit/shopsim/runs/r063-f9-twin-need_on",
+   "label": "f9-twin",
+   "population": null,
+   "run_id": "r063-f9-twin-need_on",
+   "seed": 419,
+   "ticks": 14,
+   "wall_s": 966.331
+  }
+ ],
+ "scenario_profile": {
+  "profile": "demo",
+  "reason": "the demo profile accelerates ONLY the click gate (multiple 1.0 on every post-click gate, see calibration.json demo_multiples), so it draws more samples of the gates these laws test without changing them; on the reference profile F5 got 17 page visits total and reported a coin flip"
+ },
  "unmeasured_never_drop": [
-  "F9",
   "F7b"
  ]
 }

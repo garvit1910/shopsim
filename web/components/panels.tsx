@@ -28,12 +28,22 @@ export function creativesFromConfig(
   schedule: { creative_id: number; start_tick: number }[] | undefined,
   names: Record<string, string> | undefined,
   cards?: CreativeCard[] | null,
+  /** Creative ids observed in the run's own results, used only when there is
+   * no schedule to read. A run launched outside the orchestrator has no
+   * run_config, so `schedule` is undefined and this used to return [] — which
+   * silently emptied the allocation river, the CTR small-multiples and the ad
+   * roster even though the engine had published perfectly good per-creative
+   * numbers. The ids the run actually served are the honest fallback. */
+  observedIds?: number[],
 ): CreativeInfo[] {
   const byId = new Map((cards ?? []).map((c) => [c.creative_id, c]));
   const seen = new Map<number, number>();
   for (const row of schedule ?? []) {
     const cur = seen.get(row.creative_id);
     seen.set(row.creative_id, cur == null ? row.start_tick : Math.min(cur, row.start_tick));
+  }
+  if (!seen.size) {
+    for (const id of observedIds ?? []) seen.set(id, 0);
   }
   return [...seen.entries()]
     .sort((a, b) => a[0] - b[0])

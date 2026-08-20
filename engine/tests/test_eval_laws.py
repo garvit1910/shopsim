@@ -261,3 +261,43 @@ def test_never_drop_ids_matches_the_laws_that_carry_the_flag():
     assert flagged == set(L.NEVER_DROP_IDS), (
         f"laws carrying never_drop={sorted(flagged)} but "
         f"NEVER_DROP_IDS={sorted(L.NEVER_DROP_IDS)}")
+
+
+def test_adopt_records_completed_runs_and_never_a_mid_flight_one(tmp_path, monkeypatch):
+    """`scenarios --adopt` is the recovery path for an interrupted pass.
+
+    It records WHERE a completed run is, never what it measured — the laws are
+    still computed from each run's own results.json by cmd_report. The rule
+    that matters: a run without results.json is still in flight and must not be
+    adopted, or the report would read a half-finished simulation as a result.
+    """
+    from shopsim.eval import __main__ as M
+
+    runs = tmp_path / "runs"
+    rows = []
+    for i, (label, arm, done) in enumerate([
+            ("f5-violation", "split", True),
+            ("f9-twin", "need_on", True),
+            ("f9-twin", "need_off", True),
+            ("f12-fatigue", "same_concept", True),
+            ("f12-fatigue", "rotation", False)]):   # still running
+        d = runs / f"r{i:03d}-{label}-{arm}"
+        d.mkdir(parents=True)
+        if done:
+            (d / "results.json").write_text("{}")
+        (d / "progress.json").write_text(json.dumps({"ticks": 16, "total_wall_s": 9.0}))
+        rows.append({"run_id": d.name, "run_index": i, "dir": str(d), "label": label,
+                     "arm": arm, "status": "complete" if done else "running", "seed": 1})
+
+    class Store:
+        def __init__(self, _root): pass
+        def rows(self): return rows
+
+    monkeypatch.setattr("shopsim.runner.runstore.RunStore", Store)
+    out = {"runs": {}}
+    M._adopt_scenarios(out, {"F5", "F9", "F12"}, lambda: None)
+
+    assert set(out["runs"]) == {"F5:split", "F9:need_on", "F9:need_off", "F12:same_concept"}, \
+        "the in-flight rotation arm must not be adopted"
+    assert out["runs"]["F9:need_on"]["adopted"] is True
+    assert out["runs"]["F5:split"]["run_id"] == "r000-f5-violation-split"

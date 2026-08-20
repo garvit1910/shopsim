@@ -34,6 +34,13 @@ export interface MarketState {
   pace: EnginePace | null;
   /** transient poll failures — never the red box, which means "no such run" */
   warning: string | null;
+  /** This run has no run_config.json. GET /runs/{id}/config resolves as
+   * runs/experiments/<label>/run_config.json, so only orchestrator-launched
+   * runs carry one — an eval scenario or a CLI run legitimately 404s. The
+   * cockpit still renders (the event stream and results are enough for the
+   * KPIs and the river) but the ad roster, the schedule and the population
+   * are unavailable, and saying so beats a blank chart. */
+  configMissing: boolean;
   /** prepare()-phase progress, for the preflight panel */
   bootProgress: Progress | null;
   /** events bucketed per completed tick; index = tick */
@@ -57,7 +64,7 @@ export interface MarketState {
 export const useMarket = create<MarketState>(() => ({
   runId: null, mode: "replay", status: "unknown",
   manifest: null, config: null, population: null, cards: null,
-  phase: "starting", pace: null, warning: null, bootProgress: null,
+  phase: "starting", pace: null, warning: null, configMissing: false, bootProgress: null,
   eventsByTick: [], partialEvents: [], headTick: -1,
   results: null, beliefAvg: {}, error: null,
   tick: 0, frac: 0, playing: false, speed: 1, followHead: true,
@@ -103,7 +110,10 @@ async function loadStatic(runId: string) {
     api.population(runId).catch(() => null),
     api.creatives(runId).then((r) => r.creatives).catch(() => null),
   ]);
-  return { manifest, config, population, cards };
+  // A null config is not a transient failure — it is a permanent property of
+  // runs launched outside the orchestrator. Report it so the page can explain
+  // the empty roster rather than rendering a cockpit around a hole.
+  return { manifest, config, population, cards, configMissing: config === null };
 }
 
 async function refreshResults(runId: string) {
@@ -147,7 +157,8 @@ export async function openRun(runId: string): Promise<void> {
   try {
     api.pace().then((pace) => get().runId === runId && set({ pace })).catch(() => {});
 
-    const { manifest, config, population, cards } = await loadStatic(runId);
+    const { manifest, config, population, cards, configMissing } = await loadStatic(runId);
+    set({ configMissing });
     let status = "complete";
     try {
       status = (await api.progress(runId)).status;

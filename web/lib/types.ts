@@ -319,3 +319,102 @@ export interface CatalogSummary {
   goal_config: string | null;
   n_creatives: number;
 }
+
+/** ---- v3.9-draft: the memory graph (GET /runs/{id}/memory-graph) --------
+ * The payload is the graph's TOPOLOGY plus each edge's full version history;
+ * the day scrub is a client-side filter over `time` + t/valid_to, so moving
+ * through days costs no round-trips. See engine/shopsim/hydramem/memgraph.py. */
+
+export type GraphNodeKind =
+  | "shopper" | "concept" | "category" | "brand" | "product"
+  | "creative" | "page" | "belief" | "aspect" | "anchor";
+
+/** How an edge answers "were you there on day N". `static` = always (the
+ * objective closure and TRUSTS_PERSON); `event` = t <= as_of; `bitemporal` =
+ * t <= as_of < valid_to. */
+export type GraphEdgeTime = "static" | "event" | "bitemporal";
+
+export type GraphEdgeFamily =
+  | "objective" | "episodic" | "subjective" | "preference" | "social";
+
+export interface GraphNode {
+  id: number;
+  kind: GraphNodeKind;
+  label: string | null;
+  sub: string | null;
+  props: Record<string, unknown>;
+}
+
+export interface GraphEdgeVersion {
+  t?: number; valid_to?: number;
+  [k: string]: unknown;
+}
+
+export interface GraphEdge {
+  id: string;
+  source: number;
+  target: number;
+  rel: string;
+  family: GraphEdgeFamily;
+  time: GraphEdgeTime;
+  derived: boolean;
+  owner: number;
+  count: number;
+  versions: GraphEdgeVersion[];
+  reciprocal?: boolean;
+}
+
+export interface TriadCandidate {
+  shopper_ids: number[];
+  offsets: number[];
+  why: string;
+}
+
+export interface MemoryGraph {
+  run_id: string;
+  run_index: number;
+  t0: number;
+  tick_seconds: number;
+  ticks: number;
+  head_tick: number;
+  social_enabled: boolean;
+  focus: number[];
+  candidates: TriadCandidate[];
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
+export interface SocialRunRow {
+  run_id: string;
+  label: string | null;
+  arm: string | null;
+  status: string | null;
+  run_index: number;
+  ticks: number;
+  t0: number;
+  tick_seconds: number;
+}
+
+
+/** GET /engine/busy — the launch guard's verdict, structured.
+ * `stale: true` means the row is marked running but no writer process exists,
+ * which is the only case where forcing past the guard is safe. */
+export interface EngineBusyBlocker {
+  kind: "experiment" | "run";
+  reason: string;
+  stale: boolean;
+  pid: number | null;
+  run_id?: string;
+  label?: string | null;
+  arm?: string | null;
+  experiment?: string;
+  command?: string;
+  tick?: number | null;
+  ticks?: number | null;
+  quiet_s?: number;
+}
+
+export interface EngineBusy {
+  busy: boolean;
+  blocker: EngineBusyBlocker | null;
+}

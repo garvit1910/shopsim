@@ -387,8 +387,20 @@ def cmd_scenarios(args) -> int:
     out["profile"] = profile
     out["profile_reason"] = SCENARIO_PROFILE_REASON
     started_all = time.perf_counter()
-    print(f"scenario profile: {profile} — {SCENARIO_PROFILE_REASON}", flush=True)
 
+    # Persist after EVERY arm, not once at the end. A scenario arm costs
+    # 10-45 minutes on a loaded store, and writing only after the whole loop
+    # meant one interrupted pass threw away every completed run with it — which
+    # is exactly what happened on 2026-08-20: F5 finished, F9 finished both
+    # arms, and none of it was recorded because the loop never reached its end.
+    def checkpoint() -> None:
+        out["total_wall_s"] = round(time.perf_counter() - started_all, 1)
+        report.write_json(_results_dir() / "scenarios.json", out)
+
+    if args.adopt:
+        return _adopt_scenarios(out, only, checkpoint)
+
+    print(f"scenario profile: {profile} — {SCENARIO_PROFILE_REASON}", flush=True)
     for key in [k for k in SCENARIOS if k in only]:
         meta = SCENARIOS[key]
         cfg_src = specs / f"{meta['config']}.json"
@@ -403,6 +415,7 @@ def cmd_scenarios(args) -> int:
                     overrides={"catalog_dir": catalog})
                 o = harness.run_config(cfg, trace=args.trace)
                 out["runs"][f"{key}:{tag}"] = _outcome(o)
+                checkpoint()
                 print(f"   {tag}: {o.run_id} in {o.wall_s}s", flush=True)
             continue
 
@@ -410,16 +423,84 @@ def cmd_scenarios(args) -> int:
         for arm in meta["arms"]:
             o = harness.run_config(cfg, arm=arm, trace=args.trace)
             out["runs"][f"{key}:{arm}"] = _outcome(o)
+            checkpoint()
             print(f"   {arm}: {o.run_id} in {o.wall_s}s", flush=True)
         for arm in meta.get("branch", ()):
             o = harness.branch_arm(cfg, arm)
             out["runs"][f"{key}:{arm}"] = _outcome(o)
+            checkpoint()
             print(f"   {arm} (branch): {o.run_id} in {o.wall_s}s", flush=True)
 
-    out["total_wall_s"] = round(time.perf_counter() - started_all, 1)
-    report.write_json(_results_dir() / "scenarios.json", out)
+    checkpoint()
     print(f"scenarios done in {out['total_wall_s']}s")
     return 0
+
+
+def _adopt_scenarios(out: dict, only: set, checkpoint) -> int:
+    """Record completed scenario runs already on disk, without re-running them.
+
+    The recovery path for an interrupted pass. It records the same `_outcome()`
+    bookkeeping the loop would have written — which run directory belongs to
+    which scenario arm — and nothing else: every law is still computed by
+    `cmd_report` from that run's own `results.json`. Adopting is not asserting
+    a result, it is remembering where one is.
+
+    A run qualifies only if the store says it completed AND `results.json` is on
+    disk, so a killed mid-flight run is never adopted.
+    """
+    from ..runner.runstore import RunStore
+
+    rows = RunStore(contexts.repo_root()).rows()
+    by_label_arm: dict[tuple[str, str], list] = {}
+    for r in rows:
+        if r.get("status") != "complete":
+            continue
+        by_label_arm.setdefault((r.get("label"), r.get("arm")), []).append(r)
+
+    adopted, missing = 0, []
+    for key in [k for k in SCENARIOS if k in only]:
+        meta = SCENARIOS[key]
+        label = meta["config"]
+        if meta.get("quality_pair"):
+            wanted = [(tag, f"{label}-{tag}", "quality") for tag in ("good", "bad")]
+        else:
+            arms = list(meta["arms"]) + list(meta.get("branch", ()))
+            wanted = [(arm, label, arm) for arm in arms]
+
+        for out_key, row_label, row_arm in wanted:
+            cands = by_label_arm.get((row_label, row_arm), [])
+            picked = None
+            for r in sorted(cands, key=lambda r: -int(r["run_index"])):
+                if (Path(r["dir"]) / "results.json").exists():
+                    picked = r
+                    break
+            if picked is None:
+                missing.append(f"{key}:{out_key}")
+                continue
+            run_dir = Path(picked["dir"])
+            prog = _progress(run_dir)
+            out["runs"][f"{key}:{out_key}"] = {
+                "label": row_label, "arm": row_arm, "run_id": run_dir.name,
+                "dir": str(run_dir), "wall_s": prog.get("total_wall_s"),
+                "ticks": prog.get("ticks"), "seed": picked.get("seed"),
+                "adopted": True}
+            adopted += 1
+            print(f"  adopted {key}:{out_key} <- {run_dir.name}", flush=True)
+
+    checkpoint()
+    print(f"adopted {adopted} run(s)"
+          + (f"; still unrun: {', '.join(missing)}" if missing else ""))
+    return 0
+
+
+def _progress(run_dir: Path) -> dict:
+    path = run_dir / "progress.json"
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text())
+    except (OSError, ValueError):
+        return {}
 
 
 def _outcome(o) -> dict:
@@ -691,6 +772,9 @@ def main(argv=None) -> int:
     sp.set_defaults(profile=None)  # falls back to SCENARIO_PROFILE
     sp.add_argument("--only")
     sp.add_argument("--trace", action="store_true")
+    sp.add_argument("--adopt", action="store_true",
+                    help="record completed runs already on disk instead of "
+                         "running them (recovery after an interrupted pass)")
     sp.set_defaults(fn=cmd_scenarios)
 
     sp = sub.add_parser("fit")
@@ -703,7 +787,7 @@ def main(argv=None) -> int:
     sp.set_defaults(fn=cmd_fit)
 
     args = p.parse_args(argv)
-    for attr, default in (("only", None), ("trace", False)):
+    for attr, default in (("only", None), ("trace", False), ("adopt", False)):
         if not hasattr(args, attr):
             setattr(args, attr, default)
     return args.fn(args)

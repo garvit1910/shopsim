@@ -154,6 +154,8 @@ input[type="range"] { accent-color: var(--accent); }
 }
 .statuschip.done { border-color: var(--hair); color: var(--ink-2); }
 .statuschip.err { border-color: var(--bad); color: var(--bad); }
+/* a writer the dashboard did not start — launches are serialized behind it */
+.statuschip.busy { border-color: var(--gold); color: var(--gold); }
 .tr { display: flex; align-items: center; gap: 9px; margin-left: auto; font-family: var(--mono); }
 .tr button {
   border: 1px solid var(--line); border-radius: 6px; padding: 3px 10px; font-size: 12px;
@@ -560,3 +562,184 @@ button.adcard:hover { border-color: var(--line); }
 .depth.control {
   border-style: dashed; border-color: var(--muted); color: var(--muted); cursor: default;
 }
+
+/* ==========================================================================
+   04 GRAPH — the P1 Social Memory Graph (Phase 5.9)
+
+   Adapted from AlexVanK's force-directed pen (codepen.io/AlexVanK/pen/dygjEWP).
+   The composition, the geometry and the encodings are the pen's and are meant
+   to stay that way: white canvas, curved organic arcs, Archivo Black in the
+   aside, node radius and colour saturation driven by connectivity, drag-to-pin
+   with a dashed outline. Only the palette moved, and only far enough to sit
+   with the ShopSim terminal — the stripe and the pin take --gold, the dashed
+   "indirect" link and the explain highlight take --accent. Everything here is
+   scoped under .graphpage so the dark app shell is untouched.
+   ========================================================================== */
+
+.graphpage {
+  --g-ink: #111;
+  --g-canvas: #fff;
+  --g-aside: #f7f7f7;
+  --g-hair: #e2e2e2;
+  --g-mute: #6b706a;
+  --m: 6px;
+  height: calc(100vh - 45px);
+  display: flex;
+  align-items: center;
+  padding: var(--m);
+  box-sizing: border-box;
+  /* the pen's hazard stripe, in ShopSim's gold */
+  background-image: linear-gradient(
+    45deg,
+    #000 25%, var(--gold) 25%, var(--gold) 50%,
+    #000 50%, #000 75%, var(--gold) 75%, var(--gold) 100%);
+  background-size: 56.57px 56.57px;
+}
+@media (max-width: 900px) { .graphpage { height: auto; flex-direction: column; } }
+
+.graphpage section,
+.graphpage aside {
+  background: var(--g-canvas);
+  color: var(--g-ink);
+  height: 100%;
+  box-sizing: border-box;
+}
+.graphpage section {
+  flex: 1;
+  width: calc(100% - var(--m) * 2);
+  position: relative;
+  overflow: hidden;
+}
+.graphpage aside {
+  flex: 0 0 360px;
+  position: relative;
+  padding: 18px 24px;
+  background: var(--g-aside);
+  overflow-y: auto;
+  font-family: var(--sans);
+}
+@media (max-width: 900px) {
+  .graphpage section { height: 70vh; }
+  .graphpage aside { flex: none; width: 100%; height: auto; }
+}
+.graphpage section svg { width: 100%; height: 100%; display: block; }
+
+/* ---------- aside typography: the pen's, verbatim ---------- */
+.graphpage aside h1 {
+  text-align: center; text-transform: uppercase;
+  font-family: var(--archivo), "Archivo Black", sans-serif;
+  font-size: 1.8em; line-height: .9em; font-weight: normal;
+  margin-bottom: 0; color: var(--g-ink);
+}
+.graphpage aside h2 {
+  text-align: center; text-transform: uppercase;
+  font-family: var(--archivo), "Archivo Black", sans-serif;
+  margin-top: 0; font-size: 1.2em; font-weight: normal; color: var(--g-ink);
+}
+.graphpage aside h3 { text-align: center; margin-bottom: 22px; font-size: .82em;
+  font-family: var(--mono); letter-spacing: .08em; color: var(--g-mute); font-weight: 400; }
+.graphpage aside p { text-align: left; font-size: 12.5px; margin: 5px 0; color: #333; }
+.graphpage aside strong { font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  font-family: var(--mono); display: block; margin: 16px 0 5px; color: var(--g-ink); }
+.graphpage aside hr { border: none; border-top: 1px solid var(--g-hair); margin: 16px 0; }
+.graphpage aside u { text-underline-offset: 2px; }
+
+/* ---------- edges: the pen's two classes, carrying our meaning ----------
+   .link (solid)   = a relationship really stored in HydraDB
+   .linkish (dash) = one the engine derives but never writes                */
+.graphpage #edges path { transition: opacity .2s ease; }
+.graphpage #edges path.link { fill: none; stroke: #666; stroke-width: 1.5px; }
+.graphpage #edges path.linkish {
+  fill: none; stroke: var(--accent); stroke-width: 1.5px; stroke-dasharray: 3px;
+}
+.graphpage #edges path.social { stroke: #111; stroke-width: 2.4px; }
+.graphpage #edges path.faded { opacity: .07; }
+.graphpage #edges path.lit { stroke: var(--accent); stroke-width: 3px; opacity: 1; }
+/* the social hop — the one the exhibit exists to show */
+.graphpage #edges path.hot { stroke: #b8860b; stroke-width: 4.5px; opacity: 1; }
+.graphpage #edges path.faded { opacity: .07; }
+
+/* ---------- nodes: the pen's treatment ---------- */
+.graphpage #nodes g { transition: opacity .2s ease; }
+.graphpage #nodes g circle { cursor: grab; stroke: #000; stroke-width: 1.5px; }
+.graphpage #nodes g circle:active { cursor: grabbing; }
+.graphpage #nodes g circle.pinned {
+  fill: var(--gold);
+  outline: 2px dashed #000; outline-offset: 2px; border-radius: 50%;
+}
+.graphpage #nodes g circle + text {
+  fill: #000; font: 10px var(--sans); pointer-events: none; text-transform: capitalize;
+  paint-order: stroke; stroke: rgba(255, 255, 255, .85); stroke-width: 3px;
+}
+.graphpage #nodes g.person circle { stroke-width: 2.6px; }
+.graphpage #nodes g.person text { font-weight: 700; font-size: 13px; text-transform: none; }
+/* a trusted peer outside the triple: present and readable, but not the subject */
+.graphpage #nodes g.peer circle { stroke-width: 1.5px; stroke: #555; }
+.graphpage #nodes g.peer text { font-weight: 400; font-size: 11px; fill: #555; }
+.graphpage #nodes g.faded { opacity: .11; }
+.graphpage #nodes g.lit circle { stroke: var(--accent); stroke-width: 3px; }
+
+/* ---------- canvas furniture ---------- */
+.graphpage .gcorner {
+  position: absolute; left: 14px; top: 12px; display: flex; gap: 8px; align-items: center;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; color: var(--g-mute);
+  text-transform: uppercase; pointer-events: none;
+}
+.graphpage .gempty {
+  position: absolute; inset: 0; display: grid; place-content: center; text-align: center;
+  padding: 40px; color: var(--g-mute); font-size: 13px; gap: 10px;
+}
+.graphpage .gempty b { font-family: var(--archivo), sans-serif; font-size: 20px;
+  color: var(--g-ink); text-transform: uppercase; }
+
+/* ---------- aside controls ---------- */
+.graphpage .gtabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.graphpage .gtabs button {
+  flex: 1; font-family: var(--mono); font-size: 10px; letter-spacing: .09em;
+  text-transform: uppercase; padding: 6px 4px; border: 1px solid #d3d3d3;
+  border-radius: 5px; color: #444; background: #fff;
+}
+.graphpage .gtabs button.on { border-color: #000; background: #000; color: #fff; }
+.graphpage .gpeople { display: flex; flex-direction: column; gap: 5px; }
+.graphpage .gperson {
+  display: flex; align-items: center; gap: 9px; padding: 6px 9px; width: 100%;
+  border: 1px solid #ddd; border-radius: 6px; background: #fff; text-align: left;
+}
+.graphpage .gperson.on { border-color: #000; box-shadow: inset 0 0 0 1px #000; }
+.graphpage .gperson i { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid #000; flex: none; }
+.graphpage .gperson b { font-size: 13px; }
+.graphpage .gperson span { font-family: var(--mono); font-size: 10px; color: var(--g-mute); margin-left: auto; }
+.graphpage .gscrub { display: flex; align-items: center; gap: 9px; }
+.graphpage .gscrub input[type="range"] { flex: 1; accent-color: #000; background: transparent; border: none; padding: 0; }
+.graphpage .gday {
+  font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  border: 1px solid #000; border-radius: 5px; padding: 2px 8px; color: #000; white-space: nowrap;
+}
+.graphpage .gkv { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 12px; }
+.graphpage .gkv dt { font-family: var(--mono); font-size: 10px; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--g-mute); align-self: center; }
+.graphpage .gkv dd { margin: 0; font-variant-numeric: tabular-nums; }
+.graphpage .grel {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .07em; font-weight: 700;
+  border: 1px solid #000; border-radius: 4px; padding: 1px 6px; display: inline-block;
+}
+.graphpage .gpath { font-family: var(--mono); font-size: 11px; line-height: 1.7; word-break: break-word; }
+.graphpage .gpath em { font-style: normal; font-weight: 700; }
+.graphpage .gmotif { border: 1px solid #ddd; border-radius: 6px; padding: 8px 10px;
+  margin-bottom: 7px; background: #fff; }
+.graphpage .gmotif.social { border-color: #000; box-shadow: inset 0 0 0 1px #000; }
+.graphpage .gmotif h4 { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em;
+  text-transform: uppercase; margin: 0 0 5px; }
+.graphpage .gmath { font-family: var(--mono); font-size: 11px; background: #f2f2f2;
+  border-radius: 5px; padding: 7px 9px; line-height: 1.65; white-space: pre-wrap; }
+.graphpage .glegend { display: flex; flex-direction: column; gap: 4px; }
+.graphpage .glegend div { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.graphpage .glegend i { width: 13px; height: 13px; border-radius: 50%;
+  border: 1.5px solid #000; flex: none; }
+.graphpage .gback {
+  position: absolute; right: 20px; bottom: 14px; font-family: var(--mono);
+  font-size: 10px; letter-spacing: .09em; text-transform: uppercase; color: var(--g-mute);
+}
+.graphpage .gnote { font-size: 11.5px; color: var(--g-mute); line-height: 1.5; }
+.graphpage .gpick { width: 100%; font-family: var(--mono); font-size: 11px;
+  border: 1px solid #ccc; border-radius: 5px; padding: 5px 7px; background: #fff; color: #111; }

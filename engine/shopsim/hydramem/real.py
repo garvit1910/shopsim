@@ -17,10 +17,10 @@ from pathlib import Path
 from typing import Iterable, Mapping
 
 from ..contracts.enums import EventType
-from ..contracts.ids import IdAllocator
+from ..contracts.ids import IdAllocator, shopper_offset
 from ..contracts.types import DecisionContext, Event, WorldviewSnapshot
 from ..eventlog import JsonlEventLog
-from . import cypher, reads, schema, writes
+from . import cypher, memgraph, reads, schema, writes
 from .client import HydraClient
 from .config import HydraConfig
 
@@ -187,6 +187,125 @@ class HydraMem:
                 "EXPECTS", shopper_id, now, ("about", "strength")))]
         return {"shopper_id": shopper_id, "beliefs": beliefs, "preferences": prefs,
                 "active_needs": needs, "habits": habits, "expects": expects}
+
+    # -- memory graph (5.9) -------------------------------------------------
+
+    def find_social_triads(self, *, probe_max: int = 2_000, limit: int = 8
+                           ) -> list[dict]:
+        """Mutually-trusting triples in this run, best-for-the-exhibit first.
+
+        Three adj_batch statements and no population size: cypher.adj_batch is
+        the one legal batch-read shape, and probing a fixed offset window
+        returns rows only for shoppers that actually have edges. Empty when
+        the run was built without population.social — the caller says so
+        plainly rather than drawing nothing.
+        """
+        from ..contracts.ids import shopper_id as make_sid
+
+        # HydraDB admission control caps an UNWIND batch at 1024 items
+        # ("client_query_batch_items rejected ... exceeds limit 1024"), so the
+        # offset window is walked in chunks.
+        def chunks(upto: int):
+            for i in range(0, upto, memgraph.ADJ_BATCH_MAX):
+                yield [make_sid(self.run_index, off)
+                       for off in range(i, min(i + memgraph.ADJ_BATCH_MAX, upto))]
+
+        def adj(rel: str, sids: list[int]) -> dict[int, set[int]]:
+            out: dict[int, set[int]] = {}
+            for r in self.client.run_stmt(cypher.adj_batch(rel, sids)):
+                out.setdefault(r["row.sid"], set()).add(r["x.id"])
+            return out
+
+        # Shopper offsets are allocated contiguously from 0, and the social
+        # factory gives every shopper degree >= 1, so the first chunk with no
+        # trust rows is past the end of the population. Walking until then
+        # costs one statement for the common case and never silently truncates
+        # a big population at an arbitrary window.
+        trusts: dict[int, set[int]] = {}
+        seen: list[int] = []
+        for chunk in chunks(probe_max):
+            got = adj("TRUSTS_PERSON", chunk)
+            if not got:
+                break
+            trusts.update(got)
+            seen += chunk
+        if not trusts:
+            return []
+
+        bought: dict[int, set[int]] = {}
+        experienced: dict[int, set[int]] = {}
+        for i in range(0, len(seen), memgraph.ADJ_BATCH_MAX):
+            part = seen[i:i + memgraph.ADJ_BATCH_MAX]
+            bought.update(adj("BOUGHT", part))
+            experienced.update(adj("EXPERIENCED", part))
+        degree = {s: len(bought.get(s, ())) + len(experienced.get(s, ()))
+                  for s in trusts}
+
+        tris = memgraph.triangles(trusts)
+        tris.sort(key=lambda t: (
+            memgraph.score_triad(t, bought, experienced, degree), tuple(-x for x in t)),
+            reverse=True)
+        return [{"shopper_ids": list(t),
+                 "offsets": [shopper_offset(m) for m in t],
+                 "why": memgraph.why_triad(t, bought, experienced)}
+                for t in tris[:limit]]
+
+    def get_memory_graph(self, focus_ids: Iterable[int],
+                         *, creative_names: Mapping[str, str] | None = None) -> dict:
+        """{nodes, edges} for a shopper cohort, full edge history included so
+        the client owns the as-of scrub (see memgraph's module docstring)."""
+        focus = [int(f) for f in focus_ids]
+        self.cache.build(self._now)
+
+        plans = {sid: memgraph.memory_graph_read_plan(sid) for sid in focus}
+        results = self.client.run_grouped(
+            {sid: [stmt for _, stmt in plan] for sid, plan in plans.items()})
+        rows_by_shopper = {
+            sid: {name: rows for (name, _), rows in zip(plans[sid], results[sid])}
+            for sid in focus}
+
+        # peers: the friend's BOUGHT/EXPERIENCED, via the existing plan
+        peer_ids = {r["dst"] for rows in rows_by_shopper.values()
+                    for r in rows.get("TRUSTS_PERSON", ())} - set(focus)
+        peer_rows = self._read_peers(peer_ids) if peer_ids else {}
+
+        # belief satellites (ABOUT / THAT / DERIVED_FROM), one group per belief
+        belief_ids = [r["dst"] for rows in rows_by_shopper.values()
+                      for r in rows.get("HOLDS", ())]
+        belief_rows: dict[int, dict[str, list[dict]]] = {}
+        if belief_ids:
+            bplans = {bid: memgraph.belief_satellite_plan(bid) for bid in belief_ids}
+            bres = self.client.run_grouped(
+                {bid: [stmt for _, stmt in plan] for bid, plan in bplans.items()})
+            belief_rows = {
+                bid: {name: rows for (name, _), rows in zip(bplans[bid], bres[bid])}
+                for bid in belief_ids}
+
+        # product node props + HAS_ATTR, for products anyone touched
+        product_ids = sorted({
+            r["dst"] for rows in rows_by_shopper.values()
+            for rel in ("BOUGHT", "CARTED", "ABANDONED", "PRICE_SEEN",
+                        "EXPERIENCED", "REFERENCE_PRICE")
+            for r in rows.get(rel, ())
+        } | {r["dst"] for rows in peer_rows.values()
+             for name in ("peer_bought", "peer_experienced")
+             for r in rows.get(name, ())}
+          | set(self.cache.product_brand))
+        product_rows: dict[int, dict[str, list[dict]]] = {}
+        if product_ids:
+            pplans = {pid: [memgraph.product_props_plan(pid),
+                            memgraph.has_attr_plan(pid)] for pid in product_ids}
+            pres = self.client.run_grouped(
+                {pid: [stmt for _, stmt in plan] for pid, plan in pplans.items()})
+            product_rows = {
+                pid: {name: rows for (name, _), rows in zip(pplans[pid], pres[pid])}
+                for pid in product_ids}
+
+        return memgraph.assemble_memory_graph(
+            focus_ids=focus, rows_by_shopper=rows_by_shopper,
+            belief_rows=belief_rows, peer_rows=peer_rows,
+            product_rows=product_rows, cache=self.cache,
+            creative_names=dict(creative_names or {}))
 
     def get_preference_history(self, shopper_id: int, concept_id: int) -> list[dict]:
         """The full supersession chain with receipts — the UI timeline."""

@@ -52,9 +52,18 @@ function MarketInner({ runId }: { runId: string }) {
   const t = Math.max(0, Math.min(s.tick, Math.max(0, s.headTick)));
   const d = derive(s.eventsByTick);
 
+  /** Ids the run actually served, recovered from the event stream. Only used
+   * when there is no schedule to read (a run with no run_config). */
+  const observedIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const row of d.sawPerTick) for (const k of Object.keys(row)) ids.add(Number(k));
+    return [...ids].filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
+  }, [d.sawPerTick]);
+
   const creatives = useMemo(
-    () => creativesFromConfig(s.config?.effective.schedule, s.config?.effective.creative_names, s.cards),
-    [s.config, s.cards],
+    () => creativesFromConfig(s.config?.effective.schedule, s.config?.effective.creative_names,
+                              s.cards, observedIds),
+    [s.config, s.cards, observedIds],
   );
   const scheduled = useMemo(() => scheduledEvents(s.config?.effective ?? null), [s.config]);
 
@@ -171,6 +180,15 @@ function MarketInner({ runId }: { runId: string }) {
       </div>
       {s.error && <div className="errbox" style={{ marginBottom: 12 }}>{s.error}</div>}
       {s.warning && <div className="warnbox" style={{ marginBottom: 12 }}>{s.warning}</div>}
+      {s.configMissing && (
+        <div className="warnbox" style={{ marginBottom: 12 }}>
+          This run carries no <code>run_config</code> — only runs launched from
+          Studio do. Ad names, the exposure schedule and the population are
+          unavailable, so the roster is unnamed and the timeline has no
+          scheduled markers. Every number below is still engine truth, read
+          from the run&apos;s own events and results.
+        </div>
+      )}
 
       {s.phase === "starting" ? <EnginePreflight /> : (
         <>

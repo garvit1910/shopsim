@@ -1,0 +1,47 @@
+{
+ "profile": "demo",
+ "profile_reason": "the demo profile accelerates ONLY the click gate (multiple 1.0 on every post-click gate, see calibration.json demo_multiples), so it draws more samples of the gates these laws test without changing them; on the reference profile F5 got 17 page visits total and reported a coin flip",
+ "runs": {
+  "F12:same_concept": {
+   "adopted": true,
+   "arm": "same_concept",
+   "dir": "/Users/garvit/shopsim/runs/r065-f12-fatigue-same_concept",
+   "label": "f12-fatigue",
+   "run_id": "r065-f12-fatigue-same_concept",
+   "seed": 523,
+   "ticks": 16,
+   "wall_s": 1752.657
+  },
+  "F5:split": {
+   "adopted": true,
+   "arm": "split",
+   "dir": "/Users/garvit/shopsim/runs/r058-f5-violation-split",
+   "label": "f5-violation",
+   "run_id": "r058-f5-violation-split",
+   "seed": 311,
+   "ticks": 16,
+   "wall_s": 499.71
+  },
+  "F9:need_off": {
+   "adopted": true,
+   "arm": "need_off",
+   "dir": "/Users/garvit/shopsim/runs/r064-f9-twin-need_off",
+   "label": "f9-twin",
+   "run_id": "r064-f9-twin-need_off",
+   "seed": 419,
+   "ticks": 14,
+   "wall_s": 1242.848
+  },
+  "F9:need_on": {
+   "adopted": true,
+   "arm": "need_on",
+   "dir": "/Users/garvit/shopsim/runs/r063-f9-twin-need_on",
+   "label": "f9-twin",
+   "run_id": "r063-f9-twin-need_on",
+   "seed": 419,
+   "ticks": 14,
+   "wall_s": 966.331
+  }
+ },
+ "total_wall_s": 0.2
+}

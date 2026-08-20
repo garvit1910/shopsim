@@ -17,6 +17,12 @@ import { LineChart } from "./charts";
 /** Mid-point of the researched real-world CTR band (0.5-2%), used only to
  * tell the viewer how far an accelerated run sits from reality. */
 const REAL_CTR_REFERENCE = 0.0125;
+/** The calibrated CLICK threshold (minds/calibration.py DEFAULT_STAGE_BASES).
+ * A run that lowers it has deliberately made clicking easier; a run that does
+ * not, but still clicks above band, is simply a differently-calibrated run.
+ * Calling both "ACCELERATED" put a demo-only word on eval runs that never
+ * asked for one. */
+const CALIBRATED_CLICK_BASE = 6.0;
 
 export function FlightKpis({ t, ticks }: { t: number; ticks: number }) {
   const s = useMarket();
@@ -28,6 +34,11 @@ export function FlightKpis({ t, ticks }: { t: number; ticks: number }) {
   // computed from this run's own measured CTR, so the disclosure can never
   // drift from what the run actually did
   const ctrMultiple = k.ctr && k.imp > 200 ? k.ctr / REAL_CTR_REFERENCE : null;
+  // Did this run actually ask to be accelerated? Only then is that the word.
+  const clickBase = (s.config?.raw as { calibration?: { stage_bases?: { CLICK?: number } } } | undefined)
+    ?.calibration?.stage_bases?.CLICK;
+  const accelerated = typeof clickBase === "number" && clickBase < CALIBRATED_CLICK_BASE;
+  const overBandLabel = accelerated ? "ACCELERATED" : "ABOVE BAND";
 
   return (
     <div className="kpirow">
@@ -57,7 +68,7 @@ export function FlightKpis({ t, ticks }: { t: number; ticks: number }) {
         tone={ctrMultiple != null && ctrMultiple > 2 ? "warn"
           : roas != null && roas >= 1 ? "good" : roas != null ? "bad" : undefined}
         note={ctrMultiple != null && ctrMultiple > 2 && roas != null
-          ? `Accelerated clicks inflate revenue but not per-impression spend, so ROAS carries the same ~${ctrMultiple.toFixed(0)}x. At real-world click rates this run would be nearer ${fmtRoas(roas / ctrMultiple)}.`
+          ? `Clicks above band inflate revenue but not per-impression spend, so ROAS carries the same ~${ctrMultiple.toFixed(0)}x. At real-world click rates this run would be nearer ${fmtRoas(roas / ctrMultiple)}.`
           : "revenue is simulated; spend is impressions priced at a researched CPM"}
         sub={ctrMultiple != null && ctrMultiple > 2 && roas != null
           ? `~${fmtRoas(roas / ctrMultiple)} AT REAL CTR`
@@ -66,9 +77,12 @@ export function FlightKpis({ t, ticks }: { t: number; ticks: number }) {
         tone={ctrMultiple != null && ctrMultiple > 2 ? "warn" : undefined}
         note={ctrMultiple != null
           ? `real-world paid-social CTR is 0.5-2%; this run is running about ${ctrMultiple.toFixed(0)}x that`
+            + (accelerated
+                ? ` — deliberately, this run lowers the CLICK threshold to ${clickBase}`
+                : " — this run does not lower the CLICK threshold, so that is its own calibration")
           : undefined}
         sub={ctrMultiple != null && ctrMultiple > 2
-          ? `ACCELERATED ~${ctrMultiple.toFixed(0)}x`
+          ? `${overBandLabel} ~${ctrMultiple.toFixed(0)}x`
           : `${fmtInt(k.clicks)} CLICKS`} />
       <Tile label="IMPRESSIONS" value={fmtInt(k.imp)} sub={`${fmtInt(k.buys)} PURCHASES`} />
     </div>

@@ -12,7 +12,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
-import type { AdsManifest, CatalogSummary, CreativeCard } from "@/lib/types";
+import type { AdsManifest, CatalogSummary, CreativeCard, EngineBusyBlocker, EnginePace } from "@/lib/types";
+import { estimate, fmtDuration } from "@/lib/eta";
 import Stepper, { pipelineSteps } from "@/components/Stepper";
 import AdCard from "@/components/AdCard";
 import CreativeViewer from "@/components/CreativeViewer";
@@ -25,15 +26,26 @@ const today = () => new Date().toISOString().slice(0, 10).replace(/-/g, "");
 /** minute-resolution so two launches on the same day never share a label */
 const stamp = () => `${today()}-${new Date().toTimeString().slice(0, 5).replace(":", "")}`;
 
+/** min/max on a bare number input are validation HINTS — they do not clamp
+ * typed input, and an emptied field yields Number("") === 0. That shipped
+ * `ticks: 0, end_tick: -1` to the engine. Keep the last good value instead. */
+const clamp = (raw: string, lo: number, hi: number, fallback: number): number => {
+  const n = Number(raw);
+  if (raw.trim() === "" || !Number.isFinite(n)) return fallback;
+  return Math.min(hi, Math.max(lo, n));
+};
+
 export default function StudioPage() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("market");
   const [name, setName] = useState(() => `market-${stamp()}`);
   const [seed, setSeed] = useState(424);
-  // sized so a run finishes while you watch it: on a fresh store this is
-  // minutes, not the ~2 hours a 200x60 run costs on a loaded one
-  const [ticks, setTicks] = useState(24);
-  const [population, setPopulation] = useState(150);
+  // PLAN's demo-capture shape (5 ads x 60 days). On a FRESH store 300x60 is
+  // ~17 min; on a loaded one the same run is hours, which is why the ETA below
+  // reads /engine/pace rather than trusting a constant. Archive the store
+  // before a long run (infra/README.md).
+  const [ticks, setTicks] = useState(60);
+  const [population, setPopulation] = useState(300);
   const [reach, setReach] = useState(0.6);
   const [allocate, setAllocate] = useState(true);
   const [accelerate, setAccelerate] = useState(true);
@@ -53,12 +65,21 @@ export default function StudioPage() {
   const [phase, setPhase] = useState<"idle" | "ingesting" | "launching">("idle");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  /** structured detail behind a 409 — what is holding the engine */
+  const [blocker, setBlocker] = useState<EngineBusyBlocker | null>(null);
+  /** measured per-tick pace on THIS machine, so the pre-launch ETA tracks the
+   * store's current state instead of a constant that goes stale in a day */
+  const [pace, setPace] = useState<EnginePace | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
   // a fresh t0 window per experiment (v3.4-draft item 5)
   const [t0] = useState(() => 1_700_000_000 + (Math.floor(Date.now() / 1000) % 100_000_000));
 
   useEffect(() => { setErr(null); }, [mode]);
+  useEffect(() => { api.pace().then(setPace).catch(() => {}); }, []);
+
+  /** What this run will cost, priced before you launch it rather than after. */
+  const preEta = estimate({ pace, population, ticks, progress: null });
 
   useEffect(() => {
     api.catalogs().then((rows) => {
@@ -195,7 +216,7 @@ export default function StudioPage() {
   };
 
   const submit = async (force = false) => {
-    setBusy(true); setErr(null); setNote(null);
+    setBusy(true); setErr(null); setNote(null); setBlocker(null);
     try {
       const m = images.length ? await ingest() : manifest;
       setPhase("launching");
@@ -211,6 +232,12 @@ export default function StudioPage() {
       router.push(`/market/${runId}`);
     } catch (ex) {
       setErr(ex instanceof ApiError ? `${ex.status}: ${ex.message}` : String(ex));
+      // A 409 means something else owns the engine. Ask WHAT, so the refusal
+      // can name it — and so FORCE is only offered when the blocker is a
+      // crashed leftover rather than a writer that is genuinely mid-run.
+      if (ex instanceof ApiError && ex.status === 409) {
+        setBlocker((await api.busy().catch(() => null))?.blocker ?? null);
+      }
       setBusy(false);
       setPhase("idle");
     }
@@ -224,7 +251,11 @@ export default function StudioPage() {
    * PREVIOUS run with the same label and navigated to a stale, already
    * finished run. Snapshotting the ids first removes both. */
   const waitForFirstRun = async (label: string, before: Set<string>): Promise<string | null> => {
-    for (let i = 0; i < 56; i++) {
+    // prepare() is population generation + graph seeding, ~12s per 100
+    // shoppers (eta.ts) before the first tick exists — a 300-shopper run can
+    // spend well over a minute there, and the old ~45s ceiling gave up and
+    // never navigated. 4 minutes covers the shapes Studio can launch.
+    for (let i = 0; i < 300; i++) {
       await new Promise((r) => setTimeout(r, 800));
       try {
         const runs = await api.runs();
@@ -317,16 +348,17 @@ export default function StudioPage() {
               <input value={name} disabled={busy}
                 onChange={(e) => setName(e.target.value.replace(/[^a-z0-9-]/gi, "-").toLowerCase())} /></label>
             <label className="field"><span>seed</span>
-              <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} /></label>
+              <input type="number" value={seed}
+                onChange={(e) => setSeed(clamp(e.target.value, 0, 2 ** 31 - 1, seed))} /></label>
             <label className="field"><span>days</span>
               <input type="number" min={2} max={90} value={ticks}
-                onChange={(e) => setTicks(Number(e.target.value))} /></label>
+                onChange={(e) => setTicks(clamp(e.target.value, 2, 90, ticks))} /></label>
             <label className="field"><span>shoppers</span>
               <input type="number" min={10} max={5000} value={population}
-                onChange={(e) => setPopulation(Number(e.target.value))} /></label>
+                onChange={(e) => setPopulation(clamp(e.target.value, 10, 5000, population))} /></label>
             <label className="field"><span>total reach / day</span>
               <input type="number" step={0.05} min={0.05} max={1} value={reach}
-                onChange={(e) => setReach(Number(e.target.value))} /></label>
+                onChange={(e) => setReach(clamp(e.target.value, 0.05, 1, reach))} /></label>
           </div>
 
           {mode === "market" && (
@@ -429,15 +461,46 @@ export default function StudioPage() {
                 : mode === "market" ? "RUN THE MARKET →" : "RUN SIMULATION →"}
             </button>
             {note && <span className="mono" style={{ fontSize: 12, color: "var(--good)" }}>{note}</span>}
+            {!busy && (
+              <span className="mono" style={{ fontSize: 12, color: "var(--ink-2)" }}>
+                est. {fmtDuration(preEta.remainingS)} · {population} shoppers x {ticks} days
+                {preEta.perTickS != null && ` · ~${preEta.perTickS.toFixed(0)}s/day`}
+                {pace?.per_tick_s_per_100_shoppers == null && " (no local pace yet — fresh-store estimate)"}
+              </span>
+            )}
           </div>
+          {preEta.remainingS != null && preEta.remainingS > 1800 && (
+            <div className="warnbox" style={{ marginTop: 10 }}>
+              This run is estimated at {fmtDuration(preEta.remainingS)}. Per-tick cost
+              grows with the store — archive it first (infra/README.md) and the
+              same shape typically runs several times faster.
+            </div>
+          )}
 
           {err && (
             <div className="errbox" style={{ marginTop: 12 }}>
               {err}
-              {err.startsWith("409") && (
+              {blocker && !blocker.stale && (
+                <div style={{ marginTop: 8, fontSize: 12.5 }}>
+                  Holding the engine: <b>{blocker.run_id ?? blocker.experiment}</b>
+                  {blocker.tick != null && ` · tick ${blocker.tick}/${blocker.ticks}`}
+                  {blocker.command && <> · started outside the dashboard by <code>{blocker.command}</code></>}
+                  <div style={{ marginTop: 6, color: "var(--ink-2)" }}>
+                    Launches are serialized because the run registry&apos;s
+                    read-modify-write is not concurrent-safe. Forcing past a live
+                    writer can corrupt it, so there is no override here — wait for
+                    it to finish, or stop it.
+                  </div>
+                </div>
+              )}
+              {blocker?.stale && (
                 <div style={{ marginTop: 8 }}>
+                  <div style={{ fontSize: 12.5, marginBottom: 6 }}>
+                    <b>{blocker.run_id}</b> is marked running but no writer process
+                    exists (last moved {blocker.quiet_s}s ago) — it looks crashed.
+                  </div>
                   <button className="storybtn on" onClick={() => submit(true)} disabled={busy}>
-                    FORCE LAUNCH (override the serialization guard)
+                    FORCE LAUNCH (the blocking run appears dead)
                   </button>
                 </div>
               )}

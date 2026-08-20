@@ -2,9 +2,10 @@
 
 import type {
   AdsManifestPayload, CatalogSummary, CreativeCard, DecisionPreview,
-  EnginePace, EventsPage, ExperimentDetail,
-  ExperimentSummary, Manifest, Population, PrefVersion, Progress, RegistryRow,
-  ResultsLive, RunConfigPayload, TracePayload, Worldview,
+  EngineBusy, EnginePace, EventsPage, ExperimentDetail,
+  ExperimentSummary, Manifest, MemoryGraph, Population, PrefVersion, Progress,
+  RegistryRow, ResultsLive, RunConfigPayload, SocialRunRow, TracePayload,
+  Worldview,
 } from "./types";
 
 const BASE = "/api/sim";
@@ -52,7 +53,17 @@ export const api = {
     get<TracePayload>(`/runs/${id}/shoppers/${offset}/trace/${stimulus}`),
   decisionPreview: (id: string, offset: number, stimulus: number) =>
     get<DecisionPreview>(`/runs/${id}/shoppers/${offset}/decision-preview/${stimulus}`),
+  /** Runs that carry a TRUSTS_PERSON layer — the ones 04 Graph can draw. */
+  socialRuns: () => get<SocialRunRow[]>("/social-runs"),
+  /** Omit `focus` to let the engine pick the best mutually-trusting triple. */
+  memoryGraph: (id: string, focus?: number[]) =>
+    get<MemoryGraph>(`/runs/${id}/memory-graph${
+      focus && focus.length ? `?focus=${focus.join(",")}` : ""}`),
   experiments: () => get<ExperimentSummary[]>("/experiments"),
+  /** Is the engine free, and if not, what is holding it? Answers the question
+   * a bare 409 could not: WHICH run, started by WHICH process, how far along,
+   * and whether it is genuinely live or a crashed leftover. */
+  busy: () => get<EngineBusy>("/engine/busy"),
   experiment: (name: string) => get<ExperimentDetail>(`/experiments/${encodeURIComponent(name)}`),
   creatives: (runId: string) =>
     get<{ catalog: string; perception_cache: string; creatives: CreativeCard[] }>(
