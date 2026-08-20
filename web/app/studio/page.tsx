@@ -26,6 +26,22 @@ const today = () => new Date().toISOString().slice(0, 10).replace(/-/g, "");
 /** minute-resolution so two launches on the same day never share a label */
 const stamp = () => `${today()}-${new Date().toTimeString().slice(0, 5).replace(":", "")}`;
 
+/** The accelerated CLICK threshold, from the committed `eval/profiles/demo.json`.
+ *
+ * SOLVED, not picked: `shopsim.eval.calibrate.solve_stage_base` bisects for a
+ * stated 5% target CTR against the reference run's own decision trace, and the
+ * resulting acceleration is published per metric in
+ * `eval/results/calibration.json` -> demo_profile.multiples: 5.6x on CTR and
+ * exactly 1.0x on bounce, cart|browse, buy|cart and visit-to-purchase. Only the
+ * click gate moves; everything below it is still the certified funnel.
+ *
+ * This replaces a hand-picked 2.0 that Phase 7 explicitly retired. A 300x60
+ * Nisolo run on 2.0 measured 35% CTR (~28x the researched band) and a blended
+ * ROAS of 104x against a real-world 1.5-4x — the exact failure the demo profile
+ * exists to prevent. `tests/test_studio_profile.py` pins this against the
+ * committed profile so the two cannot drift apart again. */
+const DEMO_CLICK_BASE = 4.07;
+
 /** min/max on a bare number input are validation HINTS — they do not clamp
  * typed input, and an emptied field yields Number("") === 0. That shipped
  * `ticks: 0, end_tick: -1` to the engine. Keep the last good value instead. */
@@ -183,11 +199,9 @@ export default function StudioPage() {
         // ACCELERATED MARKET. At the researched calibration (P(CLICK|exposure)
         // 0.5-2%, market-research.md §1) a demo-scale population yields
         // single-digit clicks and no purchases, so the money tiles read $0.
-        // Loosening the CLICK base buys a readable funnel at the cost of a
-        // CTR far above the real band — so the dashboard computes the multiple
-        // from the run's own numbers and prints it next to the tiles. Nothing
-        // else is rescaled: prices, budgets and purchase amounts stay real.
-        ...(accelerate ? { calibration: { stage_bases: { CLICK: 2.0 } } } : {}),
+        // The CLICK base is loosened to the value Phase 7 SOLVED for a stated
+        // 5% target (DEMO_CLICK_BASE) rather than a number picked by hand.
+        ...(accelerate ? { calibration: { stage_bases: { CLICK: DEMO_CLICK_BASE } } } : {}),
       };
     }
     if (mode === "ladder") {
@@ -206,7 +220,7 @@ export default function StudioPage() {
         discount_levels: [...new Set([0, ...depths.map((d) => d / 100)])].sort((a, b) => a - b),
         promo: { product_promos: productIds.map((pid) => ({ product_id: pid, cycles })) },
         exposure: { schedule: rows },
-        ...(accelerate ? { calibration: { stage_bases: { CLICK: 2.0 } } } : {}),
+        ...(accelerate ? { calibration: { stage_bases: { CLICK: DEMO_CLICK_BASE } } } : {}),
       };
     }
     if (mode === "page_ab") {
