@@ -112,10 +112,40 @@ over real traced decision contexts:
 | `p_buy_given_cart` | 0.24–0.28 | 0.175 ✗ | 0.247 ✓ | §2 1 − cart abandonment (72–76%) |
 | `visit_to_purchase` | 0.01–0.03 | 0.0087 ✗ | 0.0180 ✓ | §2 apparel sitewide conversion 1–3% |
 
-`visit_to_purchase` is the consistency check rather than an independent target:
-0.49 × 0.15 × 0.25 ≈ 1.8%, which is where the apparel band independently lands.
+`visit_to_purchase` is a consistency check rather than an independent target:
+0.46 × 0.14 × 0.24 ≈ 1.6%, which is where the apparel band independently lands.
 The gates agree with each other, which is what "internally consistent" has to
 mean.
+
+### Blended ROAS falls out on its own
+
+The sharpest check is the one nothing was fitted against. ROAS is fully
+determined by metrics already in band (impressions × CTR × conversion × basket),
+so targeting it directly would be double-counting — but the calibrated run
+produces:
+
+| | before (`r039`) | after (`r053` reference) | real-world |
+|---|---|---|---|
+| impressions | 6,961 | 7,878 | — |
+| revenue | $4,485 | $156.30 | — |
+| spend @ CPM $13.88 | $96.62 | $109.35 | — |
+| **blended ROAS** | **46.4×** | **1.43×** | 1.5–4× |
+
+Getting the *rates* right dragged ROAS from absurd to the right order of
+magnitude without anyone aiming at it. Stated honestly: 1.43× rests on **four
+simulated purchases**, so its interval is enormous — this is evidence about an
+order of magnitude, not a measurement to two decimals. That thinness is itself
+the finding that the `demo` profile exists to work around.
+
+### Model-implied vs realised
+
+Every rate above is the **model-implied** mean of the gate probability over the
+decisions that actually happened, not the realised count. That is deliberate: a
+correctly calibrated reference run produces 89 page decisions, and a realised
+bounce rate over 89 draws carries a ±5pp standard error before any bias. Both
+are reported (`calibration.json` → `after` and `realised`) and they agree within
+noise; the model estimator is the primary one because it is the one that can be
+read at demo scale at all.
 
 ## One more thing the baseline was doing to itself
 

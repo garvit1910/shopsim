@@ -486,7 +486,12 @@ def scenario_f9_maya_law(on: dict, off: dict, *, arm_on: str, arm_off: str,
                   f"CTR uplift >= {ctr_floor}x",
         note="Same seed, same population, same ad. The twin arm branches from the "
              "live arm's own log, so everything before the divergence tick is "
-             "shared history rather than a re-simulation.",
+             "shared history rather than a re-simulation. That also makes the "
+             "cross-arm ratios CONSERVATIVE: both arms' funnel counts include "
+             "the identical pre-divergence prefix, which dilutes the measured "
+             "uplift toward 1.0. `within_run_uplift_x` is the undiluted "
+             "statement of the same claim — it compares decisions carrying an "
+             "active need against decisions without one, inside a single arm.",
         series={"twin": [{"metric": "CTR", "uplift_x": _r(ctr_ratio)},
                          {"metric": "BUY per exposure", "uplift_x": _r(buy_ratio)}]})
 

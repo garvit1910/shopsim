@@ -195,6 +195,7 @@ def cmd_calibrate(args) -> int:
     demo_rates = calibrate.evaluate(rows, demo_profile, traced_bases)
 
     payload = {
+        "money": _money(run_dir),
         "reference_run_dir": str(run_dir),
         "reference_run_id": run_dir.name,
         "profile": args.profile,
@@ -251,6 +252,50 @@ def cmd_calibrate(args) -> int:
     if solved is not None:
         print(f"  demo CLICK base solved to {solved} for a {args.demo_ctr:.0%} target CTR")
     return 0 if payload["loss"] == 0 else 1
+
+
+# web/lib/economics.ts — the ONE assumed number in the money layer, kept in
+# sync here so the engine-side check and the dashboard price impressions the
+# same way. Everything else (revenue, purchases) is simulated.
+CPM_USD = 13.88
+ROAS_BAND = (1.5, 4.0)
+
+
+def _money(run_dir: Path) -> dict:
+    """Blended ROAS — the consistency check that ties the funnel to the money.
+
+    Reported, never fitted. It is fully determined by metrics already in band
+    (impressions x CTR x conversion x basket), so hitting it independently would
+    be double-counting; what makes it worth printing is that getting the RATES
+    right drags ROAS from ~46x to the right order of magnitude on its own.
+
+    Honest about its own noise: a correctly calibrated demo-scale run produces
+    single-digit purchases, so this estimate has an enormous interval. It is
+    evidence about the ORDER OF MAGNITUDE, not a measurement to two decimals.
+    """
+    path = run_dir / "results.json"
+    if not path.exists():
+        return {}
+    res = json.loads(path.read_text())
+    impressions = sum(c.get("SAW", 0) for segs in res.get("funnel", {}).values()
+                      for c in segs.values())
+    buys = sum(c.get("BOUGHT", 0) for segs in res.get("funnel", {}).values()
+               for c in segs.values())
+    revenue = (res.get("revenue") or {}).get("total", 0.0)
+    spend = round(impressions * CPM_USD / 1000.0, 2)
+    roas = round(revenue / spend, 3) if spend else None
+    lo, hi = ROAS_BAND
+    return {
+        "impressions": impressions, "purchases": buys, "revenue": revenue,
+        "cpm_usd": CPM_USD, "spend": spend, "blended_roas": roas,
+        "band": [lo, hi],
+        "in_band": bool(roas is not None and lo <= roas <= hi),
+        "source": "market-research.md S5 — Meta e-commerce median CPM $13.88; "
+                  "real-world blended e-commerce ROAS 1.5-4x",
+        "note": f"Derived, not fitted. Based on {buys} simulated purchases, so "
+                f"the interval is wide — read the order of magnitude, not the "
+                f"decimals. The pre-Phase-7 demo profile put this at ~46x.",
+    }
 
 
 def _reference_run_dir():

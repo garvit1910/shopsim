@@ -1,0 +1,116 @@
+{
+ "catalog": "fixtures/demo-brand",
+ "caveat": "Construct validity, not external validation: the oracle reads the same population priors the simulator does, so agreement shows the mind's mechanism preserves an ordering that is already implicit in its inputs. It is not evidence that either ranking matches a real market.",
+ "creatives": [
+  2000001,
+  2000002,
+  2000003,
+  2000004,
+  2000005
+ ],
+ "mean_spearman": 0.86,
+ "passed": true,
+ "per_seed": [
+  {
+   "oracle": [
+    0.09347,
+    0.36181,
+    0.34398,
+    0.49042,
+    0.19708
+   ],
+   "seed": 11,
+   "sim": [
+    0.00801,
+    0.009007,
+    0.010436,
+    0.01077,
+    0.008924
+   ],
+   "spearman": 0.9
+  },
+  {
+   "oracle": [
+    0.08504,
+    0.34633,
+    0.32056,
+    0.45761,
+    0.20636
+   ],
+   "seed": 23,
+   "sim": [
+    0.008289,
+    0.009347,
+    0.010851,
+    0.011208,
+    0.009344
+   ],
+   "spearman": 0.9
+  },
+  {
+   "oracle": [
+    0.06801,
+    0.37594,
+    0.33715,
+    0.49972,
+    0.20875
+   ],
+   "seed": 37,
+   "sim": [
+    0.008102,
+    0.009275,
+    0.01064,
+    0.01114,
+    0.009233
+   ],
+   "spearman": 0.9
+  },
+  {
+   "oracle": [
+    0.08128,
+    0.38177,
+    0.31595,
+    0.47997,
+    0.20214
+   ],
+   "seed": 53,
+   "sim": [
+    0.008214,
+    0.009463,
+    0.01045,
+    0.011084,
+    0.009303
+   ],
+   "spearman": 0.9
+  },
+  {
+   "oracle": [
+    0.07504,
+    0.38202,
+    0.33954,
+    0.48519,
+    0.21843
+   ],
+   "seed": 71,
+   "sim": [
+    0.008796,
+    0.009996,
+    0.01161,
+    0.012087,
+    0.010045
+   ],
+   "spearman": 0.7
+  }
+ ],
+ "population_size": 300,
+ "seeds": [
+  11,
+  23,
+  37,
+  53,
+  71
+ ],
+ "threshold": 0.7,
+ "tier": "analytic",
+ "worst_spearman": 0.7
+}

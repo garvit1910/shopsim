@@ -1,0 +1,372 @@
+{
+ "catalog": "fixtures/demo-brand",
+ "laws": [
+  {
+   "id": "F1",
+   "name": "frequency response rises then wears out",
+   "never_drop": false,
+   "note": "adstock builds the rise (gamma x min(adstock, cap)); exposures_72h past wearout_free_exposures builds the fall (-delta x wearout).",
+   "numbers": {
+    "decay_from_peak": 0.44131,
+    "p_click_final": 0.012828,
+    "p_click_first": 0.016756,
+    "p_click_peak": 0.022961,
+    "peak_at_exposure": 2
+   },
+   "passed": true,
+   "seeds_checked": 3,
+   "seeds_passed": 3,
+   "series": {
+    "frequency_response": [
+     {
+      "exposures": 1,
+      "exposures_72h": 1,
+      "p_click": 0.016756
+     },
+     {
+      "exposures": 2,
+      "exposures_72h": 2,
+      "p_click": 0.022961
+     },
+     {
+      "exposures": 3,
+      "exposures_72h": 3,
+      "p_click": 0.021891
+     },
+     {
+      "exposures": 4,
+      "exposures_72h": 4,
+      "p_click": 0.018317
+     },
+     {
+      "exposures": 5,
+      "exposures_72h": 5,
+      "p_click": 0.015328
+     },
+     {
+      "exposures": 6,
+      "exposures_72h": 6,
+      "p_click": 0.012828
+     },
+     {
+      "exposures": 7,
+      "exposures_72h": 6,
+      "p_click": 0.012828
+     },
+     {
+      "exposures": 8,
+      "exposures_72h": 6,
+      "p_click": 0.012828
+     },
+     {
+      "exposures": 9,
+      "exposures_72h": 6,
+      "p_click": 0.012828
+     },
+     {
+      "exposures": 10,
+      "exposures_72h": 6,
+      "p_click": 0.012828
+     },
+     {
+      "exposures": 11,
+      "exposures_72h": 6,
+      "p_click": 0.012828
+     },
+     {
+      "exposures": 12,
+      "exposures_72h": 6,
+      "p_click": 0.012828
+     }
+    ]
+   },
+   "threshold": "peak after exposure 1, and >=15% decay from peak by the last exposure (published creative-wearout curves fall 30-60% over a campaign; 15% is the floor for 'visible')",
+   "tier": "analytic"
+  },
+  {
+   "id": "F10",
+   "name": "confidence-differential updating",
+   "never_drop": false,
+   "note": "",
+   "numbers": {
+    "confidence_high": 0.89552,
+    "confidence_low": 0.51724,
+    "contradiction_target": 0.15,
+    "high_evidence": 6.0,
+    "low_evidence": 0.75,
+    "moved_high_E": 0.15,
+    "moved_low_E": 0.43636,
+    "ratio": 2.90909,
+    "start_value": 0.75
+   },
+   "passed": true,
+   "seeds_checked": 1,
+   "seeds_passed": 1,
+   "series": {
+    "confidence_differential": [
+     {
+      "evidence": 0.75,
+      "moved": 0.43636
+     },
+     {
+      "evidence": 6.0,
+      "moved": 0.15
+     }
+    ]
+   },
+   "threshold": "a low-evidence belief must move strictly further than a high-evidence one under identical contradiction",
+   "tier": "analytic"
+  },
+  {
+   "id": "F2",
+   "name": "unaware + no paths + no belief => engagement ~ 0",
+   "never_drop": false,
+   "note": "Abstention is structural: no live PREFERS overlap => no preference_fit, no HOLDS row => null trust_belief. The gate then damps credibility and the perceived offer as well.",
+   "numbers": {
+    "cold_credibility": 0.09456,
+    "cold_relevance": 0.0,
+    "p_click_cold": 0.004719,
+    "p_click_warm": 0.018647,
+    "ratio": 0.25306
+   },
+   "passed": true,
+   "seeds_checked": 3,
+   "seeds_passed": 3,
+   "series": {},
+   "threshold": "cold relevance exactly 0 (structural, not small) and cold CTR <= 0.35x warm CTR",
+   "tier": "analytic"
+  },
+  {
+   "id": "F3",
+   "name": "discount uplift ordering matches price sensitivity",
+   "never_drop": false,
+   "note": "",
+   "numbers": {
+    "mean_price_sensitivity": {
+     "high_price_sensitivity": 0.80845,
+     "low_price_sensitivity": 0.36221,
+     "mid_price_sensitivity": 0.56118
+    },
+    "uplift_x_at_40%": {
+     "high_price_sensitivity": 1.17547,
+     "low_price_sensitivity": 1.09514,
+     "mid_price_sensitivity": 1.13752
+    }
+   },
+   "passed": true,
+   "seeds_checked": 3,
+   "seeds_passed": 3,
+   "series": {
+    "discount_ladder": {
+     "high_price_sensitivity": [
+      {
+       "depth": 0.0,
+       "p_buy": 0.43497
+      },
+      {
+       "depth": 0.1,
+       "p_buy": 0.453913
+      },
+      {
+       "depth": 0.2,
+       "p_buy": 0.472988
+      },
+      {
+       "depth": 0.3,
+       "p_buy": 0.492135
+      },
+      {
+       "depth": 0.4,
+       "p_buy": 0.511293
+      }
+     ],
+     "low_price_sensitivity": [
+      {
+       "depth": 0.0,
+       "p_buy": 0.402058
+      },
+      {
+       "depth": 0.1,
+       "p_buy": 0.411514
+      },
+      {
+       "depth": 0.2,
+       "p_buy": 0.421046
+      },
+      {
+       "depth": 0.3,
+       "p_buy": 0.430648
+      },
+      {
+       "depth": 0.4,
+       "p_buy": 0.440308
+      }
+     ],
+     "mid_price_sensitivity": [
+      {
+       "depth": 0.0,
+       "p_buy": 0.412162
+      },
+      {
+       "depth": 0.1,
+       "p_buy": 0.426155
+      },
+      {
+       "depth": 0.2,
+       "p_buy": 0.440283
+      },
+      {
+       "depth": 0.3,
+       "p_buy": 0.454521
+      },
+      {
+       "depth": 0.4,
+       "p_buy": 0.468842
+      }
+     ]
+    }
+   },
+   "threshold": "strict ordering high > mid > low on BUY uplift at the deepest depth",
+   "tier": "analytic"
+  },
+  {
+   "id": "F6",
+   "name": "abstention: hallucinated familiarity ~ 0 when gated",
+   "never_drop": false,
+   "note": "The ungated arm fabricates a trust belief the shopper has no evidence for. That is the failure mode this engine refuses structurally rather than by prompt instruction.",
+   "numbers": {
+    "gated_vs_known": 0.25306,
+    "gated_vs_ungated": 0.25306,
+    "p_click_known_brand": 0.018647,
+    "p_click_unknown_gated": 0.004719,
+    "p_click_unknown_ungated": 0.018647
+   },
+   "passed": true,
+   "seeds_checked": 3,
+   "seeds_passed": 3,
+   "series": {
+    "abstention": [
+     {
+      "case": "known brand",
+      "p_click": 0.018647
+     },
+     {
+      "case": "unknown, ungated",
+      "p_click": 0.018647
+     },
+     {
+      "case": "unknown, gated",
+      "p_click": 0.004719
+     }
+    ]
+   },
+   "threshold": "gated unknown-brand CTR <= 0.35x both the known-brand and the ungated-strawman CTR",
+   "tier": "analytic"
+  },
+  {
+   "id": "F8",
+   "name": "evidence hierarchy: CLICK < BROWSE < CART < BUY",
+   "never_drop": false,
+   "note": "Equal counts, one formula (evidence.blend); only the per-event weight differs. SAW carries pref_weight 0.0 and is absent by construction - that is F7, not this law.",
+   "numbers": {
+    "delta_w": {
+     "BOUGHT": 0.36,
+     "BROWSED": 0.163636,
+     "CARTED": 0.257143,
+     "CLICKED": 0.078261
+    },
+    "events_each": 3,
+    "start_evidence": 2.0,
+    "start_w": 0.4
+   },
+   "passed": true,
+   "seeds_checked": 1,
+   "seeds_passed": 1,
+   "series": {
+    "evidence_hierarchy": [
+     {
+      "delta_w": 0.078261,
+      "event": "CLICKED"
+     },
+     {
+      "delta_w": 0.163636,
+      "event": "BROWSED"
+     },
+     {
+      "delta_w": 0.257143,
+      "event": "CARTED"
+     },
+     {
+      "delta_w": 0.36,
+      "event": "BOUGHT"
+     }
+    ]
+   },
+   "threshold": "strictly increasing delta_w in CLICK < BROWSE < CART < BUY",
+   "tier": "analytic"
+  }
+ ],
+ "per_seed": [
+  {
+   "funnel": {
+    "bounce_rate": 0.461605,
+    "buy_per_exposure": 0.000316,
+    "p_browse": 0.538395,
+    "p_buy_given_cart": 0.300958,
+    "p_cart_given_browse": 0.160298,
+    "p_click": 0.012176,
+    "visit_to_purchase": 0.025974
+   },
+   "laws": {
+    "F1": true,
+    "F2": true,
+    "F3": true,
+    "F6": true
+   },
+   "seed": 7
+  },
+  {
+   "funnel": {
+    "bounce_rate": 0.464349,
+    "buy_per_exposure": 0.000298,
+    "p_browse": 0.535651,
+    "p_buy_given_cart": 0.298523,
+    "p_cart_given_browse": 0.158445,
+    "p_click": 0.011765,
+    "visit_to_purchase": 0.025336
+   },
+   "laws": {
+    "F1": true,
+    "F2": true,
+    "F3": true,
+    "F6": true
+   },
+   "seed": 11
+  },
+  {
+   "funnel": {
+    "bounce_rate": 0.463127,
+    "buy_per_exposure": 0.000302,
+    "p_browse": 0.536873,
+    "p_buy_given_cart": 0.294804,
+    "p_cart_given_browse": 0.157446,
+    "p_click": 0.012123,
+    "visit_to_purchase": 0.024919
+   },
+   "laws": {
+    "F1": true,
+    "F2": true,
+    "F3": true,
+    "F6": true
+   },
+   "seed": 23
+  }
+ ],
+ "population_size": 250,
+ "profile": "reference",
+ "seeds": [
+  7,
+  11,
+  23
+ ]
+}

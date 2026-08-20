@@ -1,0 +1,224 @@
+{
+ "after": {
+  "bounce_rate": 0.5403,
+  "buy_per_exposure": 0.000141,
+  "p_browse": 0.4597,
+  "p_buy_given_cart": 0.243249,
+  "p_cart_given_browse": 0.141803,
+  "p_click": 0.008865,
+  "visit_to_purchase": 0.015857
+ },
+ "before": {
+  "bounce_rate": 0.599125,
+  "p_buy_given_cart": 0.175218,
+  "p_cart_given_browse": 0.123359,
+  "p_click": 0.007707,
+  "visit_to_purchase": 0.008665
+ },
+ "before_after": [
+  {
+   "after": 0.00887,
+   "after_in_band": true,
+   "band": [
+    0.005,
+    0.02
+   ],
+   "before": 0.00771,
+   "before_in_band": true,
+   "metric": "p_click",
+   "source": "market-research.md S1 \u2014 Meta retail CTR 1.59-1.71%, display 0.46%; adopted band 0.5-2%"
+  },
+  {
+   "after": 0.5403,
+   "after_in_band": true,
+   "band": [
+    0.45,
+    0.55
+   ],
+   "before": 0.59913,
+   "before_in_band": false,
+   "metric": "bounce_rate",
+   "source": "market-research.md S2 \u2014 BROWSE = 1 - bounce, target 0.45-0.55"
+  },
+  {
+   "after": 0.1418,
+   "after_in_band": true,
+   "band": [
+    0.1,
+    0.2
+   ],
+   "before": 0.12336,
+   "before_in_band": true,
+   "metric": "p_cart_given_browse",
+   "source": "market-research.md S2 \u2014 fashion add-to-cart 7.1-7.7% of sessions, ~2x conditioned on non-bounce"
+  },
+  {
+   "after": 0.24325,
+   "after_in_band": true,
+   "band": [
+    0.24,
+    0.28
+   ],
+   "before": 0.17522,
+   "before_in_band": false,
+   "metric": "p_buy_given_cart",
+   "source": "market-research.md S2 \u2014 1 - cart abandonment (72-76%)"
+  },
+  {
+   "after": 0.01586,
+   "after_in_band": true,
+   "band": [
+    0.01,
+    0.03
+   ],
+   "before": 0.00867,
+   "before_in_band": false,
+   "metric": "visit_to_purchase",
+   "source": "market-research.md S2 \u2014 apparel sitewide conversion 1-3%"
+  }
+ ],
+ "before_reconstructed": {
+  "bounce_rate": 0.5403,
+  "buy_per_exposure": 9.7e-05,
+  "p_browse": 0.4597,
+  "p_buy_given_cart": 0.191967,
+  "p_cart_given_browse": 0.141803,
+  "p_click": 0.007741,
+  "visit_to_purchase": 0.012514
+ },
+ "before_source": {
+  "context_health": {
+   "pref_recency_mean": 0.23,
+   "trust_share": 0.021,
+   "violation_share": 0.853
+  },
+  "engine": "pre-Phase-7: pref recency 3d (shared with fatigue), no violation floor, cold start (w=0, E=0), stage_bases.BUY 3.2",
+  "measured_on": "2026-08-20",
+  "rates": {
+   "bounce_rate": 0.599125,
+   "p_buy_given_cart": 0.175218,
+   "p_cart_given_browse": 0.123359,
+   "p_click": 0.007707,
+   "visit_to_purchase": 0.008665
+  },
+  "run": "r048-eval-reference-reference"
+ },
+ "decisions": {
+  "creative_decisions": 7878,
+  "page_decisions": 89
+ },
+ "demo_profile": {
+  "achieved_p_click": 0.050033,
+  "committed_click_base": 4.2,
+  "multiples": {
+   "bounce_rate": {
+    "band": [
+     0.45,
+     0.55
+    ],
+    "demo": 0.5403,
+    "demo_in_band": true,
+    "multiple": 1.0,
+    "reference": 0.5403
+   },
+   "p_buy_given_cart": {
+    "band": [
+     0.24,
+     0.28
+    ],
+    "demo": 0.24325,
+    "demo_in_band": true,
+    "multiple": 1.0,
+    "reference": 0.24325
+   },
+   "p_cart_given_browse": {
+    "band": [
+     0.1,
+     0.2
+    ],
+    "demo": 0.1418,
+    "demo_in_band": true,
+    "multiple": 1.0,
+    "reference": 0.1418
+   },
+   "p_click": {
+    "band": [
+     0.005,
+     0.02
+    ],
+    "demo": 0.05003,
+    "demo_in_band": false,
+    "multiple": 5.644,
+    "reference": 0.00887
+   },
+   "visit_to_purchase": {
+    "band": [
+     0.01,
+     0.03
+    ],
+    "demo": 0.01586,
+    "demo_in_band": true,
+    "multiple": 1.0,
+    "reference": 0.01586
+   }
+  },
+  "note": "Only the CLICK threshold moves. BROWSE, CART and BUY stay at their calibrated values, so everything below the click is still the certified funnel.",
+  "solved_click_base": 4.0723,
+  "target_ctr": 0.05
+ },
+ "historical_runs": {
+  "r027-market-demo": {
+   "bought": 0,
+   "bounce": 0.667,
+   "cart_given_browse": 0.067,
+   "ctr": 0.0067,
+   "profile": "stage_bases.CLICK=6.0 (default)"
+  },
+  "r039-market-20260819": {
+   "blended_roas": 46.4,
+   "bought": 25,
+   "bounce": 0.636,
+   "cart_given_browse": 0.1198,
+   "ctr": 0.2797,
+   "profile": "stage_bases.CLICK=2.0 (old demo)"
+  }
+ },
+ "in_band": {
+  "bounce_rate": true,
+  "p_buy_given_cart": true,
+  "p_cart_given_browse": true,
+  "p_click": true,
+  "visit_to_purchase": true
+ },
+ "loss": 0.0,
+ "money": {
+  "band": [
+   1.5,
+   4.0
+  ],
+  "blended_roas": 1.429,
+  "cpm_usd": 13.88,
+  "impressions": 7878,
+  "in_band": false,
+  "note": "Derived, not fitted. Based on 4 simulated purchases, so the interval is wide \u2014 read the order of magnitude, not the decimals. The pre-Phase-7 demo profile put this at ~46x.",
+  "purchases": 4,
+  "revenue": 156.3,
+  "source": "market-research.md S5 \u2014 Meta e-commerce median CPM $13.88; real-world blended e-commerce ROAS 1.5-4x",
+  "spend": 109.35
+ },
+ "pre_phase7_reconstruction": {
+  "note": "A partial cross-check, NOT the before column. Two of the three changes are invertible from a current trace (the recency half-life, because recency = 2^(-age/half_life), and the BUY stage base, because it is a parameter). The violation floor is not: sub-threshold violations stopped being recorded once the floor existed. Reconstruction therefore understates how bad the starting point was \u2014 it reports bounce 0.518 where the engine actually measured 0.599 \u2014 which is why `before` cites the measurement in before_source instead.",
+  "pref_half_life_days": 3.0,
+  "stage_bases_BUY": 3.2
+ },
+ "profile": "reference",
+ "realised": {
+  "bounce_rate": 0.617978,
+  "ctr": 0.010536,
+  "p_buy_given_cart": 0.4,
+  "p_cart_given_browse": 0.294118,
+  "visit_to_purchase": 0.044944
+ },
+ "reference_run_dir": "/Users/garvit/shopsim/runs/r053-eval-reference-reference",
+ "reference_run_id": "r053-eval-reference-reference"
+}
