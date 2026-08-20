@@ -2,40 +2,40 @@
 <rect width="720" height="400" fill="#ffffff"/>
 <text x="68" y="24" font-size="15" font-weight="600" fill="#1c1c1c">7.2 · calibration, before and after</text>
 <text x="68" y="39" font-size="11" fill="#6b6b6b">each metric as a fraction of its own band (1.0 = the band's midpoint)</text>
-<text x="14" y="196" font-size="11" fill="#6b6b6b" transform="rotate(-90 14 196)" text-anchor="middle">value ÷ band midpoint</text>
-<rect x="68" y="22" width="10" height="10" fill="#c0562e" rx="2"/>
-<text x="83" y="31" font-size="11" fill="#1c1c1c">before (Phase 6 defaults)</text>
-<rect x="265" y="22" width="10" height="10" fill="#3f8f5f" rx="2"/>
-<text x="280" y="31" font-size="11" fill="#1c1c1c">after (reference profile)</text>
-<line x1="68" y1="348.0" x2="696" y2="348.0" stroke="#e4e4e4" stroke-width="1"/>
-<text x="60" y="352.0" text-anchor="end" font-size="11" fill="#6b6b6b">0</text>
-<line x1="68" y1="246.7" x2="696" y2="246.7" stroke="#e4e4e4" stroke-width="1"/>
-<text x="60" y="250.7" text-anchor="end" font-size="11" fill="#6b6b6b">0.5</text>
-<line x1="68" y1="145.3" x2="696" y2="145.3" stroke="#e4e4e4" stroke-width="1"/>
-<text x="60" y="149.3" text-anchor="end" font-size="11" fill="#6b6b6b">1</text>
-<line x1="68" y1="44.0" x2="696" y2="44.0" stroke="#e4e4e4" stroke-width="1"/>
-<text x="60" y="48.0" text-anchor="end" font-size="11" fill="#6b6b6b">1.5</text>
-<text x="130.8" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">click</text>
-<text x="256.4" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">bounce rate</text>
-<text x="382.0" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">cart given browse</text>
-<text x="507.6" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">buy given cart</text>
-<text x="633.2" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">visit to purchase</text>
-<line x1="68" y1="348" x2="696" y2="348" stroke="#1c1c1c" stroke-width="1.2"/>
-<rect x="90.6" y="223.0" width="37.7" height="125.0" fill="#c0562e" rx="2"/>
-<rect x="133.3" y="204.2" width="37.7" height="143.8" fill="#3f8f5f" rx="2"/>
-<text x="130.8" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">click</text>
-<rect x="216.2" y="105.2" width="37.7" height="242.8" fill="#c0562e" rx="2"/>
-<rect x="258.9" y="129.0" width="37.7" height="219.0" fill="#3f8f5f" rx="2"/>
-<text x="256.4" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">bounce rate</text>
-<rect x="341.8" y="181.3" width="37.7" height="166.7" fill="#c0562e" rx="2"/>
-<rect x="384.5" y="156.4" width="37.7" height="191.6" fill="#3f8f5f" rx="2"/>
-<text x="382.0" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">cart given browse</text>
-<rect x="467.4" y="211.4" width="37.7" height="136.6" fill="#c0562e" rx="2"/>
-<rect x="510.1" y="158.4" width="37.7" height="189.6" fill="#3f8f5f" rx="2"/>
-<text x="507.6" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">buy given cart</text>
-<rect x="593.0" y="260.1" width="37.7" height="87.9" fill="#c0562e" rx="2"/>
-<rect x="635.7" y="187.3" width="37.7" height="160.7" fill="#3f8f5f" rx="2"/>
-<text x="633.2" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">visit to purchase</text>
-<line x1="68" y1="145.3" x2="696" y2="145.3" stroke="#8cc79a" stroke-width="1.5" stroke-dasharray="5 3"/>
+<text x="14" y="203" font-size="11" fill="#6b6b6b" transform="rotate(-90 14 203)" text-anchor="middle">value ÷ band midpoint</text>
+<rect x="68" y="46" width="10" height="10" fill="#c0562e" rx="2"/>
+<text x="83" y="55" font-size="11" fill="#1c1c1c">before (Phase 6 defaults)</text>
+<rect x="265" y="46" width="10" height="10" fill="#3f8f5f" rx="2"/>
+<text x="280" y="55" font-size="11" fill="#1c1c1c">after (reference profile)</text>
+<line x1="68" y1="336.0" x2="696" y2="336.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="340.0" text-anchor="end" font-size="11" fill="#6b6b6b">0</text>
+<line x1="68" y1="247.3" x2="696" y2="247.3" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="251.3" text-anchor="end" font-size="11" fill="#6b6b6b">0.5</text>
+<line x1="68" y1="158.7" x2="696" y2="158.7" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="162.7" text-anchor="end" font-size="11" fill="#6b6b6b">1</text>
+<line x1="68" y1="70.0" x2="696" y2="70.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="74.0" text-anchor="end" font-size="11" fill="#6b6b6b">1.5</text>
+<text x="130.8" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">click</text>
+<text x="256.4" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">bounce rate</text>
+<text x="382.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">cart given browse</text>
+<text x="507.6" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">buy given cart</text>
+<text x="633.2" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">visit to purchase</text>
+<line x1="68" y1="336" x2="696" y2="336" stroke="#1c1c1c" stroke-width="1.2"/>
+<rect x="90.6" y="226.6" width="37.7" height="109.4" fill="#c0562e" rx="2"/>
+<rect x="133.3" y="210.2" width="37.7" height="125.8" fill="#3f8f5f" rx="2"/>
+<text x="130.8" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">click</text>
+<rect x="216.2" y="123.5" width="37.7" height="212.5" fill="#c0562e" rx="2"/>
+<rect x="258.9" y="144.4" width="37.7" height="191.6" fill="#3f8f5f" rx="2"/>
+<text x="256.4" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">bounce rate</text>
+<rect x="341.8" y="190.2" width="37.7" height="145.8" fill="#c0562e" rx="2"/>
+<rect x="384.5" y="168.4" width="37.7" height="167.6" fill="#3f8f5f" rx="2"/>
+<text x="382.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">cart given browse</text>
+<rect x="467.4" y="216.5" width="37.7" height="119.5" fill="#c0562e" rx="2"/>
+<rect x="510.1" y="170.1" width="37.7" height="165.9" fill="#3f8f5f" rx="2"/>
+<text x="507.6" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">buy given cart</text>
+<rect x="593.0" y="259.1" width="37.7" height="76.9" fill="#c0562e" rx="2"/>
+<rect x="635.7" y="195.4" width="37.7" height="140.6" fill="#3f8f5f" rx="2"/>
+<text x="633.2" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">visit to purchase</text>
+<line x1="68" y1="158.7" x2="696" y2="158.7" stroke="#8cc79a" stroke-width="1.5" stroke-dasharray="5 3"/>
 <text x="68" y="392" font-size="10" fill="#6b6b6b">dashed line = band midpoint; bars near it are correctly calibrated</text>
 </svg>

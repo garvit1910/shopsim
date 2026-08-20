@@ -2,44 +2,44 @@
 <rect width="720" height="400" fill="#ffffff"/>
 <text x="68" y="24" font-size="15" font-weight="600" fill="#1c1c1c">F3 · discount response is ordered by price sensitivity</text>
 <text x="68" y="39" font-size="11" fill="#6b6b6b">realised-price channel only; the perceived-offer channel is held fixed</text>
-<text x="14" y="196" font-size="11" fill="#6b6b6b" transform="rotate(-90 14 196)" text-anchor="middle">P(buy | cart)</text>
-<text x="382" y="386" font-size="11" fill="#6b6b6b" text-anchor="middle">discount depth</text>
-<rect x="68" y="22" width="10" height="10" fill="#2f6fb0" rx="2"/>
-<text x="83" y="31" font-size="11" fill="#1c1c1c">high sensitivity</text>
-<rect x="202" y="22" width="10" height="10" fill="#c0562e" rx="2"/>
-<text x="217" y="31" font-size="11" fill="#1c1c1c">low sensitivity</text>
-<rect x="329" y="22" width="10" height="10" fill="#3f8f5f" rx="2"/>
-<text x="344" y="31" font-size="11" fill="#1c1c1c">mid sensitivity</text>
-<line x1="68" y1="348.0" x2="696" y2="348.0" stroke="#e4e4e4" stroke-width="1"/>
-<text x="60" y="352.0" text-anchor="end" font-size="11" fill="#6b6b6b">0</text>
-<line x1="68" y1="246.7" x2="696" y2="246.7" stroke="#e4e4e4" stroke-width="1"/>
-<text x="60" y="250.7" text-anchor="end" font-size="11" fill="#6b6b6b">0.2</text>
-<line x1="68" y1="145.3" x2="696" y2="145.3" stroke="#e4e4e4" stroke-width="1"/>
-<text x="60" y="149.3" text-anchor="end" font-size="11" fill="#6b6b6b">0.4</text>
-<line x1="68" y1="44.0" x2="696" y2="44.0" stroke="#e4e4e4" stroke-width="1"/>
-<text x="60" y="48.0" text-anchor="end" font-size="11" fill="#6b6b6b">0.6</text>
-<text x="68.0" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">0</text>
-<text x="225.0" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">0.1</text>
-<text x="382.0" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">0.2</text>
-<text x="539.0" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">0.3</text>
-<text x="696.0" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">0.4</text>
-<line x1="68" y1="348" x2="696" y2="348" stroke="#1c1c1c" stroke-width="1.2"/>
-<path d="M68.0,128.3 L225.0,118.5 L382.0,108.6 L539.0,98.7 L696.0,88.7" fill="none" stroke="#2f6fb0" stroke-width="2.2" stroke-linejoin="round"/>
-<circle cx="68.0" cy="128.3" r="2.8" fill="#2f6fb0"/>
-<circle cx="225.0" cy="118.5" r="2.8" fill="#2f6fb0"/>
-<circle cx="382.0" cy="108.6" r="2.8" fill="#2f6fb0"/>
-<circle cx="539.0" cy="98.7" r="2.8" fill="#2f6fb0"/>
-<circle cx="696.0" cy="88.7" r="2.8" fill="#2f6fb0"/>
-<path d="M68.0,145.1 L225.0,140.1 L382.0,135.0 L539.0,129.9 L696.0,124.7" fill="none" stroke="#c0562e" stroke-width="2.2" stroke-linejoin="round"/>
-<circle cx="68.0" cy="145.1" r="2.8" fill="#c0562e"/>
-<circle cx="225.0" cy="140.1" r="2.8" fill="#c0562e"/>
-<circle cx="382.0" cy="135.0" r="2.8" fill="#c0562e"/>
-<circle cx="539.0" cy="129.9" r="2.8" fill="#c0562e"/>
-<circle cx="696.0" cy="124.7" r="2.8" fill="#c0562e"/>
-<path d="M68.0,142.4 L225.0,135.4 L382.0,128.4 L539.0,121.3 L696.0,114.2" fill="none" stroke="#3f8f5f" stroke-width="2.2" stroke-linejoin="round"/>
-<circle cx="68.0" cy="142.4" r="2.8" fill="#3f8f5f"/>
-<circle cx="225.0" cy="135.4" r="2.8" fill="#3f8f5f"/>
-<circle cx="382.0" cy="128.4" r="2.8" fill="#3f8f5f"/>
-<circle cx="539.0" cy="121.3" r="2.8" fill="#3f8f5f"/>
-<circle cx="696.0" cy="114.2" r="2.8" fill="#3f8f5f"/>
+<text x="14" y="203" font-size="11" fill="#6b6b6b" transform="rotate(-90 14 203)" text-anchor="middle">P(buy | cart)</text>
+<text x="382" y="372" font-size="11" fill="#6b6b6b" text-anchor="middle">discount depth</text>
+<rect x="68" y="46" width="10" height="10" fill="#2f6fb0" rx="2"/>
+<text x="83" y="55" font-size="11" fill="#1c1c1c">high sensitivity</text>
+<rect x="202" y="46" width="10" height="10" fill="#c0562e" rx="2"/>
+<text x="217" y="55" font-size="11" fill="#1c1c1c">low sensitivity</text>
+<rect x="329" y="46" width="10" height="10" fill="#3f8f5f" rx="2"/>
+<text x="344" y="55" font-size="11" fill="#1c1c1c">mid sensitivity</text>
+<line x1="68" y1="336.0" x2="696" y2="336.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="340.0" text-anchor="end" font-size="11" fill="#6b6b6b">0</text>
+<line x1="68" y1="247.3" x2="696" y2="247.3" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="251.3" text-anchor="end" font-size="11" fill="#6b6b6b">0.2</text>
+<line x1="68" y1="158.7" x2="696" y2="158.7" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="162.7" text-anchor="end" font-size="11" fill="#6b6b6b">0.4</text>
+<line x1="68" y1="70.0" x2="696" y2="70.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="74.0" text-anchor="end" font-size="11" fill="#6b6b6b">0.6</text>
+<text x="68.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">0</text>
+<text x="225.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">0.1</text>
+<text x="382.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">0.2</text>
+<text x="539.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">0.3</text>
+<text x="696.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">0.4</text>
+<line x1="68" y1="336" x2="696" y2="336" stroke="#1c1c1c" stroke-width="1.2"/>
+<path d="M68.0,143.7 L225.0,135.2 L382.0,126.5 L539.0,117.8 L696.0,109.1" fill="none" stroke="#2f6fb0" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="68.0" cy="143.7" r="2.8" fill="#2f6fb0"/>
+<circle cx="225.0" cy="135.2" r="2.8" fill="#2f6fb0"/>
+<circle cx="382.0" cy="126.5" r="2.8" fill="#2f6fb0"/>
+<circle cx="539.0" cy="117.8" r="2.8" fill="#2f6fb0"/>
+<circle cx="696.0" cy="109.1" r="2.8" fill="#2f6fb0"/>
+<path d="M68.0,158.5 L225.0,154.1 L382.0,149.6 L539.0,145.1 L696.0,140.6" fill="none" stroke="#c0562e" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="68.0" cy="158.5" r="2.8" fill="#c0562e"/>
+<circle cx="225.0" cy="154.1" r="2.8" fill="#c0562e"/>
+<circle cx="382.0" cy="149.6" r="2.8" fill="#c0562e"/>
+<circle cx="539.0" cy="145.1" r="2.8" fill="#c0562e"/>
+<circle cx="696.0" cy="140.6" r="2.8" fill="#c0562e"/>
+<path d="M68.0,156.1 L225.0,150.0 L382.0,143.9 L539.0,137.7 L696.0,131.4" fill="none" stroke="#3f8f5f" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="68.0" cy="156.1" r="2.8" fill="#3f8f5f"/>
+<circle cx="225.0" cy="150.0" r="2.8" fill="#3f8f5f"/>
+<circle cx="382.0" cy="143.9" r="2.8" fill="#3f8f5f"/>
+<circle cx="539.0" cy="137.7" r="2.8" fill="#3f8f5f"/>
+<circle cx="696.0" cy="131.4" r="2.8" fill="#3f8f5f"/>
 </svg>
