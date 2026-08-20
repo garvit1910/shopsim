@@ -145,8 +145,8 @@ def plot_calibration_before_after(rows, out: Path) -> Path | None:
                            f'fill="{color}" rx="2"/>')
         c.parts.append(f'<text x="{cx:.1f}" y="{c.py1 + 18}" text-anchor="middle" '
                        f'font-size="11" fill="{charts.MUTED}">{charts._esc(labels[i])}</text>')
-    lo_y, hi_y = c.sy(rows[0]["band"][0] / ((rows[0]["band"][0] + rows[0]["band"][1]) / 2)), c.sy(1.0)
-    c.parts.append(f'<line x1="{c.px0}" y1="{hi_y:.1f}" x2="{c.px1}" y2="{hi_y:.1f}" '
+    mid_y = c.sy(1.0)  # every metric is normalised to its own band midpoint
+    c.parts.append(f'<line x1="{c.px0}" y1="{mid_y:.1f}" x2="{c.px1}" y2="{mid_y:.1f}" '
                    f'stroke="{charts.BAND_EDGE}" stroke-width="1.5" stroke-dasharray="5 3"/>')
     c.legend = [("before (Phase 6 defaults)", charts.SERIES[1]),
                 ("after (reference profile)", charts.SERIES[2])]

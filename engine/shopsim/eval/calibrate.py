@@ -160,7 +160,7 @@ def profile_block(profile) -> dict:
     """
     from ..minds.calibration import (
         DEFAULT_APPRAISAL_PARAMS, DEFAULT_CHOICE_PARAMS, DEFAULT_STAGE_BASES)
-    from dataclasses import asdict, fields
+    from dataclasses import fields
 
     block: dict = {"stage_bases": {st: round(v, 4) for st, v in profile.stage_bases}}
     if tuple(profile.stage_bases) == tuple(DEFAULT_STAGE_BASES):

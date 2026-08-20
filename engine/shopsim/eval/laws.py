@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from ..contracts import evidence
 from ..minds.appraisal import appraise
 from ..minds.choice import stage_probabilities
-from .contexts import DEFAULT_MIX, Profile, make_context
+from .contexts import Profile, make_context
 
 TIERS = ("analytic", "scenario", "audit")
 

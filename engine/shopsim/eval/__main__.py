@@ -20,7 +20,7 @@ import sys
 import time
 from pathlib import Path
 
-from . import calibrate, charts, contexts, harness, laws, oracle, report, trace
+from . import calibrate, contexts, harness, laws, oracle, report, trace
 
 RESULTS = "results"
 PLOTS = "plots"
@@ -362,7 +362,16 @@ def cmd_report(args) -> int:
             not_run.append({"id": key.split(":")[0], "reason": f"no results.json in {row['run_id']}"})
             continue
         results_by_key[key] = harness.load_results(rdir)
-        runs.append({**row, "population": None})
+        # population size is not a manifest field; the run's own progress
+        # snapshot is the authority for the shape it actually ran at
+        pop = None
+        prog = rdir / "progress.json"
+        if prog.exists():
+            try:
+                pop = json.loads(prog.read_text()).get("population_size")
+            except (OSError, ValueError):
+                pop = None
+        runs.append({**row, "population": pop})
 
     law_rows += _scenario_laws(results_by_key, scenarios, not_run, plots, plots_dir)
 

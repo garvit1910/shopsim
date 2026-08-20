@@ -35,7 +35,7 @@ import math
 from pathlib import Path
 
 from ..contracts.enums import Action
-from ..contracts.types import Appraisal, ChoiceCoeffs, DecisionContext
+from ..contracts.types import ChoiceCoeffs, DecisionContext
 from ..minds.appraisal import appraise
 from ..minds.calibration import (
     DEFAULT_APPRAISAL_PARAMS,
