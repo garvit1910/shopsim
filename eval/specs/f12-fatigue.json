@@ -1,0 +1,72 @@
+{
+  "comment": "F12 \u2014 within ONE brand, same-story repetition must decay CTR faster than story rotation. Both arms run TWO creatives at identical reach, so asset-level wearout (exposures_72h) is matched and cannot explain a difference. The only thing that differs is whether the two creatives share a claimed CONCEPT: 2000001 and 2000003 both claim ECO_FRIENDLY (same story, different asset) while 2000001 and 2000002 are disjoint (eco/recycled vs cushioning/comfort/washable/style). brand_semantic_fatigue is retrieved from past SAWs sharing a concept with the stimulus and excludes the stimulus itself, so this pairing isolates that channel exactly.",
+  "label": "f12-fatigue",
+  "seed": 523,
+  "ticks": 16,
+  "t0": 1812000000,
+  "population": {
+    "size": 180,
+    "personas": "fixtures/demo-brand/personas.json"
+  },
+  "exposure": {
+    "frequency_cap_per_tick": 2,
+    "frequency_cap_72h": 6,
+    "schedule": [
+      {
+        "creative_id": 2000001,
+        "start_tick": 0,
+        "end_tick": 15,
+        "reach_prob": 0.5
+      },
+      {
+        "creative_id": 2000003,
+        "start_tick": 0,
+        "end_tick": 15,
+        "reach_prob": 0.5
+      }
+    ]
+  },
+  "goals": {
+    "config": "fixtures/demo-brand/goal_config.json",
+    "overrides": {}
+  },
+  "promos": {
+    "schedule": "fixtures/demo-brand/promo_schedule.json",
+    "enabled": false
+  },
+  "arms": [
+    {
+      "name": "same_concept"
+    },
+    {
+      "name": "rotation",
+      "exposure_overrides": {
+        "schedule": [
+          {
+            "creative_id": 2000001,
+            "start_tick": 0,
+            "end_tick": 15,
+            "reach_prob": 0.5
+          },
+          {
+            "creative_id": 2000002,
+            "start_tick": 0,
+            "end_tick": 15,
+            "reach_prob": 0.5
+          }
+        ]
+      }
+    }
+  ],
+  "tick_seconds": 86400,
+  "mind": {
+    "decide": "formula",
+    "consolidate": "formula"
+  },
+  "catalog_dir": "fixtures/demo-brand",
+  "perception_cache": "fixtures/perception-cache",
+  "fulfillment": {
+    "lag_ticks": 2,
+    "sat_noise_sd": 0.08
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "comment": "F9 \u2014 the demo claim as a test, never-drop. need_on runs live; need_off BRANCHES from its log at tick 4 with scripted needs and goal waves switched off. Branching rather than re-running is the point: the twin inherits the parent's actual first four days of history, so the only thing that differs afterwards is whether goals exist. Ticks 14 so the post-divergence window is 10 days \u2014 long enough for a need to activate, be carried down the funnel and be satisfied.",
+  "label": "f9-twin",
+  "seed": 419,
+  "ticks": 14,
+  "t0": 1811000000,
+  "population": {
+    "size": 220,
+    "personas": "fixtures/demo-brand/personas.json"
+  },
+  "exposure": {
+    "frequency_cap_per_tick": 2,
+    "frequency_cap_72h": 6,
+    "schedule": [
+      {
+        "creative_id": 2000003,
+        "start_tick": 0,
+        "end_tick": 13,
+        "reach_prob": 0.4
+      },
+      {
+        "creative_id": 2000001,
+        "start_tick": 0,
+        "end_tick": 13,
+        "reach_prob": 0.4
+      },
+      {
+        "creative_id": 2000004,
+        "start_tick": 0,
+        "end_tick": 13,
+        "reach_prob": 0.4
+      }
+    ]
+  },
+  "goals": {
+    "config": "fixtures/demo-brand/goal_config.json",
+    "overrides": {}
+  },
+  "promos": {
+    "schedule": "fixtures/demo-brand/promo_schedule.json",
+    "enabled": true
+  },
+  "arms": [
+    {
+      "name": "need_on"
+    },
+    {
+      "name": "need_off",
+      "goal_overrides": {
+        "scripted_enabled": false,
+        "waves_enabled": false
+      },
+      "branch_from": "need_on",
+      "divergence_tick": 4
+    }
+  ],
+  "tick_seconds": 86400,
+  "mind": {
+    "decide": "formula",
+    "consolidate": "formula"
+  },
+  "catalog_dir": "fixtures/demo-brand",
+  "perception_cache": "fixtures/perception-cache",
+  "fulfillment": {
+    "lag_ticks": 2,
+    "sat_noise_sd": 0.08
+  }
+}

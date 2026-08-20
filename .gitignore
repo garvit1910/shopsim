@@ -32,3 +32,8 @@ infra/hydradb-data/
 # Phase-3 run artifacts (fixtures/scripted-run-1 is the committed export).
 # Root-anchored: a bare `runs/` also swallowed web/app/runs/, the results route.
 /runs/
+
+# Phase-7 eval artifacts that `make eval` regenerates from committed inputs.
+# results/ and plots/ ARE committed — they are the deliverable.
+eval/fixtures/
+eval/configs/built/

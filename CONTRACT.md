@@ -1,14 +1,21 @@
 # CONTRACT.md — the three inter-lane contracts
 
-**Version: 3.8-draft** (3.3 flagged to Garvit 2026-08-17 and built on by
+**Version: 3.10-draft** (3.3 flagged to Garvit 2026-08-17 and built on by
 Phase 4; 3.4-draft added the experiment-adapter conventions, 3.5-draft the
 live dashboard data plane, 3.6-draft the shared ad market + pricing ladder, 3.7-draft the creative-text
 read surface + the Nisolo brand fixture, 3.8-draft the Phase-6 analytics that
-fill C3's remaining placeholders + the opt-in social layer —
-all additive only, no C1/C2/C3 signature, enum, taxonomy, ENTRY_POINTS-row or
-evidence.py change, plus one C1 scalar bug-fix in 3.4 (cart re-derivation) —
-see change log; **3.4-draft through 3.8-draft all pending Atishay's
-ack at the next sync**. Note: this header sat at 3.4-draft while the
+fill C3's remaining placeholders + the opt-in social layer, 3.9-draft the
+memory-graph read surface behind the dashboard's 04 Graph exhibit,
+3.10-draft the Phase-7 calibration layer — a `calibration.retrieval` sub-block,
+two split retrieval constants, a learning cold-start prior and an opt-in
+decision trace. All additive to the *interfaces*: no C1/C2/C3 signature, enum,
+taxonomy or ENTRY_POINTS-row change, and `contracts/evidence.py` is untouched
+and still frozen by hash. **3.10-draft does change BEHAVIOUR** — it is the
+first version that deliberately moves numbers rather than only adding keys, so
+it re-hashes runs and regenerates `fixtures/golden-run`; see the change log and
+`eval/calibration.md` for what moved and why. Plus one C1 scalar bug-fix in 3.4
+(cart re-derivation) — see change log; **3.4-draft through 3.10-draft all
+pending Atishay's ack at the next sync**. Note: this header sat at 3.4-draft while the
 3.5-draft change-log entry was already written — the bump was missed then and
 is corrected here.)
 **Change rule:** any contract or registry change = 5-minute call + version bump here, with a line in the change log at the bottom. `context.scalars` keeps the old v3 MemoryPacket byte-for-byte (first nine fields) — that back-compat is why ScriptedMind and the Phase-3 runner survive every architecture change.
@@ -826,6 +833,62 @@ props), consolidate purity (skips until a Mind implementation exists).
      inside `create_app`, so that path would have `NameError`d into a 500
      instead of a 422.
 
+- **3.9-draft** (2026-08-20, Phase 5.9 — the Social Memory Graph; **additive
+  only: two new read endpoints and one optional spec key. No C1/C2/C3
+  signature, enum, taxonomy, ENTRY_POINTS-row or evidence.py change, and no
+  new Cypher — pending Atishay's ack at the next sync**):
+  1. **`GET /runs/{run_id}/memory-graph?focus=<csv offsets>`** — a shopper
+     cohort's subgraph as `{nodes, edges}`, for the dashboard's `04 Graph`.
+     Omitted `focus` lets the engine choose: `HydraMem.find_social_triads()`
+     ranks mutually-trusting triples by whether they can actually SHOW the
+     mechanism (a member with both `BOUGHT` and `EXPERIENCED`), so the default
+     view is one that can draw `TRUSTS_PERSON -> BOUGHT -> EXPERIENCED`.
+     Response also carries `run_index`, `t0`, `tick_seconds`, `ticks`,
+     `head_tick`, `social_enabled`, `focus` and the ranked `candidates`.
+     Node `kind` is `shopper | concept | category | brand | product | creative
+     | page | belief | aspect | anchor`. NOTE the typing rule: shopper ids are
+     `1_000_000 + run_index * 100_000`, so from run_index 10 on they run
+     straight through the creative/product/page blocks — id ranges alone are
+     NOT sufficient. The shopper set is recovered exactly instead, from
+     `{focus} union {TRUSTS_PERSON destinations}`, which is complete only
+     because `TRUSTS_PERSON` is the sole relationship whose destination is a
+     shopper (`schema.SOCIAL_EDGES`). A second shopper-valued relationship
+     would have to update that closure; a test pins the assumption.
+  2. **The payload is topology + version history; the CLIENT owns time.** One
+     edge per `(rel, source, target)`, with every stored row in its `versions`
+     list and a `time` discipline of `static` (objective closure and
+     `TRUSTS_PERSON`), `event` (`t <= as_of`) or `bitemporal`
+     (`t <= as_of < valid_to`). So the dashboard's day scrub is one fetch and
+     a pure filter — the same as-of rule `reads.ObjectiveCache.build` applies
+     to `PRICED_AT` and `Inspector.tsx` applies to preference chains. Folding
+     is not cosmetic: emitting one link per stored row would make
+     `d3.forceLink` treat four visits to one page as four parallel springs,
+     so the layout would encode event-log volume rather than graph shape.
+     `ABOUT`/`THAT`/`DERIVED_FROM` carry no time of their own and are stamped
+     with their belief node's `t`/`valid_to`, so a superseded belief version
+     retires together with its whole provenance fan.
+  3. **`GET /social-runs`** — registry rows whose manifest carries
+     `social_config_hash`, i.e. the runs that have a trust layer at all. A new
+     endpoint rather than a new field on `/runs`, so no existing payload shape
+     moves. `04 Graph` links at the newest one; a run without the layer renders
+     an explicit "nothing social to draw here" rather than an empty canvas.
+  4. **`population.social` reaches the experiment spec** (`specs.py`
+     `BaseSpec.social`, emitted by `build._population`). Previously only a raw
+     run_config could turn the layer on, and a CLI run leaves its config
+     outside the run store where `_cfg_for` cannot find it. Emitted ONLY when
+     the spec asks for it, so every pre-social spec still builds a
+     byte-identical config and its `config_hash` is unchanged; validation stays
+     with the single authority, `runner.config.parse_social`.
+  5. **No new Cypher.** The exporter reuses `all_edges`, `holds_history`,
+     `node_props` and — for triad discovery — `adj_batch`, the one legal
+     batch-read shape, which until now only `bench/probe11.py` called. Probes
+     are chunked at 1,000 ids because HydraDB admission control rejects an
+     `UNWIND` batch above 1,024 items. `cypher.py` is untouched, so
+     `test_cypher_hygiene.py` still pins the template set.
+  6. **Law 12/15 hold at the new surface.** The exporter reads the `shopper`
+     node's `segment_id` and never its `budget`; latent product props remain
+     unreadable. `fixtures/run-configs/social-graph-demo.json` is the committed
+     run behind the exhibit (100 shoppers, 28 ticks, `w_social` 0.5).
 - **3.8-draft** (2026-08-20, Phase 6 — analytics & MetricsReport; additive
   conventions only, no C1/C2/C3 signature, enum, taxonomy, ENTRY_POINTS-row or
   evidence.py change; every default is a no-op and the committed
@@ -952,3 +1015,89 @@ props), consolidate purity (skips until a Mind implementation exists).
      restored only the demo brand's. Now it skips creatives it has no
      perception for. Nothing in Phase 6 writes catalog or stimulus edges; this
      broke the moment a second brand touched the store on 2026-08-19.
+
+
+---
+
+## v3.10-draft — Phase 7: the calibration layer (2026-08-20)
+
+The first version that changes behaviour on purpose. Every item below moves
+numbers; none of them changes a signature, an enum, a taxonomy row or
+`evidence.py`. The full before/after, with sources, is `eval/calibration.md`.
+
+ 1. **`calibration.retrieval` — retrieval constants become run configuration.**
+    `schema.RetrievalParams` has always documented itself as calibration
+    ("tuning them is calibration, not a contract change"), but the values were
+    reachable only by editing the module default, so no run could pin what it
+    actually retrieved with. A new optional `calibration.retrieval` sub-block
+    parses through one authority, `runner.config.parse_retrieval`, refuses
+    unknown keys the way `parse_allocation`/`parse_social`/`parse_calibration`
+    do, and rides in `raw` — so `config_hash` covers it and a replay can no
+    longer retrieve differently than the original run. `parse_calibration`
+    keeps its three-value contract; the new block gets its own parser rather
+    than changing fourteen call sites.
+
+ 2. **Two retrieval constants split apart.** `recency_half_life_s` was doing
+    two unrelated jobs: how fast a past *impression* stops counting as
+    repetition, and how fast a *preference* stops counting as current. At 3
+    days, a seeded `PREFERS` prior — written at `t0 - 1 tick` — decayed to
+    recency 0.016 by day 18, collapsing `relevance` and starving the whole
+    funnel. Now `recency_half_life_s` (3 days) serves fatigue and saturation,
+    and `pref_recency_half_life_s` (**30 days**) serves taste.
+
+ 3. **`violation_min_strength` (0.0 -> 0.5).** `expectation_violation` fired on
+    any `EXPECTS(brand)` concept a page did not show, with no floor. Because
+    `EXPECTS` accumulates from *every* creative a brand runs, 85% of page
+    visits in the traced baseline carried a violation at mean strength 0.42 —
+    a -0.64 utility penalty, at the BROWSE weight of 1.5, on pages doing
+    nothing wrong. An expectation must now be genuinely held before failing to
+    meet it counts. The deliberate A/B variant still fires: it hides a concept
+    its own creative claims at strength 0.9.
+
+ 4. **Learning cold start: `(w=0, E=0)` -> `(COLD_START_W=0.5,
+    COLD_START_E=1.0)`.** With no prior evidence `blend()` is degenerate — the
+    first observation is all the evidence — so one CLICK set an unheld
+    concept's weight to `PREF_TARGET = 1.0` outright. Mean `preference_fit`
+    strength in `r039` was 0.958 and every affected `preference_drift` series
+    read a flat 1.0. The constants live in `minds/calibration.py` beside the
+    other tunables; `evidence.py` is untouched, the formula is unchanged, and
+    only the *caller's* choice of starting state moved. Shoppers holding a
+    seeded prior are byte-identical. Beliefs deliberately keep their old cold
+    start: a first trust belief lands on its own event's target (0.6/0.65/sat),
+    which is already a sane value, and its low evidence is what makes F10
+    demonstrable.
+
+ 5. **`stage_bases.BUY` 3.2 -> 2.85.** The only mind constant the Phase-7 fit
+    had to move, taking P(BUY|cart) from 0.194 to 0.247 against the 0.24-0.28
+    band implied by 72-76% cart abandonment. CLICK, BROWSE and CART were
+    already correct once items 2 and 3 stopped starving them. The fitted values
+    are the module DEFAULTS on purpose: the simulator you get without a profile
+    should be the calibrated one.
+
+ 6. **Opt-in decision trace (`--trace-decisions`).** Writes `decisions.jsonl`
+    beside the run: one row per decision carrying the raw appraisal INPUTS
+    (motif strengths, traits, scalars, coefficients), the gate probabilities and
+    the realised action. Inputs rather than the appraised dims, because a
+    candidate calibration changes `appraise()` too — replay calls the real
+    `appraise()` and the real gate functions, so there is no second copy of the
+    arithmetic. **Off by default: no file, no branch taken in the tick loop, and
+    a byte-identical `results.json`** (`tests/test_eval_trace.py`). The trace is
+    what makes calibration cost milliseconds instead of the 20-110 minutes a
+    real run costs.
+
+ 7. **`fixtures/golden-run` regenerated.** Items 2-5 reshape what it records.
+    The funnel is byte-identical (ScriptedMind decides there, so the choice
+    model cannot move it) and prior-holding shoppers are byte-identical; what
+    changed is that drift series for concepts first met inside the run read
+    `[None, 0.6875, 0.77273]` instead of `[None, 1.0, 1.0]`.
+    `test_first_learned_version_of_an_unheld_concept_saturates` was written to
+    fail loudly if the cold-start rule ever changed. It did, and is replaced by
+    `test_an_unheld_concept_starts_neutral_and_learns_gradually`, which pins the
+    new rule and records the old one in its docstring.
+
+ 8. **Two named calibration profiles** (`eval/profiles/`). `reference` is
+    certified against every band in `market-research.md`; `demo` moves only the
+    CLICK threshold, solved for a stated target rate, and publishes the multiple
+    it induces on every metric. This replaces the ad-hoc
+    `{"stage_bases": {"CLICK": 2.0}}` that was copy-pasted into spec files and
+    ran at ~28% CTR (~22x the band, blended ROAS ~46x).

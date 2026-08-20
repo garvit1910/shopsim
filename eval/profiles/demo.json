@@ -1,0 +1,11 @@
+{
+  "name": "demo",
+  "comment": "The ACCELERATED profile, for live demos only — never for a published number. Why it exists, stated plainly: at the calibrated 0.85% CTR a demo-scale run (300 shoppers x 20 days ~ 11,000 impressions) produces around 140 clicks and 2 purchases. Those are the RIGHT numbers and they make a dashboard that looks broken. This profile lowers the CLICK threshold so a demo produces visible events, and nothing else: BROWSE, CART and BUY stay exactly at their calibrated values, so everything below the click is still the certified funnel. The CLICK base is SOLVED for a stated target rate by shopsim.eval.calibrate.solve_stage_base rather than picked, and the resulting multiple on every metric is published in eval/results/calibration.json under demo_multiples. This replaces the ad-hoc {\"stage_bases\": {\"CLICK\": 2.0}} that was copy-pasted into spec files before Phase 7, which ran at ~28% CTR — roughly 22x the researched band, with a blended ROAS near 46x against a real-world 1.5-4x.",
+  "calibration": {
+    "stage_bases": {"CLICK": 4.2, "BROWSE": 2.3, "CART": 3.7, "BUY": 2.85},
+    "retrieval": {
+      "pref_recency_half_life_s": 2592000,
+      "violation_min_strength": 0.5
+    }
+  }
+}

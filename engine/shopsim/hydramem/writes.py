@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Mapping
 
 from ..contracts import evidence
+from ..minds.calibration import COLD_START_E, COLD_START_W
 from ..contracts.enums import EventType
 from ..contracts.ids import IdAllocator
 from ..contracts.types import Event, EvidenceDelta, WorldviewSnapshot
@@ -479,7 +480,9 @@ class DeltaApplier:
 
         if kind == "edge":  # PREFERS
             concept = d.key.object
-            w0, e0 = st.prefs.get(concept, (0.0, 0.0))
+            # Phase 7: an unheld concept starts NEUTRAL with weak evidence, not
+            # at (0, 0) - see minds/calibration.py COLD_START_W/E for why.
+            w0, e0 = st.prefs.get(concept, (COLD_START_W, COLD_START_E))
             w1, e1 = w0, e0
             for od in ods:
                 w1, e1 = evidence.blend(w1, e1, od.delta.target, od.delta.weight)

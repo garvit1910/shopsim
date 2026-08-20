@@ -107,7 +107,8 @@ class CrashRequested(SystemExit):
 
 class SimRunner:
     def __init__(self, cfg: RunConfig, arm_name: str, run_index: int, run_dir: Path,
-                 *, crash_after: str | None = None, quiet: bool = False):
+                 *, crash_after: str | None = None, quiet: bool = False,
+                 trace_decisions: bool = False):
         self.cfg = cfg
         self.arm = cfg.arm(arm_name)
         self.overrides = cfg.goal_overrides(self.arm)
@@ -118,6 +119,11 @@ class SimRunner:
         self.phase_s: dict[str, float] = {}
         self.mem: HydraMem | None = None
         self.log: JsonlEventLog | None = None
+        # Phase 7: opt-in decision trace. None => no file is opened and no
+        # branch is taken in the tick loop, so a run without --trace-decisions
+        # is byte-identical to the pre-Phase-7 one.
+        self.trace_decisions = trace_decisions
+        self.trace = None
 
     # -- setup ---------------------------------------------------------------
 
@@ -126,6 +132,7 @@ class SimRunner:
         # calibration block (CONTRACT v3.4-draft): absent => the module
         # DEFAULT objects, so populations and minds are byte-identical
         appraisal_params, choice_params, stage_bases = cfg.calibration()
+        retrieval_params = cfg.retrieval()  # Phase 7: engine-side calibration
         specs = load_segment_specs(cfg.personas_path)
         self._boot("population")
         self.shoppers = generate_population(PopulationConfig(
@@ -170,7 +177,8 @@ class SimRunner:
                                        self.view.view_hash())
 
         self.log = JsonlEventLog(self.run_dir / "events.jsonl")
-        self.mem = HydraMem(run_index=self.run_index, event_log=self.log)
+        self.mem = HydraMem(run_index=self.run_index, event_log=self.log,
+                            params=retrieval_params)
 
         if seed_graph:
             self._boot("stimuli")
@@ -199,6 +207,18 @@ class SimRunner:
 
         self.decide_mind = make_mind(cfg.mind_decide)
         self.consolidator = make_mind(cfg.mind_consolidate)
+
+        if self.trace_decisions:
+            from ..eval.trace import TRACE_FILENAME, DecisionTrace
+            self.trace = DecisionTrace(self.run_dir / TRACE_FILENAME, header={
+                "run_id": self.run_dir.name, "label": cfg.label, "arm": self.arm.name,
+                "seed": cfg.seed, "run_index": self.run_index, "ticks": cfg.ticks,
+                "population_size": cfg.population_size,
+                "catalog_dir": str(cfg.catalog_dir),
+                "stage_bases": {k: v for k, v in stage_bases},
+                "pref_recency_half_life_s": retrieval_params.pref_recency_half_life_s,
+                "violation_min_strength": retrieval_params.violation_min_strength,
+            })
 
         hero = min(self.promo.windows) if self.promo else None
         drift_concepts = sorted({
@@ -328,6 +348,11 @@ class SimRunner:
                 rng = substream(cfg.seed, DECIDE_STREAM, o, tick, creative)
                 act = mind.decide(a, ctx.scalars, sh.coeffs, rng)
                 self.results.observe_decision(ctx, act, "creative", tick)
+                if self.trace is not None:
+                    self.trace.record(
+                        ctx=ctx, traits=sh.traits, coeffs=sh.coeffs,
+                        stim=self.view.facts(creative), kind="creative", action=act,
+                        tick=tick, offset=o, segment=sh.segment_id, stimulus=creative)
                 events_by_offset.setdefault(o, []).extend(
                     expand_creative(act, sid, creative, now, run))
                 if act is Action.CLICK:
@@ -367,6 +392,11 @@ class SimRunner:
                 rng = substream(cfg.seed, DECIDE_STREAM, o, tick, page)
                 act = mind.decide(a, ctx.scalars, sh.coeffs, rng)
                 self.results.observe_decision(ctx, act, "page", tick)
+                if self.trace is not None:
+                    self.trace.record(
+                        ctx=ctx, traits=sh.traits, coeffs=sh.coeffs,
+                        stim=self.view.facts(page), kind="page", action=act,
+                        tick=tick, offset=o, segment=sh.segment_id, stimulus=page)
                 # Expand against what the MIND saw, not what the runner
                 # remembers. decide() calls a cart "resumed" iff the cart
                 # intersects the stimulus's reference prices, and a
@@ -500,6 +530,8 @@ class SimRunner:
         })
 
     def close(self) -> None:
+        if self.trace is not None:
+            self.trace.close()
         if self.mem is not None:
             self.mem.close()
         if self.log is not None:

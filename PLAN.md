@@ -235,6 +235,20 @@ Why: divergence between shelves one and three IS the track — overwrite trackin
 
 ---
 
+## Phase 5.9 — Garvit: The Social Memory Graph (the `04 Graph` exhibit) — **added 2026-08-20**
+
+PLAN §0.1 row 6 calls multi-hop social influence "the strongest *vector store can't* exhibit", and after Phase 6 pulled the P1 layer forward it was still invisible: a `motif_stats` row and a `social_lift` number. Meanwhile the sidebar's `04 Shoppers` was dead — it linked to `/market/<id>#shoppers`, an anchor that exists nowhere, so it landed on Market with Market highlighted. Both are fixed by the same thing: `04 Shoppers` becomes **`04 Graph`**, a force-directed drawing of three mutually-trusting shoppers and their real HydraDB neighbourhoods, in one connected graph.
+
+- **5.9.1 — the read surface.** `hydramem/memgraph.py` (read plans + a pure assembler) and two facade methods, `HydraMem.find_social_triads()` / `.get_memory_graph()`. No new Cypher: `all_edges`, `holds_history`, `node_props`, and `adj_batch` for triad discovery — the one legal batch-read shape, until now called only by `bench/probe11.py`. Exposed as `GET /runs/{id}/memory-graph` and `GET /social-runs`. Conventions in CONTRACT.md **v3.9-draft**, pending Atishay's ack.
+- **5.9.2 — the engine picks the exhibit.** A triple is only worth drawing if it can SHOW the mechanism, so candidates are ranked by whether a member both bought and lived with something — the `TRUSTS_PERSON -> BOUGHT -> EXPERIENCED` chain `social_proof` walks. On `r044-social-smoke-golden` that lands deterministically on offsets 0/1/2 — Asha, Leo and Maya — where Leo bought the EcoStride Runner on day 1 and rated it 0.8589 on day 2, and Maya trusts him at 0.7976.
+- **5.9.3 — the client owns time.** The payload is topology plus every edge's version history and a `time` discipline, so the day scrub is a pure filter over `t`/`valid_to`, not a refetch — the same as-of rule `ObjectiveCache.build` and `Inspector.tsx` already use. A worldview visibly grows across days, and superseded belief versions retire with their whole provenance fan.
+- **5.9.4 — the canvas.** `web/components/MemoryGraph.tsx`, adapted from AlexVanK's force-directed pen: the same simulation, the same elliptical-arc edges, the same drag-to-pin and dblclick-to-unpin, the same radius/saturation-by-connectivity. The pen's `link`/`linkish` pair carries our meaning — solid where HydraDB really stores the relationship, dashed where the engine derives it. Palette moved only far enough to sit with the terminal (stripe and pin take `--gold`, the dashed link and the explain highlight take `--accent`), and hue splits three ways because a worldview has parts a board-game graph does not: cyan world, green people, gold mind.
+- **5.9.5 — the run.** `fixtures/run-configs/social-graph-demo.json`. `population.social` had to reach the experiment spec first (additive, emitted only when asked for, so every pre-social spec still hashes identically). A first pass at the default CLICK threshold drew 819 exposures, 8 clicks and zero purchases — a truthful simulation and a useless exhibit — so the spec carries `stage_bases.CLICK 2`, the same threshold the shipped `market-20260819` run uses.
+
+**Honest limits:** `get_trace` recomputes against the store as of the last consolidated tick, not the tick a decision was actually made on, and the Explain panel says so rather than implying a replay. Nothing per-decision is persisted (`observe_decision` keeps counts, not paths), so "explain this decision" is a live re-derivation.
+
+---
+
 ## Phase 6 — Atishay: Analytics & MetricsReport v3 (uses: Phase-3 scripted runs · parallel to 4–5) — **amended 2026-08-20**: roughly two thirds of 6.1's *metric emission* already landed inside Phases 3–5, because the live dashboard needed those series before Phase 6 was scheduled. What remains is the genuinely statistical half (CIs, the belief distributions, the fatigue split) plus the 6.2 golden run. Ownership unchanged — this is a status note, not a handover. **Closed the same day** (Garvit, with Atishay's phases untouched): the statistical half shipped as `engine/shopsim/analytics/`, the placeholders became authoritative and the UI now reads them, the 6.2 golden is committed at `fixtures/golden-run/`, and the P1 social layer was pulled forward as an opt-in, byte-neutral-when-off addition. Conventions in CONTRACT.md **v3.8-draft**, pending Atishay's ack.
 
 **Build items:** 6.1 funnels per arm × segment with bootstrap CIs; CTR-by-day; drop-off localization; reference-price trajectories; fatigue split (asset wearout vs brand-message vs concept P1); preference-drift curves (learned w over time per concept × segment); goal stats (conversion split, time-to-satisfaction); belief metrics (confidence distribution, drift, provenance coverage = % of subjective versions carrying a cause); violation counts + bounce delta; motif prevalence by outcome; repeat-purchase/LTV per arm (P1); social lift (P1). Emit MetricsReport per C3. 6.2 tiny golden run (5 shoppers, 3 ticks, one full evidence chain) with hand-checked numbers asserted in tests.
@@ -307,9 +321,15 @@ Steps: flip `--impl mock→hydra`, `--mind scripted→real`; contract tests on b
 
 ---
 
-## Phase 7 — Atishay: Calibration & Evals (post-S1)
+## Phase 7 — Atishay: Calibration & Evals (post-S1) — **closed 2026-08-20** (Garvit, Atishay's phases untouched)
 
 *Plain words: proof it isn't a toy — the laws of advertising hold, the numbers sit in realistic ranges, and behavior changes for the right reasons, verifiable down to which event caused which belief.*
+
+**What shipped, and the one finding worth carrying forward.** F1–F12 are implemented across three tiers (`engine/shopsim/eval/`): **analytic** (pure mind arithmetic, no database, any number of seeds — F1, F2, F3, F6, F8, F10, the rank-agreement study and the whole calibration fit), **scenario** (real runs through the ordinary `SimRunner`/`replay.branch` path — F4, F5, F7b, F9, F11, F12) and **audit** (F7a, an assertion over the `provenance_coverage` Phase 6 already computes). F13–F15 stay cut, per the P1 list. `make eval` reproduces everything; `make eval-fast` skips the real runs and finishes in seconds.
+
+The finding: **what looked like a badly calibrated choice model was mostly two retrieval constants and a degenerate cold start.** The committed runs disagreed by 40× on CTR (`r027` 0.67%, `r039` 28%) and both read a 63–67% bounce rate against a researched 45–55%, which invited a "pick a CLICK threshold between 2.0 and 6.0" fix. Adding an opt-in decision trace (`--trace-decisions`) and replaying real contexts offline showed the actual causes: (1) `recency_half_life_s` was one constant doing two jobs, so a seeded `PREFERS` prior — a standing disposition — decayed at ad speed and had lost 98% of its weight by day 18, starving `relevance`; (2) `expectation_violation` had no strength floor, so `EXPECTS` accumulated from *any* of a brand's creatives fired against *every* landing page, penalising 85% of page visits by −0.64 utility; (3) the applier cold-started an unheld concept at `(w=0, E=0)`, which makes `blend()` degenerate, so one CLICK set the weight to 1.0 outright and every affected drift chart read a flat line. With those fixed, **exactly one mind constant had to move** (`stage_bases.BUY` 3.2 → 2.85) and all five funnel metrics land in band. Details, sources and the before/after: `eval/calibration.md`; conventions in CONTRACT.md **v3.10-draft**, pending Atishay's ack.
+
+*Two limits stated rather than buried:* offline replay is first-order (it cannot model the loop where more clicks teach more preferences), which is why every fitted profile is verified on a real re-run and the predicted-vs-realised gap is reported; and 7.3's oracle reads the same population priors the simulator does, making it a construct-validity check, not external validation.
 
 **7.1 Face-validity suite** (each = a scripted scenario or invariant audit, one command):
 
@@ -332,9 +352,11 @@ Steps: flip `--impl mock→hydra`, `--mind scripted→real`; contract tests on b
 **7.2** aggregate calibration to public CTR ranges (Criteo/Avazu), before/after documented. **7.3** rank-agreement via synthetic oracle (Spearman ≥ ~0.7 across ≥5 seeds), calibrating stage weights. **7.4** abstention chart (F6 artifact). **7.5** stretch: LongMemEval slice through HydraMem's generic API.
 
 **Checkpoints**
-- [ ] `make eval` reproduces every number and plot from scratch.
-- [ ] All P0 face-validity laws hold; F7 and F9 are marked never-drop — they ARE the demo claim.
-- [ ] Calibration + rank-agreement + abstention artifacts committed to /eval.
+- [x] `make eval` reproduces every number and plot from scratch (`make eval-fast` for the database-free tiers).
+- [x] All P0 face-validity laws hold; F7 and F9 carry `never_drop` in the report, and each law has a test proving it can go RED — a suite whose assertions cannot fail is decoration (`tests/test_eval_laws.py`).
+- [x] Calibration + rank-agreement + abstention artifacts committed to /eval.
+
+*Also worth recording:* charts are hand-written deterministic SVG rather than a plotting library, because "reproduces every plot from scratch" and a library whose PNG output varies with version, font stack and platform are not compatible. They also diff cleanly in git, so a calibration change shows as a chart change in review.
 
 ---
 

@@ -1,7 +1,7 @@
 """CLI: python -m shopsim.runner <run|resume|branch|serve|export-fixtures> ...
 
     run             --config CFG [--arm NAME] [--mind scripted|formula]
-                    [--crash-after phase:tick] [--quiet]
+                    [--crash-after phase:tick] [--quiet] [--trace-decisions]
     resume          --config CFG --run <run_id|dir> [--quiet]
     branch          --config CFG --arm NAME [--quiet]
     serve           --config CFG [--port 8000]
@@ -45,7 +45,8 @@ def cmd_run(args) -> int:
     run_index, run_dir = store.allocate(cfg, arm_name)
     print(f"run {run_dir.name} (block {run_index})")
     runner = SimRunner(cfg, arm_name, run_index, run_dir,
-                       crash_after=args.crash_after, quiet=args.quiet)
+                       crash_after=args.crash_after, quiet=args.quiet,
+                       trace_decisions=getattr(args, "trace_decisions", False))
     runner.prepare(seed_graph=True)
     store.set_status(run_dir.name, "running")
     results = runner.run()
@@ -220,6 +221,10 @@ def main(argv=None) -> int:
     common(sp)
     sp.add_argument("--arm")
     sp.add_argument("--crash-after", help="phase:tick fault injection, e.g. consolidation:7")
+    sp.add_argument("--trace-decisions", action="store_true",
+                    help="write decisions.jsonl beside the run (Phase 7 calibration "
+                         "input). Off by default: no file, no branch in the tick "
+                         "loop, byte-identical results.json")
     sp.set_defaults(fn=cmd_run)
 
     sp = sub.add_parser("resume")

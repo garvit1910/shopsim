@@ -98,13 +98,51 @@ class ChoiceParams:
 # Population-default stage thresholds θ_s (segments shift these via
 # theta_adjust; shoppers carry them in ChoiceCoeffs.stage_bases). Derived so a
 # typical warm-shopper appraisal lands in the researched bands above with
-# τ = 1.0; verified by bench/calibrate_choice.py.
+# τ = 1.0.
+#
+# Phase 7 (2026-08-20) re-derived these against REAL decision contexts rather
+# than a synthetic mix — `shopsim.eval.calibrate` fits them by replaying a live
+# run's decision trace — and only BUY had to move: 3.2 -> 2.85, which brings
+# P(BUY | cart) from 0.194 to 0.247 against the 0.24-0.28 band implied by
+# 72-76% cart abandonment. CLICK, BROWSE and CART were already right once the
+# retrieval half-life and violation floor stopped starving them
+# (hydramem/schema.py). The fitted values are the DEFAULTS on purpose: the
+# simulator you get without a profile should be the calibrated one.
+# eval/profiles/reference.json restates them so a run's config_hash pins them.
 DEFAULT_STAGE_BASES: tuple[tuple[str, float], ...] = (
     ("CLICK", 6.0),
     ("BROWSE", 2.3),
     ("CART", 3.7),
-    ("BUY", 3.2),
+    ("BUY", 2.85),
 )
+
+# ---------------------------------------------------------------------------
+# Learning cold start (Phase 7 calibration decision, 2026-08-20)
+# ---------------------------------------------------------------------------
+# What the applier assumes about a concept the shopper has never held, at the
+# moment the first behavioural event lands on it. This is a CALLER's choice, not
+# a formula change: contracts/evidence.py is frozen by hash and untouched, and
+# blend() still computes w' = (E*w + wt*target)/(E + wt) exactly as before.
+#
+# It used to be (0.0, 0.0), which makes blend() degenerate: with no prior
+# evidence the first observation IS all the evidence, so a single CLICK set
+# w = PREF_TARGET = 1.0 outright. At population scale that pinned mean
+# preference_fit strength at 0.958 in runs/r039 and flattened every
+# preference_drift series onto a constant 1.0 - the chart could not show
+# learning because learning had already finished on contact.
+#
+# (0.5, 1.0) says the honest thing instead: a shopper who has never expressed a
+# view on a concept is NEUTRAL about it, and that neutrality is worth about half
+# a seeded prior (PRIOR_E0 = 2). One CLICK then moves 0.5 -> 0.545, a BUY moves
+# it to 0.75, and the curve is a curve. Held concepts are untouched: anyone with
+# a seeded prior blended normally before this change and blends identically now.
+#
+# Deliberately NOT applied to beliefs: a first trust belief starts at its own
+# event's target (0.6 for BROWSED, 0.65 for BOUGHT, satisfaction for
+# EXPERIENCED), which is already a sane value rather than a saturated one, and
+# its low evidence is exactly what F10 needs to stay demonstrable.
+COLD_START_W = 0.5
+COLD_START_E = 1.0
 
 DEFAULT_APPRAISAL_PARAMS = AppraisalParams()
 DEFAULT_CHOICE_PARAMS = ChoiceParams()

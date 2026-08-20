@@ -1,0 +1,53 @@
+{
+  "comment": "F11 \u2014 the experience loop. TWO FRESH RUNS (never a branch: an alternate latent_quality.csv changes latent_quality_hash, which is a shared manifest hash, so branch would be refused and rightly so). `catalog_dir` is rewritten per arm by shopsim.eval.harness to eval/fixtures/quality-{good,bad}, which are copies of the demo catalog differing ONLY in latent_quality. Nothing the shopper can read differs: latent quality never enters a DecisionContext (Law 15), it reaches them solely as EXPERIENCED satisfaction after the fulfilment lag. Promos on and reach high so purchases \u2014 and therefore deliveries \u2014 actually happen inside 16 ticks.",
+  "label": "f11-quality",
+  "seed": 829,
+  "ticks": 16,
+  "t0": 1815000000,
+  "tick_seconds": 86400,
+  "mind": {
+    "decide": "formula",
+    "consolidate": "formula"
+  },
+  "catalog_dir": "eval/fixtures/quality-good",
+  "perception_cache": "fixtures/perception-cache",
+  "population": {
+    "size": 200,
+    "personas": "fixtures/demo-brand/personas.json"
+  },
+  "exposure": {
+    "frequency_cap_per_tick": 2,
+    "frequency_cap_72h": 6,
+    "schedule": [
+      {
+        "creative_id": 2000003,
+        "start_tick": 0,
+        "end_tick": 15,
+        "reach_prob": 0.6
+      },
+      {
+        "creative_id": 2000001,
+        "start_tick": 0,
+        "end_tick": 15,
+        "reach_prob": 0.4
+      }
+    ]
+  },
+  "goals": {
+    "config": "fixtures/demo-brand/goal_config.json",
+    "overrides": {}
+  },
+  "fulfillment": {
+    "lag_ticks": 2,
+    "sat_noise_sd": 0.08
+  },
+  "promos": {
+    "schedule": "fixtures/demo-brand/promo_schedule.json",
+    "enabled": true
+  },
+  "arms": [
+    {
+      "name": "quality"
+    }
+  ]
+}

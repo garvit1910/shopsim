@@ -28,6 +28,16 @@ from `results_state_2.json`, and pins the hand-checked numbers.
 `tests/real/test_golden_run_real.py` re-runs the config on the live store and
 asserts the report comes back identical under the run-block normalization.
 
+**Regenerated 2026-08-20 (Phase 7).** Three calibration changes reshape what
+this fixture records, all deliberate and all documented in `eval/calibration.md`:
+the applier's cold start for an unheld concept moved from `(w=0, E=0)` to
+`(0.5, 1.0)`, the preference-recency half-life moved from 3 to 30 days, and the
+expectation-violation floor moved from 0 to 0.5. The funnel is byte-identical
+(ScriptedMind decides here, so the choice model cannot move it) and shoppers
+holding a seeded prior are byte-identical too — what changed is that
+`preference_drift` series for concepts first met inside the run now read
+`[None, 0.6875, 0.77273]` instead of a flat `[None, 1.0, 1.0]`.
+
 **The run block is not part of the fixture.** `run_manifest.run_index` is the
 one key that legitimately differs between reproductions; everything else is
 byte-identical for the same seed, which the two runs behind this fixture

@@ -137,11 +137,30 @@ class RetrievalParams:
     saw_window_ticks: int = 14  # SAW lookback for adstock/fatigue/awareness
     freq_window_seconds: int = 259_200  # 72h — exposures_72h window
     adstock_half_life_s: float = 2 * 86_400.0  # exp decay of brand exposure
-    recency_half_life_s: float = 3 * 86_400.0  # pref/fatigue recency weight
+    # AD recency: how fast a past impression stops counting as repetition.
+    recency_half_life_s: float = 3 * 86_400.0  # fatigue/saturation recency weight
+    # TASTE recency: how fast a preference stops counting as current (Phase 7).
+    # These were ONE constant until 2026-08-20, which meant a seeded prior — a
+    # standing disposition, not an event — decayed at ad speed: by tick 18 of
+    # the reference run the median preference_fit carried recency 0.125, so
+    # relevance had collapsed to a twentieth of its day-one value and the whole
+    # funnel starved. An ad you saw on Tuesday is stale by Friday; liking
+    # cushioned shoes is not. 30 days keeps a prior meaningful across a
+    # campaign while still rewarding recent engagement.
+    pref_recency_half_life_s: float = 30 * 86_400.0
     fatigue_norm: float = 3.0  # full-recency same-story SAWs to saturate fatigue
     saturation_norm: float = 4.0  # cross-brand version of the same normalizer (P1)
     urgency_horizon_s: float = 7 * 86_400.0  # deadline this far out => urgency 0
     pref_min_w: float = 0.05  # preference_fit floor (hub-noise kill)
+    # An expectation has to be genuinely held before failing to meet it counts
+    # as a violation (Phase 7). With no floor, EXPECTS picked up from ANY of a
+    # brand's creatives fired against EVERY landing page — 85% of page visits
+    # in the baseline reference run carried a violation at mean strength 0.42,
+    # which at the BROWSE weight of 1.5 is a -0.64 utility penalty on a page
+    # doing nothing wrong. That is what held bounce at 60-65% against a
+    # researched 45-55%. The deliberate A/B variant still fires: it hides a
+    # concept its own creative claims at strength 0.8.
+    violation_min_strength: float = 0.5
     claim_min_strength: float = 0.05  # CLAIMS strength floor
     max_path_len: int = 4  # Law: maxLen <= 4 everywhere
     budget_default: float = 200.0  # budget_left base when the node prop is unset

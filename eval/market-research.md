@@ -183,3 +183,25 @@ no products can never convert.
    1.25% mid-band reference) so an accelerated rate is never mistaken for a
    real-world one. Nothing else is rescaled: prices, budgets and purchase
    amounts stay as cited above.
+
+   *Amended 2026-08-20 (Phase 7).* This caveat was right about the tension and
+   too generous about how it was being handled. The acceleration in use was an
+   ad-hoc `{"stage_bases": {"CLICK": 2.0}}` copy-pasted into spec files, which
+   ran at **~28% CTR — roughly 22x the band** — and dragged blended ROAS to
+   ~46x against a real-world 1.5-4x. Stating one multiple for CTR while four
+   other metrics were silently distorted is not a disclosure.
+
+   Phase 7 replaces it with two named, committed profiles (`eval/profiles/`).
+   `reference` is fitted and certified against every band in S1-S2 and is what
+   every published number uses. `demo` moves **only** the CLICK threshold —
+   solved for a stated target rate rather than picked — so everything below the
+   click remains the certified funnel, and the multiple it induces on *every*
+   metric is published in `eval/results/calibration.json`. The full before/after
+   is in [calibration.md](calibration.md).
+
+   Two of the three faults behind the original tension turned out not to be the
+   click gate at all: a preference-recency half-life shared with ad fatigue (so
+   a shopper's standing taste decayed at ad speed) and an expectation-violation
+   motif with no strength floor (so 85% of landing pages "violated" something).
+   Fixing those moved bounce and conversion into band on their own; the choice
+   model needed exactly one constant changed.

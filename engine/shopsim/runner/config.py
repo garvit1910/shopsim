@@ -227,6 +227,7 @@ class RunConfig:
                 problems.append(f"arm {a.name}: bad exposure_overrides schedule ({ex})")
         try:
             self.calibration()
+            self.retrieval()
         except ValueError as ex:
             problems.append(str(ex))
         if problems:
@@ -282,6 +283,17 @@ class RunConfig:
         objects — the byte-identical Phase-3 path. The block rides in raw, so
         config_hash pins every tuned constant (Law 13, CONTRACT v3.4-draft)."""
         return parse_calibration(self.raw.get("calibration"))
+
+    def retrieval(self):
+        """calibration.retrieval -> RetrievalParams (Phase 7).
+
+        Retrieval constants (recency half-lives, motif normalizers, the
+        violation floor) are calibration too — schema.py has always said so —
+        but until Phase 7 they were reachable only by editing the module
+        default, so no run could pin the values it actually used. They now ride
+        in the same raw block, which means config_hash covers them and a replay
+        cannot silently retrieve differently than the original run."""
+        return parse_retrieval((self.raw.get("calibration") or {}).get("retrieval"))
 
     def config_hash(self, arm_name: str) -> str:
         blob = canonical_json(self.raw) + "\n" + arm_name
@@ -387,9 +399,12 @@ def parse_calibration(block: dict | None):
 
     if not block:
         return DEFAULT_APPRAISAL_PARAMS, DEFAULT_CHOICE_PARAMS, DEFAULT_STAGE_BASES
-    bad = set(block) - {"appraisal", "choice", "stage_bases"}
+    bad = set(block) - {"appraisal", "choice", "stage_bases", "retrieval"}
     if bad:
         raise ValueError(f"calibration: unknown keys {sorted(bad)}")
+    # "retrieval" is parsed by parse_retrieval, not here: it configures the
+    # ENGINE's read path, not the mind's arithmetic, and keeping the two apart
+    # is what lets parse_calibration keep its three-value contract.
 
     def override(default_obj, given: dict, *, skip=()):
         known = {f.name for f in fields(default_obj)} - set(skip)
@@ -429,3 +444,25 @@ def parse_calibration(block: dict | None):
     bases.update({k: float(v) for k, v in bases_given.items()})
     sb = tuple((stage, bases[stage]) for stage, _ in DEFAULT_STAGE_BASES)
     return ap, cp, sb
+
+
+def parse_retrieval(block: dict | None):
+    """calibration.retrieval -> RetrievalParams. None/empty -> the module
+    DEFAULT object, so an untouched config retrieves byte-identically.
+
+    Unknown keys are refused, the way parse_allocation/parse_social/
+    parse_calibration refuse them: a typo must never be swallowed into a run
+    whose config_hash then claims it was honored.
+    """
+    from dataclasses import fields, replace
+
+    from ..hydramem.schema import DEFAULT_PARAMS
+
+    if not block:
+        return DEFAULT_PARAMS
+    known = {f.name for f in fields(DEFAULT_PARAMS)}
+    bad = set(block) - known
+    if bad:
+        raise ValueError(f"calibration.retrieval: unknown keys {sorted(bad)}")
+    return replace(DEFAULT_PARAMS, **{
+        k: type(getattr(DEFAULT_PARAMS, k))(v) for k, v in block.items()})

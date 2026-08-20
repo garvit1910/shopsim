@@ -32,11 +32,33 @@ row — no schema change.
 engine/    Python 3.11 — HydraMem, sim runner, minds, analytics, contracts (shared enums, evidence.py)
 web/       Next.js dashboard (Phase 5)
 infra/     HydraDB run config + docker compose (Atishay)
-eval/      Calibration & face-validity evals F1–F15 (Phase 7)
+eval/      Calibration & face-validity evals F1–F12 + profiles (Phase 7)
 fixtures/  Demo brand assets + canned DecisionContexts + scripted-run + golden-run fixtures
 CONTRACT.md  The three inter-lane contracts (C1/C2/C3) — versioned; changes need a call
 PLAN.md      Master build plan v4
 ```
+
+## Is it calibrated?
+
+Yes, against published ranges, and the evidence is in [`/eval`](eval/INDEX.md).
+
+```bash
+make eval-fast     # face-validity laws + rank agreement + report — seconds, no database
+make eval          # everything, including the real scenario runs
+```
+
+| metric | published band | reference profile | source |
+|---|---|---|---|
+| P(click \| exposure) | 0.5–2% | in band | Meta retail CTR 1.59–1.71% |
+| bounce rate | 45–55% | in band | 1 − BROWSE |
+| P(cart \| browse) | 10–20% | in band | fashion add-to-cart ~7% of sessions |
+| P(buy \| cart) | 24–28% | in band | 1 − cart abandonment (72–76%) |
+| visit → purchase | 1–3% | in band | apparel sitewide conversion |
+
+Twelve face-validity laws (F1–F12) hold, F7 and F9 marked never-drop, and each
+has a test proving it can go red. What the calibration actually found is in
+[`eval/calibration.md`](eval/calibration.md): most of what looked like a
+mis-tuned choice model was two retrieval constants doing the wrong job.
 
 ## One run, one report
 

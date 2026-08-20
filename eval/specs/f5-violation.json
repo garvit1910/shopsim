@@ -1,0 +1,51 @@
+{
+  "comment": "F5 \u2014 the violating page variant must bounce harder. One creative (2000003) claiming DISCOUNT at strength 0.9, split 50/50 by the seeded (seed,'page',offset,creative) substream across 4000001 (consistent) and 4000002 (deliberately hides DISCOUNT). Same shoppers, same ad, same tick: the ONLY difference between the two cohorts is what the landing page shows, which is what makes the bounce delta attributable. page_ids order is [consistent, violating] because violations.bounce_delta is computed B minus A.",
+  "label": "f5-violation",
+  "seed": 311,
+  "ticks": 12,
+  "t0": 1810000000,
+  "population": {
+    "size": 180,
+    "personas": "fixtures/demo-brand/personas.json"
+  },
+  "exposure": {
+    "frequency_cap_per_tick": 2,
+    "frequency_cap_72h": 6,
+    "schedule": [
+      {
+        "creative_id": 2000003,
+        "start_tick": 0,
+        "end_tick": 11,
+        "reach_prob": 0.55,
+        "page_ids": [
+          4000001,
+          4000002
+        ]
+      }
+    ]
+  },
+  "goals": {
+    "config": "fixtures/demo-brand/goal_config.json",
+    "overrides": {}
+  },
+  "promos": {
+    "schedule": "fixtures/demo-brand/promo_schedule.json",
+    "enabled": true
+  },
+  "arms": [
+    {
+      "name": "split"
+    }
+  ],
+  "tick_seconds": 86400,
+  "mind": {
+    "decide": "formula",
+    "consolidate": "formula"
+  },
+  "catalog_dir": "fixtures/demo-brand",
+  "perception_cache": "fixtures/perception-cache",
+  "fulfillment": {
+    "lag_ticks": 2,
+    "sat_noise_sd": 0.08
+  }
+}
