@@ -45,6 +45,24 @@ A law goes in the cheapest tier that can actually test it. F8 and F10 are
 properties of one formula and need no population; F9 needs a real paired twin
 run and gets one.
 
+### Why the scenario tier runs on the `demo` profile
+
+Because at a correctly calibrated ~1% CTR, a demo-scale population cannot
+generate enough post-click events to measure a post-click law. F5 was first run
+on `reference` and produced **seventeen page visits** across both variants
+(bounce 0.70 vs 0.57) — a coin flip, reported as a failed law.
+
+Every scenario law measures either post-click behaviour or a *ratio* of click
+rates, and the `demo` profile moves only the CLICK threshold: its published
+multiples are 5.6× on CTR and exactly **1.0× on bounce, cart|browse, buy|cart
+and visit→purchase** (`results/calibration.json` → `demo_profile.multiples`).
+Running these laws there is importance sampling, not a different simulator — it
+draws more samples of the gates under test without changing them.
+
+What that does *not* excuse, and the report repeats it: **the calibration itself
+is fitted and certified on `reference` only**, and any law about a click *rate*
+rather than a ratio of click rates would have to be too.
+
 ## Charts are SVG on purpose
 
 Hand-written, dependency-free, deterministic. A PNG from a plotting library

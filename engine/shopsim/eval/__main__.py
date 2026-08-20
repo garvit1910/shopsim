@@ -25,6 +25,32 @@ from . import calibrate, contexts, harness, laws, oracle, report, trace
 RESULTS = "results"
 PLOTS = "plots"
 
+# Which profile the scenario tier runs on, and why it is not `reference`.
+#
+# Every scenario law measures POST-CLICK behaviour or a CTR *ratio*, and the
+# `demo` profile moves only the CLICK threshold — its published multiples are
+# 5.6x on CTR and exactly 1.0x on bounce, cart|browse, buy|cart and
+# visit-to-purchase (eval/results/calibration.json). So running these laws on
+# `demo` is importance sampling, not a different simulator: it draws more
+# samples of the gates under test without changing them.
+#
+# It is not a nicety. F5 first ran on `reference` and produced SEVENTEEN page
+# visits across both variants (bounce 0.70 vs 0.57, delta -0.13) — a coin flip
+# reported as a failed law. At a correctly calibrated ~1% CTR a demo-scale
+# population simply cannot generate enough post-click events to measure a
+# post-click law, and pretending otherwise would mean publishing noise.
+#
+# The two things this does NOT excuse: the calibration itself is fitted and
+# certified on `reference` only, and any law about the CLICK RATE (rather than
+# a ratio of click rates) would have to be too.
+SCENARIO_PROFILE = "demo"
+SCENARIO_PROFILE_REASON = (
+    "the demo profile accelerates ONLY the click gate (multiple 1.0 on every "
+    "post-click gate, see calibration.json demo_multiples), so it draws more "
+    "samples of the gates these laws test without changing them; on the "
+    "reference profile F5 got 17 page visits total and reported a coin flip"
+)
+
 # scenario key -> (config stem, arms to run, branch arms)
 SCENARIOS: dict[str, dict] = {
     "F5": {"config": "f5-violation", "arms": ["split"]},
@@ -330,8 +356,12 @@ def cmd_scenarios(args) -> int:
     only = {s.strip() for s in args.only.split(",")} if args.only else set(SCENARIOS)
     specs = report.eval_root() / "specs"
     built = report.eval_root() / "configs" / "built"
+    profile = args.profile or SCENARIO_PROFILE
     out = _load("scenarios") or {"runs": {}}
+    out["profile"] = profile
+    out["profile_reason"] = SCENARIO_PROFILE_REASON
     started_all = time.perf_counter()
+    print(f"scenario profile: {profile} — {SCENARIO_PROFILE_REASON}", flush=True)
 
     for key in [k for k in SCENARIOS if k in only]:
         meta = SCENARIOS[key]
@@ -342,7 +372,7 @@ def cmd_scenarios(args) -> int:
             for tag, catalog in (("good", "eval/fixtures/quality-good"),
                                  ("bad", "eval/fixtures/quality-bad")):
                 cfg = harness.materialize(
-                    cfg_src, args.profile, built,
+                    cfg_src, profile, built,
                     label=f"{meta['config']}-{tag}",
                     overrides={"catalog_dir": catalog})
                 o = harness.run_config(cfg, trace=args.trace)
@@ -350,7 +380,7 @@ def cmd_scenarios(args) -> int:
                 print(f"   {tag}: {o.run_id} in {o.wall_s}s", flush=True)
             continue
 
-        cfg = harness.materialize(cfg_src, args.profile, built)
+        cfg = harness.materialize(cfg_src, profile, built)
         for arm in meta["arms"]:
             o = harness.run_config(cfg, arm=arm, trace=args.trace)
             out["runs"][f"{key}:{arm}"] = _outcome(o)
@@ -457,7 +487,10 @@ def cmd_report(args) -> int:
 
     payload = {"laws": law_rows, "laws_not_run": not_run, "calibration": cal,
                "rank_agreement": rank, "plots": sorted(plots), "runs": runs,
-               "profile": args.profile}
+               "profile": args.profile,
+               "scenario_profile": ({"profile": scenarios.get("profile"),
+                                     "reason": scenarios.get("profile_reason")}
+                                    if scenarios.get("profile") else None)}
     report.write_json(_results_dir() / "eval_report.json", payload)
     (report.eval_root() / "README.md").write_text(report.render_markdown(payload))
     ok = sum(1 for x in law_rows if x["passed"])
@@ -548,7 +581,8 @@ def cmd_all(args) -> int:
     print("== rank agreement ==")
     rc |= cmd_rank(args)
     print("== scenario tier (real runs; this is the slow part) ==")
-    rc |= cmd_scenarios(args)
+    scenario_args = argparse.Namespace(**{**vars(args), "profile": SCENARIO_PROFILE})
+    rc |= cmd_scenarios(scenario_args)
     print("== report ==")
     rc |= cmd_report(args)
     return rc
@@ -580,6 +614,7 @@ def main(argv=None) -> int:
 
     sp = sub.add_parser("scenarios")
     common(sp)
+    sp.set_defaults(profile=None)  # falls back to SCENARIO_PROFILE
     sp.add_argument("--only")
     sp.add_argument("--trace", action="store_true")
     sp.set_defaults(fn=cmd_scenarios)

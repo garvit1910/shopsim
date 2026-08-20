@@ -253,6 +253,10 @@ def render_markdown(report: dict) -> str:
         head = _headline(x)
         A(f"| **{x['id']}** {x['name']} | {x['tier']} | {mark} | {head} |")
     A("")
+    sp = report.get("scenario_profile")
+    if sp:
+        A(f"**Scenario tier ran on the `{sp['profile']}` profile** — {sp['reason']}. "
+          f"The calibration below is fitted and certified on `reference` only.\n")
     missing = report.get("laws_not_run") or []
     if missing:
         A("Not run in this pass (named rather than omitted): "
