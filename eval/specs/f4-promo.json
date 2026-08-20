@@ -1,11 +1,11 @@
 {
-  "comment": "F4 \u2014 promo addiction. The demo brand's committed three-cycle schedule (ticks 3-5, 8-10, 12-14 at 15/15/20%) over an 18-tick run, with the hero product 3000001 the only discounted item. The mechanism under test is the learned reference price: each window teaches a lower anchor via evidence.smooth_reference_price (alpha 0.3), so the full-price shelf afterwards reads as a LOSS and decide() row 13 doubles it. Needs real purchases to measure a share, so the population is the largest in the suite and goal arrivals are left at their configured rates.",
+  "comment": "F4 \u2014 promo addiction. The demo brand's committed three-cycle schedule (ticks 3-5, 8-10, 12-14 at 15/15/20%) over an 18-tick run, with the hero product 3000001 the only discounted item. The mechanism under test is the learned reference price: each window teaches a lower anchor via evidence.smooth_reference_price (alpha 0.3), so the full-price shelf afterwards reads as a LOSS and decide() row 13 doubles it. Needs real purchases to measure a share, so the population is the largest in the suite and goal arrivals are left at their configured rates. SIZED 2026-08-20: F4 measures a purchase SHARE across three promo windows, so it needs purchases in every window and between them \u2014 the one law here that cannot be rescued by a low-variance estimator. 500 shoppers plus a x8 arrival wave on 5504 across the whole run makes the population in-market; the promo schedule, not the arrival rate, is still the only thing that varies over time, so what the law measures is untouched.",
   "label": "f4-promo",
   "seed": 727,
   "ticks": 18,
   "t0": 1814000000,
   "population": {
-    "size": 260,
+    "size": 500,
     "personas": "fixtures/demo-brand/personas.json"
   },
   "exposure": {
@@ -16,19 +16,28 @@
         "creative_id": 2000003,
         "start_tick": 0,
         "end_tick": 17,
-        "reach_prob": 0.6
+        "reach_prob": 0.7
       },
       {
         "creative_id": 2000001,
         "start_tick": 0,
         "end_tick": 17,
-        "reach_prob": 0.35
+        "reach_prob": 0.4
       }
     ]
   },
   "goals": {
     "config": "fixtures/demo-brand/goal_config.json",
-    "overrides": {}
+    "overrides": {
+      "extra_waves": [
+        {
+          "category_id": 5504,
+          "start_tick": 0,
+          "end_tick": 17,
+          "rate_multiplier": 8.0
+        }
+      ]
+    }
   },
   "promos": {
     "schedule": "fixtures/demo-brand/promo_schedule.json",

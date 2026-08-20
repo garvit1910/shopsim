@@ -18,7 +18,10 @@ import math
 from pathlib import Path
 
 W, H = 720, 400
-PAD_L, PAD_R, PAD_T, PAD_B = 68, 24, 44, 52
+# Top padding stacks title (y=22), subtitle (y=38) and the legend row
+# (y=54); bottom padding stacks tick labels, the axis label and the note.
+# They collided at 44/52 — the legend sat on the subtitle.
+PAD_L, PAD_R, PAD_T, PAD_B = 68, 24, 70, 64
 
 INK = "#1c1c1c"
 MUTED = "#6b6b6b"
@@ -202,15 +205,15 @@ class Chart:
                         f'{(self.py0 + self.py1) / 2:.0f})" text-anchor="middle">'
                         f'{_esc(self.y_label)}</text>')
         if self.x_label:
-            head.append(f'<text x="{(self.px0 + self.px1) / 2:.0f}" y="{self.py1 + 38}" '
+            head.append(f'<text x="{(self.px0 + self.px1) / 2:.0f}" y="{self.py1 + 36}" '
                         f'font-size="11" fill="{MUTED}" text-anchor="middle">'
                         f'{_esc(self.x_label)}</text>')
         legend = []
         lx = self.px0
         for label, color in self.legend:
-            legend.append(f'<rect x="{lx}" y="{self.py0 - 22}" width="10" height="10" '
+            legend.append(f'<rect x="{lx}" y="{self.py0 - 24}" width="10" height="10" '
                           f'fill="{color}" rx="2"/>')
-            legend.append(f'<text x="{lx + 15}" y="{self.py0 - 13}" font-size="11" '
+            legend.append(f'<text x="{lx + 15}" y="{self.py0 - 15}" font-size="11" '
                           f'fill="{INK}">{_esc(label)}</text>')
             lx += 22 + 7 * len(label)
         return "\n".join(head + legend + self.parts + ["</svg>"]) + "\n"

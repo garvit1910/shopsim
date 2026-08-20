@@ -1,11 +1,11 @@
 {
-  "comment": "F5 \u2014 the violating page variant must bounce harder. One creative (2000003) claiming DISCOUNT at strength 0.9, split 50/50 by the seeded (seed,'page',offset,creative) substream across 4000001 (consistent) and 4000002 (deliberately hides DISCOUNT). Same shoppers, same ad, same tick: the ONLY difference between the two cohorts is what the landing page shows, which is what makes the bounce delta attributable. page_ids order is [consistent, violating] because violations.bounce_delta is computed B minus A.",
+  "comment": "F5 \u2014 the violating page variant must bounce harder. One creative (2000003) claiming DISCOUNT at strength 0.9, split 50/50 by the seeded (seed,'page',offset,creative) substream across 4000001 (consistent) and 4000002 (deliberately hides DISCOUNT). Same shoppers, same ad, same tick: the ONLY difference between the two cohorts is what the landing page shows, which is what makes the bounce delta attributable. page_ids order is [consistent, violating] because violations.bounce_delta is computed B minus A. SIZED 2026-08-20: at 180x12 this produced 79 page visits split across two variants \u2014 a delta of -0.04 with a standard error near 0.11, i.e. a coin flip. 400x16 at reach 0.75 gives ~120 visits per variant, which is enough to see the effect the violating page is supposed to have. Note the violation also needs EXPECTS to CLEAR the 0.5 floor, which takes ~4 exposures of alpha-0.2 smoothing, so the run has to be long enough for expectations to form before the split can matter.",
   "label": "f5-violation",
   "seed": 311,
-  "ticks": 12,
+  "ticks": 16,
   "t0": 1810000000,
   "population": {
-    "size": 180,
+    "size": 400,
     "personas": "fixtures/demo-brand/personas.json"
   },
   "exposure": {
@@ -15,8 +15,8 @@
       {
         "creative_id": 2000003,
         "start_tick": 0,
-        "end_tick": 11,
-        "reach_prob": 0.55,
+        "end_tick": 15,
+        "reach_prob": 0.75,
         "page_ids": [
           4000001,
           4000002

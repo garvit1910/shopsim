@@ -1,11 +1,11 @@
 {
-  "comment": "F9 \u2014 the demo claim as a test, never-drop. need_on runs live; need_off BRANCHES from its log at tick 4 with scripted needs and goal waves switched off. Branching rather than re-running is the point: the twin inherits the parent's actual first four days of history, so the only thing that differs afterwards is whether goals exist. Ticks 14 so the post-divergence window is 10 days \u2014 long enough for a need to activate, be carried down the funnel and be satisfied.",
+  "comment": "F9 \u2014 the demo claim as a test, never-drop. need_on runs live; need_off BRANCHES from its log at tick 4 with scripted needs and goal waves switched off. Branching rather than re-running is the point: the twin inherits the parent's actual first four days of history, so the only thing that differs afterwards is whether goals exist. Ticks 14 so the post-divergence window is 10 days \u2014 long enough for a need to activate, be carried down the funnel and be satisfied. SIZED 2026-08-20: an extra wave (x6 on 5504, the hero product's category, for the whole run) amplifies exactly the channel under test. It only applies to the need_on arm: goal_step gates extra_waves on waves_enabled, which need_off switches off. Base arrival rates still run in BOTH arms, so need_off is 'no wave-driven demand', not 'no demand' \u2014 which is why goal_stats' within-run split is the undiluted statement of the claim and the cross-arm ratio is the conservative one.",
   "label": "f9-twin",
   "seed": 419,
   "ticks": 14,
   "t0": 1811000000,
   "population": {
-    "size": 220,
+    "size": 300,
     "personas": "fixtures/demo-brand/personas.json"
   },
   "exposure": {
@@ -16,25 +16,34 @@
         "creative_id": 2000003,
         "start_tick": 0,
         "end_tick": 13,
-        "reach_prob": 0.4
+        "reach_prob": 0.45
       },
       {
         "creative_id": 2000001,
         "start_tick": 0,
         "end_tick": 13,
-        "reach_prob": 0.4
+        "reach_prob": 0.45
       },
       {
         "creative_id": 2000004,
         "start_tick": 0,
         "end_tick": 13,
-        "reach_prob": 0.4
+        "reach_prob": 0.45
       }
     ]
   },
   "goals": {
     "config": "fixtures/demo-brand/goal_config.json",
-    "overrides": {}
+    "overrides": {
+      "extra_waves": [
+        {
+          "category_id": 5504,
+          "start_tick": 0,
+          "end_tick": 13,
+          "rate_multiplier": 6.0
+        }
+      ]
+    }
   },
   "promos": {
     "schedule": "fixtures/demo-brand/promo_schedule.json",

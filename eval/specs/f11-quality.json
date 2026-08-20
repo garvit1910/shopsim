@@ -1,5 +1,5 @@
 {
-  "comment": "F11 \u2014 the experience loop. TWO FRESH RUNS (never a branch: an alternate latent_quality.csv changes latent_quality_hash, which is a shared manifest hash, so branch would be refused and rightly so). `catalog_dir` is rewritten per arm by shopsim.eval.harness to eval/fixtures/quality-{good,bad}, which are copies of the demo catalog differing ONLY in latent_quality. Nothing the shopper can read differs: latent quality never enters a DecisionContext (Law 15), it reaches them solely as EXPERIENCED satisfaction after the fulfilment lag. Promos on and reach high so purchases \u2014 and therefore deliveries \u2014 actually happen inside 16 ticks.",
+  "comment": "F11 \u2014 the experience loop. TWO FRESH RUNS (never a branch: an alternate latent_quality.csv changes latent_quality_hash, which is a shared manifest hash, so branch would be refused and rightly so). `catalog_dir` is rewritten per arm by shopsim.eval.harness to eval/fixtures/quality-{good,bad}, which are copies of the demo catalog differing ONLY in latent_quality. Nothing the shopper can read differs: latent quality never enters a DecisionContext (Law 15), it reaches them solely as EXPERIENCED satisfaction after the fulfilment lag. Promos on and reach high so purchases \u2014 and therefore deliveries \u2014 actually happen inside 16 ticks. SIZED 2026-08-20: trust only moves through EXPERIENCED, which needs a purchase plus the 2-tick fulfilment lag, so both arms need real buyers. The x6 arrival wave is applied identically to both, so it cannot explain a divergence \u2014 the only asymmetry between the arms is latent_quality, which no shopper can read.",
   "label": "f11-quality",
   "seed": 829,
   "ticks": 16,
@@ -12,7 +12,7 @@
   "catalog_dir": "eval/fixtures/quality-good",
   "perception_cache": "fixtures/perception-cache",
   "population": {
-    "size": 200,
+    "size": 350,
     "personas": "fixtures/demo-brand/personas.json"
   },
   "exposure": {
@@ -29,13 +29,22 @@
         "creative_id": 2000001,
         "start_tick": 0,
         "end_tick": 15,
-        "reach_prob": 0.4
+        "reach_prob": 0.6
       }
     ]
   },
   "goals": {
     "config": "fixtures/demo-brand/goal_config.json",
-    "overrides": {}
+    "overrides": {
+      "extra_waves": [
+        {
+          "category_id": 5504,
+          "start_tick": 0,
+          "end_tick": 15,
+          "rate_multiplier": 6.0
+        }
+      ]
+    }
   },
   "fulfillment": {
     "lag_ticks": 2,
