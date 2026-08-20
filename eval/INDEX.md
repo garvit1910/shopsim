@@ -100,6 +100,38 @@ change in review.
    re-run, and why the predicted-vs-realised gap is reported rather than assumed
    away.
 
+## F9 fails, and what the numbers say
+
+The Maya law is the demo claim as a test, and on its first real measurement it
+**does not hold** at the thresholds it declares. Recorded here rather than
+tuned, because the gap is informative:
+
+| measure | value | threshold |
+|---|---|---|
+| CTR uplift (cross-arm) | 1.032× | ≥ 1.05× ✗ |
+| BUY uplift (cross-arm) | 1.095× | ≥ 1.50× ✗ |
+| ordering (BUY moves more than CTR) | 1.095 > 1.032 | ✓ |
+| **within-run** P(buy) with a need vs without | **1.789×** | — |
+
+Two things are true at once. The *ordering* the law is really about holds: a
+goal moves BUY more than it moves CTR. And the within-run contrast — shoppers
+carrying an active need versus those who are not, inside the same run — is
+1.79×, comfortably past the 1.5 floor.
+
+What fails is the **cross-arm** comparison the law actually gates on, and there
+are two structural reasons to distrust it here. `f9-twin.json` branches
+`need_off` from `need_on` at `divergence_tick: 4` of 14, so **29% of the run is
+shared history by construction** — and goals activated before the split persist
+into the "off" arm until they expire or are satisfied. The arms are simply not
+as different as the law assumes. On top of that the whole contrast rests on
+**21 vs 23 purchases**; a two-purchase difference is noise at that scale.
+
+So this is most likely a scenario-design problem, not a simulator one — but it
+has not been proven either way, and the law stays RED until it is. The honest
+options are to branch earlier (or not at all, running two independent seeded
+arms), to expire pre-split needs in the off arm, or to size the run for enough
+purchases to separate the two. None of them is "lower the threshold".
+
 ## Scope
 
 ### What is implemented vs what has been measured

@@ -255,9 +255,11 @@ def render_markdown(report: dict) -> str:
     A(headline + "\n")
     unmeasured = report.get("unmeasured_never_drop") or []
     if unmeasured:
-        A(f"> **{', '.join(unmeasured)} are never-drop laws and have not been "
-          f"measured.** PLAN.md's degradation ladder ends \"Never drop F7/F9\"; "
-          f"until the scenario tier runs, this suite does not carry them and "
+        one = len(unmeasured) == 1
+        A(f"> **{', '.join(unmeasured)} {'is a never-drop law' if one else 'are never-drop laws'} "
+          f"and {'has' if one else 'have'} not been measured.** PLAN.md's "
+          f"degradation ladder ends \"Never drop F7/F9\"; until the scenario tier "
+          f"runs, this suite does not carry {'it' if one else 'them'} and "
           f"`make eval` exits non-zero.\n")
     A("| law | tier | result | what it measured |")
     A("|---|---|---|---|")
