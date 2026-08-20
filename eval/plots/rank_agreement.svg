@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="400" viewBox="0 0 720 400" font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+<rect width="720" height="400" fill="#ffffff"/>
+<text x="68" y="24" font-size="15" font-weight="600" fill="#1c1c1c">7.3 · rank agreement with the synthetic oracle</text>
+<text x="68" y="39" font-size="11" fill="#6b6b6b">Spearman ρ = 0.86 mean over 5 seeds (worst 0.7); points are seed 11</text>
+<text x="14" y="196" font-size="11" fill="#6b6b6b" transform="rotate(-90 14 196)" text-anchor="middle">simulated P(click)</text>
+<text x="382" y="386" font-size="11" fill="#6b6b6b" text-anchor="middle">oracle score (priors × claims + deal)</text>
+<line x1="68" y1="348.0" x2="696" y2="348.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="352.0" text-anchor="end" font-size="11" fill="#6b6b6b">0.008</text>
+<line x1="68" y1="246.7" x2="696" y2="246.7" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="250.7" text-anchor="end" font-size="11" fill="#6b6b6b">0.009</text>
+<line x1="68" y1="145.3" x2="696" y2="145.3" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="149.3" text-anchor="end" font-size="11" fill="#6b6b6b">0.01</text>
+<line x1="68" y1="44.0" x2="696" y2="44.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="48.0" text-anchor="end" font-size="11" fill="#6b6b6b">0.011</text>
+<text x="68.0" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">0</text>
+<text x="193.6" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">0.1</text>
+<text x="319.2" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">0.2</text>
+<text x="444.8" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">0.3</text>
+<text x="570.4" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">0.4</text>
+<text x="696.0" y="366" text-anchor="middle" font-size="11" fill="#6b6b6b">0.5</text>
+<line x1="68" y1="348" x2="696" y2="348" stroke="#1c1c1c" stroke-width="1.2"/>
+<circle cx="185.4" cy="347.0" r="5" fill="#2f6fb0" fill-opacity="0.85"/>
+<text x="185.4" y="337.0" text-anchor="middle" font-size="10" fill="#6b6b6b">2000001</text>
+<circle cx="522.4" cy="246.0" r="5" fill="#2f6fb0" fill-opacity="0.85"/>
+<text x="522.4" y="236.0" text-anchor="middle" font-size="10" fill="#6b6b6b">2000002</text>
+<circle cx="500.0" cy="101.2" r="5" fill="#2f6fb0" fill-opacity="0.85"/>
+<text x="500.0" y="91.2" text-anchor="middle" font-size="10" fill="#6b6b6b">2000003</text>
+<circle cx="684.0" cy="67.3" r="5" fill="#2f6fb0" fill-opacity="0.85"/>
+<text x="684.0" y="57.3" text-anchor="middle" font-size="10" fill="#6b6b6b">2000004</text>
+<circle cx="315.5" cy="254.4" r="5" fill="#2f6fb0" fill-opacity="0.85"/>
+<text x="315.5" y="244.4" text-anchor="middle" font-size="10" fill="#6b6b6b">2000005</text>
+<text x="68" y="392" font-size="10" fill="#6b6b6b">construct validity: the oracle reads the same priors, not the same mechanism</text>
+</svg>

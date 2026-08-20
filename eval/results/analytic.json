@@ -7,10 +7,10 @@
    "never_drop": false,
    "note": "adstock builds the rise (gamma x min(adstock, cap)); exposures_72h past wearout_free_exposures builds the fall (-delta x wearout).",
    "numbers": {
-    "decay_from_peak": 0.44131,
-    "p_click_final": 0.012828,
-    "p_click_first": 0.016756,
-    "p_click_peak": 0.022961,
+    "decay_from_peak": 0.44126,
+    "p_click_final": 0.012385,
+    "p_click_first": 0.016174,
+    "p_click_peak": 0.022166,
     "peak_at_exposure": 2
    },
    "passed": true,
@@ -21,62 +21,62 @@
      {
       "exposures": 1,
       "exposures_72h": 1,
-      "p_click": 0.016756
+      "p_click": 0.016174
      },
      {
       "exposures": 2,
       "exposures_72h": 2,
-      "p_click": 0.022961
+      "p_click": 0.022166
      },
      {
       "exposures": 3,
       "exposures_72h": 3,
-      "p_click": 0.021891
+      "p_click": 0.021133
      },
      {
       "exposures": 4,
       "exposures_72h": 4,
-      "p_click": 0.018317
+      "p_click": 0.017681
      },
      {
       "exposures": 5,
       "exposures_72h": 5,
-      "p_click": 0.015328
+      "p_click": 0.014796
      },
      {
       "exposures": 6,
       "exposures_72h": 6,
-      "p_click": 0.012828
+      "p_click": 0.012385
      },
      {
       "exposures": 7,
       "exposures_72h": 6,
-      "p_click": 0.012828
+      "p_click": 0.012385
      },
      {
       "exposures": 8,
       "exposures_72h": 6,
-      "p_click": 0.012828
+      "p_click": 0.012385
      },
      {
       "exposures": 9,
       "exposures_72h": 6,
-      "p_click": 0.012828
+      "p_click": 0.012385
      },
      {
       "exposures": 10,
       "exposures_72h": 6,
-      "p_click": 0.012828
+      "p_click": 0.012385
      },
      {
       "exposures": 11,
       "exposures_72h": 6,
-      "p_click": 0.012828
+      "p_click": 0.012385
      },
      {
       "exposures": 12,
       "exposures_72h": 6,
-      "p_click": 0.012828
+      "p_click": 0.012385
      }
     ]
    },
@@ -123,11 +123,11 @@
    "never_drop": false,
    "note": "Abstention is structural: no live PREFERS overlap => no preference_fit, no HOLDS row => null trust_belief. The gate then damps credibility and the perceived offer as well.",
    "numbers": {
-    "cold_credibility": 0.09456,
+    "cold_credibility": 0.05909,
     "cold_relevance": 0.0,
-    "p_click_cold": 0.004719,
-    "p_click_warm": 0.018647,
-    "ratio": 0.25306
+    "p_click_cold": 0.004573,
+    "p_click_warm": 0.017999,
+    "ratio": 0.25406
    },
    "passed": true,
    "seeds_checked": 3,
@@ -143,14 +143,14 @@
    "note": "",
    "numbers": {
     "mean_price_sensitivity": {
-     "high_price_sensitivity": 0.80845,
-     "low_price_sensitivity": 0.36221,
-     "mid_price_sensitivity": 0.56118
+     "high_price_sensitivity": 0.80401,
+     "low_price_sensitivity": 0.37828,
+     "mid_price_sensitivity": 0.57386
     },
     "uplift_x_at_40%": {
-     "high_price_sensitivity": 1.17547,
-     "low_price_sensitivity": 1.09514,
-     "mid_price_sensitivity": 1.13752
+     "high_price_sensitivity": 1.17997,
+     "low_price_sensitivity": 1.10069,
+     "mid_price_sensitivity": 1.13686
     }
    },
    "passed": true,
@@ -161,67 +161,67 @@
      "high_price_sensitivity": [
       {
        "depth": 0.0,
-       "p_buy": 0.43497
+       "p_buy": 0.43367
       },
       {
        "depth": 0.1,
-       "p_buy": 0.453913
+       "p_buy": 0.453041
       },
       {
        "depth": 0.2,
-       "p_buy": 0.472988
+       "p_buy": 0.472552
       },
       {
        "depth": 0.3,
-       "p_buy": 0.492135
+       "p_buy": 0.492133
       },
       {
        "depth": 0.4,
-       "p_buy": 0.511293
+       "p_buy": 0.511719
       }
      ],
      "low_price_sensitivity": [
       {
        "depth": 0.0,
-       "p_buy": 0.402058
+       "p_buy": 0.400384
       },
       {
        "depth": 0.1,
-       "p_buy": 0.411514
+       "p_buy": 0.410352
       },
       {
        "depth": 0.2,
-       "p_buy": 0.421046
+       "p_buy": 0.4204
       },
       {
        "depth": 0.3,
-       "p_buy": 0.430648
+       "p_buy": 0.430518
       },
       {
        "depth": 0.4,
-       "p_buy": 0.440308
+       "p_buy": 0.440698
       }
      ],
      "mid_price_sensitivity": [
       {
        "depth": 0.0,
-       "p_buy": 0.412162
+       "p_buy": 0.405853
       },
       {
        "depth": 0.1,
-       "p_buy": 0.426155
+       "p_buy": 0.419555
       },
       {
        "depth": 0.2,
-       "p_buy": 0.440283
+       "p_buy": 0.433395
       },
       {
        "depth": 0.3,
-       "p_buy": 0.454521
+       "p_buy": 0.44735
       },
       {
        "depth": 0.4,
-       "p_buy": 0.468842
+       "p_buy": 0.461397
       }
      ]
     }
@@ -235,11 +235,11 @@
    "never_drop": false,
    "note": "The ungated arm fabricates a trust belief the shopper has no evidence for. That is the failure mode this engine refuses structurally rather than by prompt instruction.",
    "numbers": {
-    "gated_vs_known": 0.25306,
-    "gated_vs_ungated": 0.25306,
-    "p_click_known_brand": 0.018647,
-    "p_click_unknown_gated": 0.004719,
-    "p_click_unknown_ungated": 0.018647
+    "gated_vs_known": 0.25406,
+    "gated_vs_ungated": 0.25406,
+    "p_click_known_brand": 0.017999,
+    "p_click_unknown_gated": 0.004573,
+    "p_click_unknown_ungated": 0.017999
    },
    "passed": true,
    "seeds_checked": 3,
@@ -248,15 +248,15 @@
     "abstention": [
      {
       "case": "known brand",
-      "p_click": 0.018647
+      "p_click": 0.017999
      },
      {
       "case": "unknown, ungated",
-      "p_click": 0.018647
+      "p_click": 0.017999
      },
      {
       "case": "unknown, gated",
-      "p_click": 0.004719
+      "p_click": 0.004573
      }
     ]
    },
@@ -309,24 +309,6 @@
  "per_seed": [
   {
    "funnel": {
-    "bounce_rate": 0.461605,
-    "buy_per_exposure": 0.000316,
-    "p_browse": 0.538395,
-    "p_buy_given_cart": 0.300958,
-    "p_cart_given_browse": 0.160298,
-    "p_click": 0.012176,
-    "visit_to_purchase": 0.025974
-   },
-   "laws": {
-    "F1": true,
-    "F2": true,
-    "F3": true,
-    "F6": true
-   },
-   "seed": 7
-  },
-  {
-   "funnel": {
     "bounce_rate": 0.464349,
     "buy_per_exposure": 0.000298,
     "p_browse": 0.535651,
@@ -360,13 +342,31 @@
     "F6": true
    },
    "seed": 23
+  },
+  {
+   "funnel": {
+    "bounce_rate": 0.466703,
+    "buy_per_exposure": 0.000309,
+    "p_browse": 0.533297,
+    "p_buy_given_cart": 0.298096,
+    "p_cart_given_browse": 0.160036,
+    "p_click": 0.012152,
+    "visit_to_purchase": 0.025441
+   },
+   "laws": {
+    "F1": true,
+    "F2": true,
+    "F3": true,
+    "F6": true
+   },
+   "seed": 37
   }
  ],
  "population_size": 250,
  "profile": "reference",
  "seeds": [
-  7,
   11,
-  23
+  23,
+  37
  ]
 }
