@@ -17,14 +17,14 @@
 <text x="382.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">unknown, ungated</text>
 <text x="591.3" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">unknown, gated</text>
 <line x1="68" y1="336" x2="696" y2="336" stroke="#1c1c1c" stroke-width="1.2"/>
-<rect x="114.1" y="96.6" width="117.2" height="239.4" fill="#3f8f5f" rx="2"/>
-<text x="172.7" y="90.6" text-anchor="middle" font-size="11" fill="#1c1c1c">1.80%</text>
+<rect x="114.1" y="93.4" width="117.2" height="242.6" fill="#3f8f5f" rx="2"/>
+<text x="172.7" y="87.4" text-anchor="middle" font-size="11" fill="#1c1c1c">1.82%</text>
 <text x="172.7" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">known brand</text>
-<rect x="323.4" y="96.6" width="117.2" height="239.4" fill="#c0562e" rx="2"/>
-<text x="382.0" y="90.6" text-anchor="middle" font-size="11" fill="#1c1c1c">1.80%</text>
+<rect x="323.4" y="93.4" width="117.2" height="242.6" fill="#c0562e" rx="2"/>
+<text x="382.0" y="87.4" text-anchor="middle" font-size="11" fill="#1c1c1c">1.82%</text>
 <text x="382.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">unknown, ungated</text>
-<rect x="532.7" y="275.2" width="117.2" height="60.8" fill="#2f6fb0" rx="2"/>
-<text x="591.3" y="269.2" text-anchor="middle" font-size="11" fill="#1c1c1c">0.46%</text>
+<rect x="532.7" y="274.3" width="117.2" height="61.7" fill="#2f6fb0" rx="2"/>
+<text x="591.3" y="268.3" text-anchor="middle" font-size="11" fill="#1c1c1c">0.46%</text>
 <text x="591.3" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">unknown, gated</text>
 <text x="68" y="392" font-size="10" fill="#6b6b6b">gated = this engine: no path, no belief, no invented familiarity</text>
 </svg>

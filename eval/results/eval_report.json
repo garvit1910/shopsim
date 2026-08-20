@@ -110,7 +110,7 @@
   },
   "demo_profile": {
    "achieved_p_click": 0.050033,
-   "committed_click_base": 4.2,
+   "committed_click_base": 4.07,
    "multiples": {
     "bounce_rate": {
      "band": [
@@ -223,6 +223,106 @@
   "reference_run_dir": "/Users/garvit/shopsim/runs/r053-eval-reference-reference",
   "reference_run_id": "r053-eval-reference-reference"
  },
+ "ctr_by_day": {
+  "band": [
+   0.005,
+   0.02
+  ],
+  "days_out_of_band": [
+   0,
+   6,
+   11,
+   15,
+   16
+  ],
+  "max": 0.02128,
+  "mean": 0.010563,
+  "min": 0.0025,
+  "note": "Reported, not asserted \u2014 a single day is a handful of clicks. The mean is the number to read; the per-day excursions are recorded so the band on the chart is checkable at all.",
+  "series": [
+   {
+    "ctr": 0.0025,
+    "tick": 0
+   },
+   {
+    "ctr": 0.00508,
+    "tick": 1
+   },
+   {
+    "ctr": 0.0099,
+    "tick": 2
+   },
+   {
+    "ctr": 0.01005,
+    "tick": 3
+   },
+   {
+    "ctr": 0.01279,
+    "tick": 4
+   },
+   {
+    "ctr": 0.01018,
+    "tick": 5
+   },
+   {
+    "ctr": 0.0201,
+    "tick": 6
+   },
+   {
+    "ctr": 0.0175,
+    "tick": 7
+   },
+   {
+    "ctr": 0.00743,
+    "tick": 8
+   },
+   {
+    "ctr": 0.00798,
+    "tick": 9
+   },
+   {
+    "ctr": 0.01523,
+    "tick": 10
+   },
+   {
+    "ctr": 0.00258,
+    "tick": 11
+   },
+   {
+    "ctr": 0.01772,
+    "tick": 12
+   },
+   {
+    "ctr": 0.00796,
+    "tick": 13
+   },
+   {
+    "ctr": 0.00955,
+    "tick": 14
+   },
+   {
+    "ctr": 0.02128,
+    "tick": 15
+   },
+   {
+    "ctr": 0.00488,
+    "tick": 16
+   },
+   {
+    "ctr": 0.00739,
+    "tick": 17
+   },
+   {
+    "ctr": 0.01078,
+    "tick": 18
+   },
+   {
+    "ctr": 0.01039,
+    "tick": 19
+   }
+  ],
+  "source": "market-research.md S1 \u2014 adopted band 0.5-2%"
+ },
  "laws": [
   {
    "id": "F1",
@@ -230,76 +330,76 @@
    "never_drop": false,
    "note": "adstock builds the rise (gamma x min(adstock, cap)); exposures_72h past wearout_free_exposures builds the fall (-delta x wearout).",
    "numbers": {
-    "decay_from_peak": 0.44126,
-    "p_click_final": 0.012385,
-    "p_click_first": 0.016174,
-    "p_click_peak": 0.022166,
+    "decay_from_peak": 0.44053,
+    "p_click_final": 0.012559,
+    "p_click_first": 0.016392,
+    "p_click_peak": 0.022448,
     "peak_at_exposure": 2
    },
    "passed": true,
-   "seeds_checked": 3,
-   "seeds_passed": 3,
+   "seeds_checked": 5,
+   "seeds_passed": 5,
    "series": {
     "frequency_response": [
      {
       "exposures": 1,
       "exposures_72h": 1,
-      "p_click": 0.016174
+      "p_click": 0.016392
      },
      {
       "exposures": 2,
       "exposures_72h": 2,
-      "p_click": 0.022166
+      "p_click": 0.022448
      },
      {
       "exposures": 3,
       "exposures_72h": 3,
-      "p_click": 0.021133
+      "p_click": 0.021404
      },
      {
       "exposures": 4,
       "exposures_72h": 4,
-      "p_click": 0.017681
+      "p_click": 0.017916
      },
      {
       "exposures": 5,
       "exposures_72h": 5,
-      "p_click": 0.014796
+      "p_click": 0.014999
      },
      {
       "exposures": 6,
       "exposures_72h": 6,
-      "p_click": 0.012385
+      "p_click": 0.012559
      },
      {
       "exposures": 7,
       "exposures_72h": 6,
-      "p_click": 0.012385
+      "p_click": 0.012559
      },
      {
       "exposures": 8,
       "exposures_72h": 6,
-      "p_click": 0.012385
+      "p_click": 0.012559
      },
      {
       "exposures": 9,
       "exposures_72h": 6,
-      "p_click": 0.012385
+      "p_click": 0.012559
      },
      {
       "exposures": 10,
       "exposures_72h": 6,
-      "p_click": 0.012385
+      "p_click": 0.012559
      },
      {
       "exposures": 11,
       "exposures_72h": 6,
-      "p_click": 0.012385
+      "p_click": 0.012559
      },
      {
       "exposures": 12,
       "exposures_72h": 6,
-      "p_click": 0.012385
+      "p_click": 0.012559
      }
     ]
    },
@@ -314,13 +414,13 @@
    "numbers": {
     "cold_credibility": 0.05909,
     "cold_relevance": 0.0,
-    "p_click_cold": 0.004573,
-    "p_click_warm": 0.017999,
-    "ratio": 0.25406
+    "p_click_cold": 0.004642,
+    "p_click_warm": 0.018237,
+    "ratio": 0.25454
    },
    "passed": true,
-   "seeds_checked": 3,
-   "seeds_passed": 3,
+   "seeds_checked": 5,
+   "seeds_passed": 5,
    "series": {},
    "threshold": "cold relevance exactly 0 (structural, not small) and cold CTR <= 0.35x warm CTR",
    "tier": "analytic"
@@ -332,85 +432,85 @@
    "note": "",
    "numbers": {
     "mean_price_sensitivity": {
-     "high_price_sensitivity": 0.80401,
-     "low_price_sensitivity": 0.37828,
-     "mid_price_sensitivity": 0.57386
+     "high_price_sensitivity": 0.80578,
+     "low_price_sensitivity": 0.37058,
+     "mid_price_sensitivity": 0.56535
     },
     "uplift_x_at_40%": {
-     "high_price_sensitivity": 1.17997,
-     "low_price_sensitivity": 1.10069,
-     "mid_price_sensitivity": 1.13686
+     "high_price_sensitivity": 1.17937,
+     "low_price_sensitivity": 1.10038,
+     "mid_price_sensitivity": 1.13229
     }
    },
    "passed": true,
-   "seeds_checked": 3,
-   "seeds_passed": 3,
+   "seeds_checked": 5,
+   "seeds_passed": 5,
    "series": {
     "discount_ladder": {
      "high_price_sensitivity": [
       {
        "depth": 0.0,
-       "p_buy": 0.43367
+       "p_buy": 0.43301
       },
       {
        "depth": 0.1,
-       "p_buy": 0.453041
+       "p_buy": 0.452282
       },
       {
        "depth": 0.2,
-       "p_buy": 0.472552
+       "p_buy": 0.471696
       },
       {
        "depth": 0.3,
-       "p_buy": 0.492133
+       "p_buy": 0.491183
       },
       {
        "depth": 0.4,
-       "p_buy": 0.511719
+       "p_buy": 0.510677
       }
      ],
      "low_price_sensitivity": [
       {
        "depth": 0.0,
-       "p_buy": 0.400384
+       "p_buy": 0.399414
       },
       {
        "depth": 0.1,
-       "p_buy": 0.410352
+       "p_buy": 0.409325
       },
       {
        "depth": 0.2,
-       "p_buy": 0.4204
+       "p_buy": 0.419318
       },
       {
        "depth": 0.3,
-       "p_buy": 0.430518
+       "p_buy": 0.429382
       },
       {
        "depth": 0.4,
-       "p_buy": 0.440698
+       "p_buy": 0.439509
       }
      ],
      "mid_price_sensitivity": [
       {
        "depth": 0.0,
-       "p_buy": 0.405853
+       "p_buy": 0.40934
       },
       {
        "depth": 0.1,
-       "p_buy": 0.419555
+       "p_buy": 0.42271
       },
       {
        "depth": 0.2,
-       "p_buy": 0.433395
+       "p_buy": 0.436205
       },
       {
        "depth": 0.3,
-       "p_buy": 0.44735
+       "p_buy": 0.449807
       },
       {
        "depth": 0.4,
-       "p_buy": 0.461397
+       "p_buy": 0.463491
       }
      ]
     }
@@ -424,28 +524,28 @@
    "never_drop": false,
    "note": "The ungated arm fabricates a trust belief the shopper has no evidence for. That is the failure mode this engine refuses structurally rather than by prompt instruction.",
    "numbers": {
-    "gated_vs_known": 0.25406,
-    "gated_vs_ungated": 0.25406,
-    "p_click_known_brand": 0.017999,
-    "p_click_unknown_gated": 0.004573,
-    "p_click_unknown_ungated": 0.017999
+    "gated_vs_known": 0.25454,
+    "gated_vs_ungated": 0.25454,
+    "p_click_known_brand": 0.018237,
+    "p_click_unknown_gated": 0.004642,
+    "p_click_unknown_ungated": 0.018237
    },
    "passed": true,
-   "seeds_checked": 3,
-   "seeds_passed": 3,
+   "seeds_checked": 5,
+   "seeds_passed": 5,
    "series": {
     "abstention": [
      {
       "case": "known brand",
-      "p_click": 0.017999
+      "p_click": 0.018237
      },
      {
       "case": "unknown, ungated",
-      "p_click": 0.017999
+      "p_click": 0.018237
      },
      {
       "case": "unknown, gated",
-      "p_click": 0.004573
+      "p_click": 0.004642
      }
     ]
    },
@@ -555,26 +655,32 @@
  "laws_not_run": [
   {
    "id": "F5",
+   "never_drop": false,
    "reason": "no f5-violation run on disk"
   },
   {
    "id": "F9",
+   "never_drop": true,
    "reason": "twin pair incomplete (needs both arms)"
   },
   {
    "id": "F12",
+   "never_drop": false,
    "reason": "needs both fatigue arms"
   },
   {
    "id": "F7b",
+   "never_drop": true,
    "reason": "no heavy-exposure run on disk"
   },
   {
    "id": "F11",
+   "never_drop": false,
    "reason": "needs both latent-quality arms"
   },
   {
    "id": "F4",
+   "never_drop": false,
    "reason": "no promo run on disk"
   }
  ],
@@ -706,5 +812,9 @@
   "worst_spearman": 0.7
  },
  "runs": [],
- "scenario_profile": null
+ "scenario_profile": null,
+ "unmeasured_never_drop": [
+  "F9",
+  "F7b"
+ ]
 }

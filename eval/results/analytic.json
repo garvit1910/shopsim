@@ -1,5 +1,9 @@
 {
  "catalog": "fixtures/demo-brand",
+ "funnel_band_note": "Reported, not asserted. The analytic tier's population is synthetic; the certified funnel is the traced reference in calibration.json. A metric listed here disagrees with that certification on every seed and is a finding, not noise.",
+ "funnel_bands_missed_on_every_seed": [
+  "p_buy_given_cart"
+ ],
  "laws": [
   {
    "id": "F1",
@@ -7,76 +11,76 @@
    "never_drop": false,
    "note": "adstock builds the rise (gamma x min(adstock, cap)); exposures_72h past wearout_free_exposures builds the fall (-delta x wearout).",
    "numbers": {
-    "decay_from_peak": 0.44126,
-    "p_click_final": 0.012385,
-    "p_click_first": 0.016174,
-    "p_click_peak": 0.022166,
+    "decay_from_peak": 0.44053,
+    "p_click_final": 0.012559,
+    "p_click_first": 0.016392,
+    "p_click_peak": 0.022448,
     "peak_at_exposure": 2
    },
    "passed": true,
-   "seeds_checked": 3,
-   "seeds_passed": 3,
+   "seeds_checked": 5,
+   "seeds_passed": 5,
    "series": {
     "frequency_response": [
      {
       "exposures": 1,
       "exposures_72h": 1,
-      "p_click": 0.016174
+      "p_click": 0.016392
      },
      {
       "exposures": 2,
       "exposures_72h": 2,
-      "p_click": 0.022166
+      "p_click": 0.022448
      },
      {
       "exposures": 3,
       "exposures_72h": 3,
-      "p_click": 0.021133
+      "p_click": 0.021404
      },
      {
       "exposures": 4,
       "exposures_72h": 4,
-      "p_click": 0.017681
+      "p_click": 0.017916
      },
      {
       "exposures": 5,
       "exposures_72h": 5,
-      "p_click": 0.014796
+      "p_click": 0.014999
      },
      {
       "exposures": 6,
       "exposures_72h": 6,
-      "p_click": 0.012385
+      "p_click": 0.012559
      },
      {
       "exposures": 7,
       "exposures_72h": 6,
-      "p_click": 0.012385
+      "p_click": 0.012559
      },
      {
       "exposures": 8,
       "exposures_72h": 6,
-      "p_click": 0.012385
+      "p_click": 0.012559
      },
      {
       "exposures": 9,
       "exposures_72h": 6,
-      "p_click": 0.012385
+      "p_click": 0.012559
      },
      {
       "exposures": 10,
       "exposures_72h": 6,
-      "p_click": 0.012385
+      "p_click": 0.012559
      },
      {
       "exposures": 11,
       "exposures_72h": 6,
-      "p_click": 0.012385
+      "p_click": 0.012559
      },
      {
       "exposures": 12,
       "exposures_72h": 6,
-      "p_click": 0.012385
+      "p_click": 0.012559
      }
     ]
    },
@@ -125,13 +129,13 @@
    "numbers": {
     "cold_credibility": 0.05909,
     "cold_relevance": 0.0,
-    "p_click_cold": 0.004573,
-    "p_click_warm": 0.017999,
-    "ratio": 0.25406
+    "p_click_cold": 0.004642,
+    "p_click_warm": 0.018237,
+    "ratio": 0.25454
    },
    "passed": true,
-   "seeds_checked": 3,
-   "seeds_passed": 3,
+   "seeds_checked": 5,
+   "seeds_passed": 5,
    "series": {},
    "threshold": "cold relevance exactly 0 (structural, not small) and cold CTR <= 0.35x warm CTR",
    "tier": "analytic"
@@ -143,85 +147,85 @@
    "note": "",
    "numbers": {
     "mean_price_sensitivity": {
-     "high_price_sensitivity": 0.80401,
-     "low_price_sensitivity": 0.37828,
-     "mid_price_sensitivity": 0.57386
+     "high_price_sensitivity": 0.80578,
+     "low_price_sensitivity": 0.37058,
+     "mid_price_sensitivity": 0.56535
     },
     "uplift_x_at_40%": {
-     "high_price_sensitivity": 1.17997,
-     "low_price_sensitivity": 1.10069,
-     "mid_price_sensitivity": 1.13686
+     "high_price_sensitivity": 1.17937,
+     "low_price_sensitivity": 1.10038,
+     "mid_price_sensitivity": 1.13229
     }
    },
    "passed": true,
-   "seeds_checked": 3,
-   "seeds_passed": 3,
+   "seeds_checked": 5,
+   "seeds_passed": 5,
    "series": {
     "discount_ladder": {
      "high_price_sensitivity": [
       {
        "depth": 0.0,
-       "p_buy": 0.43367
+       "p_buy": 0.43301
       },
       {
        "depth": 0.1,
-       "p_buy": 0.453041
+       "p_buy": 0.452282
       },
       {
        "depth": 0.2,
-       "p_buy": 0.472552
+       "p_buy": 0.471696
       },
       {
        "depth": 0.3,
-       "p_buy": 0.492133
+       "p_buy": 0.491183
       },
       {
        "depth": 0.4,
-       "p_buy": 0.511719
+       "p_buy": 0.510677
       }
      ],
      "low_price_sensitivity": [
       {
        "depth": 0.0,
-       "p_buy": 0.400384
+       "p_buy": 0.399414
       },
       {
        "depth": 0.1,
-       "p_buy": 0.410352
+       "p_buy": 0.409325
       },
       {
        "depth": 0.2,
-       "p_buy": 0.4204
+       "p_buy": 0.419318
       },
       {
        "depth": 0.3,
-       "p_buy": 0.430518
+       "p_buy": 0.429382
       },
       {
        "depth": 0.4,
-       "p_buy": 0.440698
+       "p_buy": 0.439509
       }
      ],
      "mid_price_sensitivity": [
       {
        "depth": 0.0,
-       "p_buy": 0.405853
+       "p_buy": 0.40934
       },
       {
        "depth": 0.1,
-       "p_buy": 0.419555
+       "p_buy": 0.42271
       },
       {
        "depth": 0.2,
-       "p_buy": 0.433395
+       "p_buy": 0.436205
       },
       {
        "depth": 0.3,
-       "p_buy": 0.44735
+       "p_buy": 0.449807
       },
       {
        "depth": 0.4,
-       "p_buy": 0.461397
+       "p_buy": 0.463491
       }
      ]
     }
@@ -235,28 +239,28 @@
    "never_drop": false,
    "note": "The ungated arm fabricates a trust belief the shopper has no evidence for. That is the failure mode this engine refuses structurally rather than by prompt instruction.",
    "numbers": {
-    "gated_vs_known": 0.25406,
-    "gated_vs_ungated": 0.25406,
-    "p_click_known_brand": 0.017999,
-    "p_click_unknown_gated": 0.004573,
-    "p_click_unknown_ungated": 0.017999
+    "gated_vs_known": 0.25454,
+    "gated_vs_ungated": 0.25454,
+    "p_click_known_brand": 0.018237,
+    "p_click_unknown_gated": 0.004642,
+    "p_click_unknown_ungated": 0.018237
    },
    "passed": true,
-   "seeds_checked": 3,
-   "seeds_passed": 3,
+   "seeds_checked": 5,
+   "seeds_passed": 5,
    "series": {
     "abstention": [
      {
       "case": "known brand",
-      "p_click": 0.017999
+      "p_click": 0.018237
      },
      {
       "case": "unknown, ungated",
-      "p_click": 0.017999
+      "p_click": 0.018237
      },
      {
       "case": "unknown, gated",
-      "p_click": 0.004573
+      "p_click": 0.004642
      }
     ]
    },
@@ -309,13 +313,20 @@
  "per_seed": [
   {
    "funnel": {
-    "bounce_rate": 0.464349,
-    "buy_per_exposure": 0.000298,
-    "p_browse": 0.535651,
-    "p_buy_given_cart": 0.298523,
-    "p_cart_given_browse": 0.158445,
-    "p_click": 0.011765,
-    "visit_to_purchase": 0.025336
+    "bounce_rate": 0.465767,
+    "buy_per_exposure": 0.000301,
+    "p_browse": 0.534233,
+    "p_buy_given_cart": 0.299009,
+    "p_cart_given_browse": 0.158029,
+    "p_click": 0.011926,
+    "visit_to_purchase": 0.025244
+   },
+   "funnel_in_band": {
+    "bounce_rate": true,
+    "p_buy_given_cart": false,
+    "p_cart_given_browse": true,
+    "p_click": true,
+    "visit_to_purchase": true
    },
    "laws": {
     "F1": true,
@@ -327,13 +338,20 @@
   },
   {
    "funnel": {
-    "bounce_rate": 0.463127,
-    "buy_per_exposure": 0.000302,
-    "p_browse": 0.536873,
-    "p_buy_given_cart": 0.294804,
-    "p_cart_given_browse": 0.157446,
-    "p_click": 0.012123,
-    "visit_to_purchase": 0.024919
+    "bounce_rate": 0.462066,
+    "buy_per_exposure": 0.000313,
+    "p_browse": 0.537934,
+    "p_buy_given_cart": 0.295038,
+    "p_cart_given_browse": 0.159144,
+    "p_click": 0.012378,
+    "visit_to_purchase": 0.025258
+   },
+   "funnel_in_band": {
+    "bounce_rate": true,
+    "p_buy_given_cart": false,
+    "p_cart_given_browse": true,
+    "p_click": true,
+    "visit_to_purchase": true
    },
    "laws": {
     "F1": true,
@@ -345,13 +363,20 @@
   },
   {
    "funnel": {
-    "bounce_rate": 0.466703,
+    "bounce_rate": 0.466129,
     "buy_per_exposure": 0.000309,
-    "p_browse": 0.533297,
-    "p_buy_given_cart": 0.298096,
-    "p_cart_given_browse": 0.160036,
-    "p_click": 0.012152,
-    "visit_to_purchase": 0.025441
+    "p_browse": 0.533871,
+    "p_buy_given_cart": 0.298014,
+    "p_cart_given_browse": 0.159619,
+    "p_click": 0.012186,
+    "visit_to_purchase": 0.025395
+   },
+   "funnel_in_band": {
+    "bounce_rate": true,
+    "p_buy_given_cart": false,
+    "p_cart_given_browse": true,
+    "p_click": true,
+    "visit_to_purchase": true
    },
    "laws": {
     "F1": true,
@@ -360,13 +385,65 @@
     "F6": true
    },
    "seed": 37
+  },
+  {
+   "funnel": {
+    "bounce_rate": 0.464358,
+    "buy_per_exposure": 0.000299,
+    "p_browse": 0.535642,
+    "p_buy_given_cart": 0.29411,
+    "p_cart_given_browse": 0.156473,
+    "p_click": 0.012112,
+    "visit_to_purchase": 0.02465
+   },
+   "funnel_in_band": {
+    "bounce_rate": true,
+    "p_buy_given_cart": false,
+    "p_cart_given_browse": true,
+    "p_click": true,
+    "visit_to_purchase": true
+   },
+   "laws": {
+    "F1": true,
+    "F2": true,
+    "F3": true,
+    "F6": true
+   },
+   "seed": 53
+  },
+  {
+   "funnel": {
+    "bounce_rate": 0.46288,
+    "buy_per_exposure": 0.000353,
+    "p_browse": 0.53712,
+    "p_buy_given_cart": 0.302728,
+    "p_cart_given_browse": 0.163915,
+    "p_click": 0.013242,
+    "visit_to_purchase": 0.026653
+   },
+   "funnel_in_band": {
+    "bounce_rate": true,
+    "p_buy_given_cart": false,
+    "p_cart_given_browse": true,
+    "p_click": true,
+    "visit_to_purchase": true
+   },
+   "laws": {
+    "F1": true,
+    "F2": true,
+    "F3": true,
+    "F6": true
+   },
+   "seed": 71
   }
  ],
- "population_size": 250,
+ "population_size": 300,
  "profile": "reference",
  "seeds": [
   11,
   23,
-  37
+  37,
+  53,
+  71
  ]
 }

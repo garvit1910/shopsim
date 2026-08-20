@@ -1,13 +1,16 @@
-"""CLI: python -m shopsim.eval <analytic|fit|scenarios|rank|report|all> ...
+"""CLI: python -m shopsim.eval <analytic|calibrate|fit|scenarios|rank|report|all> ...
 
     analytic   [--profile P] [--seeds 7,11,...] [--size N]
+    calibrate  [--profile P] [--run DIR] [--demo-ctr R]
     fit        --trace PATH [--from-profile P] [--out eval/profiles/X.json]
     scenarios  [--only F5,F9] [--profile P]
     rank       [--profile P] [--seeds ...]
     report     [--profile P]          assemble /eval from what is on disk
     all        [--profile P]          the `make eval` pipeline, in order
 
-`analytic`, `rank` and `report` never touch the database. `scenarios` runs real
+`analytic`, `calibrate`, `rank` and `report` never touch the database —
+`calibrate` REPLAYS a decision trace already on disk, which is why it is a
+database-free tier despite being about a real run. `scenarios` runs real
 simulations and is the only slow command; it prints its own wall clock so a
 `make eval` that takes an hour says why.
 """
@@ -88,11 +91,16 @@ def cmd_analytic(args) -> int:
     for seed in seeds:
         pop = contexts.population(seed, args.size, stage_bases=profile.stage_bases)
         stim = view.facts(args.stimulus)
+        funnel = contexts.funnel_mix(pop, stim, profile)
+        # Band-check the synthetic population's funnel against the SAME bands the
+        # traced reference is certified on. This is not a law and does not gate
+        # the exit code — it exists because an analytic population that disagrees
+        # with the certified run is a fact worth seeing rather than an unchecked
+        # number sitting in a JSON file.
         row = {"seed": seed,
-               "funnel": {k: round(v, 6) for k, v in
-                          contexts.funnel_mix(pop, stim, profile).items()}}
-        for fn in (laws.analytic_f1_frequency_response, laws.analytic_f2_cold_gate,
-                   laws.analytic_f3_discount_ordering, laws.analytic_f6_abstention):
+               "funnel": {k: round(v, 6) for k, v in funnel.items()},
+               "funnel_in_band": calibrate.in_band(funnel)}
+        for fn in laws.ANALYTIC_LAWS:
             r = fn(pop, view, profile)
             row.setdefault("laws", {})[r.id] = r.passed
             results.setdefault(r.id, []).append(r)
@@ -112,13 +120,30 @@ def cmd_analytic(args) -> int:
                     "passed": all(r.passed for r in runs),
                     "seeds_checked": len(runs),
                     "seeds_passed": sum(1 for r in runs if r.passed)})
+    # Which bands the analytic population misses on EVERY seed. A miss on one
+    # seed is sampling; a miss on all of them is a standing disagreement between
+    # this synthetic population and the traced reference, and is reported as one.
+    metrics = sorted(calibrate.TARGETS)
+    always_out = [m for m in metrics
+                  if per_seed and not any(r["funnel_in_band"][m] for r in per_seed)]
     payload = {"profile": args.profile or "module defaults", "seeds": seeds,
                "population_size": args.size, "catalog": args.catalog,
-               "per_seed": per_seed, "laws": out}
+               "per_seed": per_seed, "laws": out,
+               "funnel_bands_missed_on_every_seed": always_out,
+               "funnel_band_note":
+                   "Reported, not asserted. The analytic tier's population is "
+                   "synthetic; the certified funnel is the traced reference in "
+                   "calibration.json. A metric listed here disagrees with that "
+                   "certification on every seed and is a finding, not noise."}
     report.write_json(_results_dir() / "analytic.json", payload)
     for r in out:
         print(f"  {'PASS' if r['passed'] else 'FAIL'}  {r['id']:<4} {r['name']} "
               f"({r['seeds_passed']}/{r['seeds_checked']} seeds)")
+    for m in always_out:
+        lo, hi, _src = calibrate.TARGETS[m]
+        vals = [r["funnel"][m] for r in per_seed]
+        print(f"  OUT   {m} {min(vals):.4f}-{max(vals):.4f} outside band "
+              f"[{lo}, {hi}] on every seed")
     return 0 if all(r["passed"] for r in out) else 1
 
 
@@ -185,9 +210,10 @@ def cmd_calibrate(args) -> int:
     """7.2 — the before/after table, from the reference run's own trace."""
     run_dir = Path(args.run) if args.run else _reference_run_dir()
     if run_dir is None or not (run_dir / trace.TRACE_FILENAME).exists():
-        print("error: no traced reference run found — run "
-              "`shopsim.runner run --config eval/configs/reference.json "
-              "--trace-decisions` first", file=sys.stderr)
+        print("error: no traced reference run found — run `make eval-reference` "
+              "first (it is idempotent, and `make eval` invokes it for you). "
+              "/runs/ is gitignored, so a fresh clone never has one.",
+              file=sys.stderr)
         return 2
     header, rows = trace.load(run_dir / trace.TRACE_FILENAME)
     traced_bases = tuple(header["stage_bases"].items())
@@ -469,12 +495,17 @@ def cmd_report(args) -> int:
             if p:
                 plots.append(f"{PLOTS}/{p.name}")
     ref_results = cal.get("reference_run_dir")
+    ctr_by_day = None
     if ref_results and (Path(ref_results) / "results.json").exists():
         res = harness.load_results(ref_results)
         p = report.plot_ctr_by_day(res, plots_dir / "ctr_by_day_reference.svg",
                                    title="Reference profile · CTR by simulated day")
         if p:
             plots.append(f"{PLOTS}/{p.name}")
+        # Persist the series the chart draws. It used to live only as SVG
+        # geometry, which means the band it is plotted against could never be
+        # checked by anything — a chart is not a measurement.
+        ctr_by_day = _ctr_by_day_block(res)
 
     if rank:
         p = report.plot_rank_agreement(rank, plots_dir / "rank_agreement.svg")
@@ -485,22 +516,65 @@ def cmd_report(args) -> int:
         ["F1", "F2", "F3", "F4", "F5", "F6", "F7a", "F7b", "F8", "F9", "F10", "F11", "F12"])}
     law_rows.sort(key=lambda x: order.get(x["id"], 99))
 
+    for row in not_run:
+        row["never_drop"] = row["id"] in laws.NEVER_DROP_IDS
+    unmeasured_never_drop = [r["id"] for r in not_run if r["never_drop"]]
+
     payload = {"laws": law_rows, "laws_not_run": not_run, "calibration": cal,
                "rank_agreement": rank, "plots": sorted(plots), "runs": runs,
                "profile": args.profile,
+               "unmeasured_never_drop": unmeasured_never_drop,
+               "ctr_by_day": ctr_by_day,
                "scenario_profile": ({"profile": scenarios.get("profile"),
                                      "reason": scenarios.get("profile_reason")}
                                     if scenarios.get("profile") else None)}
     report.write_json(_results_dir() / "eval_report.json", payload)
     (report.eval_root() / "README.md").write_text(report.render_markdown(payload))
     ok = sum(1 for x in law_rows if x["passed"])
-    print(f"\n{ok}/{len(law_rows)} laws passing; {len(plots)} plots; "
-          f"eval/README.md + eval/results/eval_report.json written")
+    print(f"\n{ok}/{len(law_rows)} laws passing; {len(not_run)} not run; "
+          f"{len(plots)} plots; eval/README.md + eval/results/eval_report.json written")
     for x in law_rows:
         if not x["passed"]:
             print(f"  FAIL {x['id']} {x['name']}"
                   + ("  (NEVER-DROP)" if x.get("never_drop") else ""))
-    return 0 if all(x["passed"] for x in law_rows) else 1
+    for lid in unmeasured_never_drop:
+        print(f"  FAIL {lid} NEVER-DROP NOT MEASURED — "
+              f"{next(r['reason'] for r in not_run if r['id'] == lid)}")
+    if ctr_by_day and ctr_by_day["days_out_of_band"]:
+        print(f"  OUT   ctr_by_day {len(ctr_by_day['days_out_of_band'])}/"
+              f"{len(ctr_by_day['series'])} days outside band "
+              f"{ctr_by_day['band']} (reported, not asserted)")
+    return 0 if (all(x["passed"] for x in law_rows)
+                 and not unmeasured_never_drop) else 1
+
+
+def _ctr_by_day_block(results: dict, band=(0.005, 0.02)) -> dict | None:
+    """The CTR-by-day series as data, alongside the band it is plotted against.
+
+    Reported, never asserted. Day-level CTR over a demo-scale population is a
+    handful of clicks per day, so an individual day leaving the band is noise
+    and gating on it would be superstition. What is NOT acceptable is the
+    previous state, where the series existed only as coordinates inside an SVG:
+    the chart claimed a band and nothing could ever check the claim.
+    """
+    rows = [r for r in (results.get("ctr_by_day") or []) if r.get("ctr") is not None]
+    if not rows:
+        return None
+    lo, hi = band
+    series = [{"tick": r["tick"], "ctr": round(r["ctr"], 6)} for r in rows]
+    out = [r["tick"] for r in series if not lo <= r["ctr"] <= hi]
+    ctrs = [r["ctr"] for r in series]
+    return {
+        "band": [lo, hi],
+        "source": "market-research.md S1 — adopted band 0.5-2%",
+        "series": series,
+        "mean": round(sum(ctrs) / len(ctrs), 6),
+        "min": min(ctrs), "max": max(ctrs),
+        "days_out_of_band": out,
+        "note": "Reported, not asserted — a single day is a handful of clicks. "
+                "The mean is the number to read; the per-day excursions are "
+                "recorded so the band on the chart is checkable at all.",
+    }
 
 
 def _scenario_laws(res: dict, scenarios: dict, not_run: list, plots: list,

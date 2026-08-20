@@ -7,15 +7,29 @@ not change between runs.*
 ## Reproducing
 
 ```sh
-make eval-fast     # analytic laws + rank agreement + report — seconds, no database
-make eval          # everything, including the real scenario runs — needs a live HydraDB
-make eval-clean    # delete generated artifacts (keeps specs and profiles)
+make eval-reference # the traced reference run everything else replays (real run, once)
+make eval-fast      # every database-free tier: analytic + calibration + rank + report
+make eval           # everything, including the real scenario runs — needs a live HydraDB
+make eval-clean     # delete generated artifacts (keeps specs and profiles)
 ```
+
+**"From scratch" has one data prerequisite.** The calibration tier replays a
+*traced* reference run's `decisions.jsonl`, and `/runs/` is gitignored — so a
+fresh clone has none, and `make eval-fast` will stop and tell you to run
+`make eval-reference` first. That target is idempotent (it skips when a traced
+run already exists) and `make eval` invokes it for you.
+
+Note that `make eval-fast` includes **calibration**: replaying a trace needs no
+database and takes milliseconds, so leaving it out of the fast path was how the
+committed `calibration.json` drifted out of step with `profiles/demo.json`.
 
 `make eval` is deliberately slow: the scenario tier runs real simulations,
 because a face-validity law proved on a special code path proves nothing about
 the engine that ships. Per-tick cost grows with the store — if it crawls,
-archive the store (`infra/README.md`) and retry.
+archive the store (`infra/README.md`) and retry. Run scenarios one at a time
+(`shopsim.eval scenarios --only F9`) if you may be interrupted: each invocation
+merges into `results/scenarios.json`, but a single invocation writes only when
+its whole loop finishes.
 
 ## What is here
 
@@ -28,7 +42,7 @@ archive the store (`infra/README.md`) and retry.
 | `specs/*.json` | one run config per scenario law (F4, F5, F7b, F9, F11, F12) | hand-written |
 | `configs/reference.json` | the reference shape the calibration is certified on | hand-written |
 | `configs/built/` | specs + profile merged into runnable configs | generated |
-| `results/*.json` | every number the suite produced | generated |
+| `results/*.json` | every number the suite produced, including the CTR-by-day series and the analytic tier's band check | generated |
 | `plots/*.svg` | every chart | generated |
 | `fixtures/quality-{good,bad}/` | F11's two catalogs, differing only in latent_quality | generated |
 | `README.md` | the report | generated |
@@ -88,7 +102,21 @@ change in review.
 
 ## Scope
 
-F1–F12 are implemented. **F13 (habit), F14 (social on/off) and F15
-(overpromise/LTV) are not** — they are P1 on PLAN.md's cut list and were
-explicitly out of scope for this phase. 7.5 (LongMemEval) is PLAN's own stretch
-item and was not attempted.
+### What is implemented vs what has been measured
+
+All of F1–F12 are **implemented**. Only the analytic and audit tiers have been
+**measured**: F1, F2, F3, F6, F7a, F8, F10 pass; the six scenario laws (F4, F5,
+F7b, F9, F11, F12) have never produced a number, because the scenario tier was
+interrupted part-way through its first full pass.
+
+Two of those, **F7b and F9, are never-drop laws** — PLAN.md's degradation ladder
+ends "Never drop F7/F9." `make eval` therefore **exits non-zero** until they are
+measured: a law nobody ran and a law that failed are indistinguishable to
+someone reading the artifact, so the report refuses to distinguish them either.
+
+F13–F15 and 7.5 are a different thing — deliberately out of scope, not pending:
+
+**F13 (habit), F14 (social on/off) and F15 (overpromise/LTV) are not
+implemented** — they are P1 on PLAN.md's cut list and were explicitly out of
+scope for this phase. 7.5 (LongMemEval) is PLAN's own stretch item and was not
+attempted.

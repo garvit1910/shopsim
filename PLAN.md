@@ -321,11 +321,13 @@ Steps: flip `--impl mock→hydra`, `--mind scripted→real`; contract tests on b
 
 ---
 
-## Phase 7 — Atishay: Calibration & Evals (post-S1) — **closed 2026-08-20** (Garvit, Atishay's phases untouched)
+## Phase 7 — Atishay: Calibration & Evals (post-S1) — **analytic + audit tiers closed 2026-08-20; scenario tier OPEN** (Garvit, Atishay's phases untouched)
 
 *Plain words: proof it isn't a toy — the laws of advertising hold, the numbers sit in realistic ranges, and behavior changes for the right reasons, verifiable down to which event caused which belief.*
 
 **What shipped, and the one finding worth carrying forward.** F1–F12 are implemented across three tiers (`engine/shopsim/eval/`): **analytic** (pure mind arithmetic, no database, any number of seeds — F1, F2, F3, F6, F8, F10, the rank-agreement study and the whole calibration fit), **scenario** (real runs through the ordinary `SimRunner`/`replay.branch` path — F4, F5, F7b, F9, F11, F12) and **audit** (F7a, an assertion over the `provenance_coverage` Phase 6 already computes). F13–F15 stay cut, per the P1 list. `make eval` reproduces everything; `make eval-fast` skips the real runs and finishes in seconds.
+
+**What is NOT done, stated plainly:** the scenario tier has never completed a pass. F4, F5, F7b, F9, F11 and F12 have code, specs and thresholds but no measured numbers — the first run got through F5 and was interrupted mid-F9, and `cmd_scenarios` only writes `scenarios.json` after its whole loop, so nothing was kept. **F9 is the Maya law, i.e. the demo claim as a test, and it is currently unproven.** Running the tier is ~45 min on a freshly archived store and 4+ hours on a loaded one; run it one scenario at a time (`shopsim.eval scenarios --only F9`), since each invocation merges into the results file.
 
 The finding: **what looked like a badly calibrated choice model was mostly two retrieval constants and a degenerate cold start.** The committed runs disagreed by 40× on CTR (`r027` 0.67%, `r039` 28%) and both read a 63–67% bounce rate against a researched 45–55%, which invited a "pick a CLICK threshold between 2.0 and 6.0" fix. Adding an opt-in decision trace (`--trace-decisions`) and replaying real contexts offline showed the actual causes: (1) `recency_half_life_s` was one constant doing two jobs, so a seeded `PREFERS` prior — a standing disposition — decayed at ad speed and had lost 98% of its weight by day 18, starving `relevance`; (2) `expectation_violation` had no strength floor, so `EXPECTS` accumulated from *any* of a brand's creatives fired against *every* landing page, penalising 85% of page visits by −0.64 utility; (3) the applier cold-started an unheld concept at `(w=0, E=0)`, which makes `blend()` degenerate, so one CLICK set the weight to 1.0 outright and every affected drift chart read a flat line. With those fixed, **exactly one mind constant had to move** (`stage_bases.BUY` 3.2 → 2.85) and all five funnel metrics land in band. Details, sources and the before/after: `eval/calibration.md`; conventions in CONTRACT.md **v3.10-draft**, pending Atishay's ack.
 
@@ -352,8 +354,8 @@ The finding: **what looked like a badly calibrated choice model was mostly two r
 **7.2** aggregate calibration to public CTR ranges (Criteo/Avazu), before/after documented. **7.3** rank-agreement via synthetic oracle (Spearman ≥ ~0.7 across ≥5 seeds), calibrating stage weights. **7.4** abstention chart (F6 artifact). **7.5** stretch: LongMemEval slice through HydraMem's generic API.
 
 **Checkpoints**
-- [x] `make eval` reproduces every number and plot from scratch (`make eval-fast` for the database-free tiers).
-- [x] All P0 face-validity laws hold; F7 and F9 carry `never_drop` in the report, and each law has a test proving it can go RED — a suite whose assertions cannot fail is decoration (`tests/test_eval_laws.py`).
+- [x] `make eval` reproduces every number and plot from scratch (`make eval-fast` for the database-free tiers, which includes calibration — replaying a trace needs no database). One data prerequisite, now explicit: the calibration tier replays a *traced* reference run and `/runs/` is gitignored, so `make eval-reference` produces one and `make eval` invokes it when missing.
+- [ ] **All P0 face-validity laws hold.** Seven do (F1, F2, F3, F6, F7a, F8, F10). The six scenario laws — F4, F5, F7b, F9, F11, F12 — are implemented and specced but have **never been measured**: the tier's first full pass was interrupted at F9. Two of them, **F7b and F9, are never-drop**, so `make eval` exits non-zero until they run and `eval/README.md` names them. Each law does have a test proving it can go RED — a suite whose assertions cannot fail is decoration (`tests/test_eval_laws.py`).
 - [x] Calibration + rank-agreement + abstention artifacts committed to /eval.
 
 *Also worth recording:* charts are hand-written deterministic SVG rather than a plotting library, because "reproduces every plot from scratch" and a library whose PNG output varies with version, font stack and platform are not compatible. They also diff cleanly in git, so a calibration change shows as a chart change in review.

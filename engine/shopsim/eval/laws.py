@@ -340,6 +340,14 @@ ANALYTIC_LAWS = (
     analytic_f6_abstention,
 )
 
+# PLAN.md's degradation ladder ends "Never drop F7/F9." These ids are the
+# machine-readable form of that sentence: a never-drop law that was never
+# MEASURED must fail the report exactly as loudly as one that ran and went red,
+# because "we didn't get to it" and "it doesn't hold" are indistinguishable to
+# anyone reading the artifact. `test_eval_laws.py` pins this set against the
+# laws that actually carry never_drop=True, so the two cannot drift apart.
+NEVER_DROP_IDS = frozenset({"F7a", "F7b", "F9"})
+
 
 # ===========================================================================
 # audit tier — assertions over what a finished run already wrote

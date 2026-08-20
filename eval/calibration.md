@@ -92,7 +92,7 @@ the published bands. **Only one mind constant had to move:**
 | `stage_bases.CLICK` | 6.0 | 6.0 | already right |
 | `stage_bases.BROWSE` | 2.3 | 2.3 | already right |
 | `stage_bases.CART` | 3.7 | 3.7 | already right |
-| `stage_bases.BUY` | 3.2 | **2.85** | P(BUY\|cart) 0.194 → 0.247 |
+| `stage_bases.BUY` | 3.2 | **2.85** | P(BUY\|cart) 0.175 → 0.243 |
 
 That is the useful result: the choice model was close to correctly calibrated
 all along, and what looked like four broken gates was two retrieval constants
@@ -106,11 +106,15 @@ over real traced decision contexts:
 
 | metric | band | before | after | source |
 |---|---|---|---|---|
-| `p_click` | 0.005–0.020 | 0.0077 ✓ | 0.0085 ✓ | §1 Meta retail CTR 1.59–1.71% |
-| `bounce_rate` | 0.45–0.55 | 0.599 ✗ | 0.511 ✓ | §2 BROWSE = 1 − bounce |
-| `p_cart_given_browse` | 0.10–0.20 | 0.123 ✓ | 0.149 ✓ | §2 add-to-cart ~7% of sessions, ~2× on non-bounce |
-| `p_buy_given_cart` | 0.24–0.28 | 0.175 ✗ | 0.247 ✓ | §2 1 − cart abandonment (72–76%) |
-| `visit_to_purchase` | 0.01–0.03 | 0.0087 ✗ | 0.0180 ✓ | §2 apparel sitewide conversion 1–3% |
+| `p_click` | 0.005–0.020 | 0.0077 ✓ | 0.0089 ✓ | §1 Meta retail CTR 1.59–1.71% |
+| `bounce_rate` | 0.45–0.55 | 0.599 ✗ | 0.5403 ✓ | §2 BROWSE = 1 − bounce |
+| `p_cart_given_browse` | 0.10–0.20 | 0.123 ✓ | 0.1418 ✓ | §2 add-to-cart ~7% of sessions, ~2× on non-bounce |
+| `p_buy_given_cart` | 0.24–0.28 | 0.175 ✗ | 0.2432 ✓ | §2 1 − cart abandonment (72–76%) |
+| `visit_to_purchase` | 0.01–0.03 | 0.0087 ✗ | 0.0159 ✓ | §2 apparel sitewide conversion 1–3% |
+
+*This table is hand-written and has drifted from the generated artifact once
+already. `eval/README.md` and `eval/results/calibration.json` are the authority;
+if they disagree with the numbers above, they are right and this file is stale.*
 
 `visit_to_purchase` is a consistency check rather than an independent target:
 0.46 × 0.14 × 0.24 ≈ 1.6%, which is where the apparel band independently lands.
@@ -141,11 +145,51 @@ the finding that the `demo` profile exists to work around.
 
 Every rate above is the **model-implied** mean of the gate probability over the
 decisions that actually happened, not the realised count. That is deliberate: a
-correctly calibrated reference run produces 89 page decisions, and a realised
-bounce rate over 89 draws carries a ±5pp standard error before any bias. Both
-are reported (`calibration.json` → `after` and `realised`) and they agree within
-noise; the model estimator is the primary one because it is the one that can be
-read at demo scale at all.
+correctly calibrated reference run produces only 89 page decisions, so the
+realised estimator is very thin. Both are reported (`calibration.json` → `after`
+and `realised`), and this is what they actually say:
+
+| metric | model | realised | n | SE | gap in SE | realised in band |
+|---|---|---|---|---|---|---|
+| `p_click` | 0.0089 | 0.0105 | 7878 | 0.0011 | 1.58 | ✓ |
+| `bounce_rate` | 0.5403 | 0.6180 | 89 | 0.0528 | 1.47 | ✗ |
+| `p_cart_given_browse` | 0.1418 | 0.2941 | 34 | 0.0598 | **2.55** | ✗ |
+| `p_buy_given_cart` | 0.2432 | 0.4000 | 10 | 0.1357 | 1.16 | ✗ |
+| `visit_to_purchase` | 0.0159 | 0.0449 | 89 | 0.0132 | **2.20** | ✗ |
+
+An earlier draft of this file said the two "agree within noise". They do not,
+quite, and the correction is worth keeping: **four of five realised rates sit
+outside their published band**, two of them more than two standard errors from
+the model value, and — the part that noise alone does not explain — *all five
+are above it*, not scattered around it. The five are not independent
+(`visit_to_purchase` is a product of the others, and the cart denominator is
+ten draws), so this is not a significance test. It is a one-sided pattern that
+a larger reference run would either confirm as a real bias in the gate
+composition or wash out, and it has not been run.
+
+The model estimator stays primary, for the reason it always was: it is the one
+that can be read at demo scale at all. But "primary" is a choice of estimator,
+not a licence to describe a gap as agreement.
+
+### The analytic population does not match the certified funnel
+
+The analytic tier builds its own synthetic population rather than replaying a
+run, and its funnel is now band-checked with the same `calibrate.TARGETS` the
+reference is certified against (`results/analytic.json` →
+`funnel_bands_missed_on_every_seed`). One metric misses on **every** seed:
+
+| metric | band | analytic tier (5 seeds) | certified reference |
+|---|---|---|---|
+| `p_buy_given_cart` | 0.24–0.28 | 0.2941–0.3027 | 0.2432 |
+
+Every other metric is in band on every seed. This is reported, not asserted —
+no law gates on it — but it is a standing disagreement rather than sampling: a
+miss on one seed is noise, a miss on five in the same direction is the
+population. The two are built differently (`contexts.population` draws priors
+directly; the reference replays the contexts a real 300 × 20 run produced), so
+some gap is expected. A ~6pp gap on the tightest band in the table is worth
+knowing about before anyone quotes an analytic-tier funnel as a calibrated one.
+It has not been chased down.
 
 ## One more thing the baseline was doing to itself
 

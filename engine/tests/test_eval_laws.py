@@ -224,3 +224,40 @@ def test_f11_needs_trust_to_diverge_in_the_right_direction():
 def test_buys_by_tick_reads_the_golden_event_log():
     buys = L.buys_by_tick(REPO / "fixtures" / "golden-run" / "events.jsonl")
     assert buys == {1: 1}, "the golden run's single purchase lands on tick 1"
+
+
+def test_never_drop_ids_matches_the_laws_that_carry_the_flag():
+    """`NEVER_DROP_IDS` is the machine-readable form of "Never drop F7/F9".
+
+    The report gates its exit code on this set, so a law that grows or loses
+    `never_drop=True` while the set stays put would silently change what
+    `make eval` is willing to call a pass. Every law that carries the flag is
+    exercised somewhere in this file; this test pins the two sides together.
+    """
+    flagged = set()
+
+    # audit tier — F7a over the committed golden run
+    golden = json.loads((REPO / "fixtures" / "golden-run" / "results.json").read_text())
+    r = L.audit_f7a_no_learning_from_exposure({"golden-run": golden})
+    if r.never_drop:
+        flagged.add(r.id)
+
+    # scenario tier — F9 and F7b, on the same synthetic payloads the rest of
+    # this file drives them with
+    r = L.scenario_f9_maya_law(_funnel(10_000, 200, 40, "need_on"),
+                               _funnel(10_000, 180, 10, "need_off"),
+                               arm_on="need_on", arm_off="need_off")
+    if r.never_drop:
+        flagged.add(r.id)
+
+    r = L.scenario_f7b_heavy_exposure(
+        {"funnel": {"a": {"1001": {"SAW": 5000, "CLICKED": 0}}},
+         "preference_drift": [{"concept": 5003, "segment": 1001,
+                               "series": [0.5, 0.5, 0.5]}],
+         "motif_stats": {}})
+    if r.never_drop:
+        flagged.add(r.id)
+
+    assert flagged == set(L.NEVER_DROP_IDS), (
+        f"laws carrying never_drop={sorted(flagged)} but "
+        f"NEVER_DROP_IDS={sorted(L.NEVER_DROP_IDS)}")
