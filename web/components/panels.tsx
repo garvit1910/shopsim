@@ -13,6 +13,8 @@ import {
 import type { DetectedEvent, ScheduledEvent } from "@/lib/detectors";
 import type { CreativeCard } from "@/lib/types";
 import { fmtInt, fmtPct, fmtUsd, fmtW, shopperLabel } from "@/lib/format";
+import { adjusted, adjustedSeries, fmtFactor, isAdjusted } from "@/lib/economics";
+import { runAdjust } from "./market";
 import { LineChart, Spark, colorForCreative } from "./charts";
 
 /** Identity for a creative on a chart. The optional fields come from the
@@ -84,6 +86,8 @@ export function KpiTiles({ t }: { t: number }) {
   if (s.headTick < 0) return null;
   const k = kpisAt(d, s.results, t);
   const kPrev = t > 0 ? kpisAt(d, s.results, t - 1) : null;
+  // human-scale CTR (v3.13-draft), the same adjusting factor as the flight row
+  const a = runAdjust(s, s.manifest?.ticks ?? Math.max(1, s.headTick + 1));
   const trustKey = Object.keys(s.beliefAvg).find((x) => x.endsWith(":all"));
   const trust = trustKey ? s.beliefAvg[trustKey] : [];
   const delta = (cur: number, prev: number | null | undefined, fm: (n: number) => string) =>
@@ -91,7 +95,8 @@ export function KpiTiles({ t }: { t: number }) {
   const tiles: [string, string, React.ReactNode][] = [
     ["IMPRESSIONS", fmtInt(k.imp), delta(k.imp, kPrev?.imp, fmtInt)],
     ["CLICKS", fmtInt(k.clicks), delta(k.clicks, kPrev?.clicks, fmtInt)],
-    ["BLENDED CTR", fmtPct(k.ctr), <Spark key="s" data={s.results?.ctr_by_day.map((r) => r.ctr) ?? []} upto={t} color="var(--info)" />],
+    ["REAL CTR", fmtPct(adjusted(k.ctr, a)),
+      <Spark key="s" data={adjustedSeries(s.results?.ctr_by_day.map((r) => r.ctr) ?? [], a)} upto={t} color="var(--info)" />],
     ["CARTS", fmtInt(k.carts), delta(k.carts, kPrev?.carts, fmtInt)],
     ["BUYS", fmtInt(k.buys), delta(k.buys, kPrev?.buys, fmtInt)],
     ["REVENUE", fmtUsd(revenueAt(s.eventsByTick, t)), ""],
@@ -127,14 +132,20 @@ export function CtrByDayPanel({ t, creatives }: { t: number; creatives: Creative
   const ticks = s.manifest?.ticks ?? Math.max(1, s.headTick + 1);
   const h = 150, p = { t: 8, r: 10, b: 18, l: 40 };
   const iw = w - p.l - p.r, ih = h - p.t - p.b;
-  const series = creatives.map((c) => ({ ...c, data: ctrSeries(s.results, String(c.id), ticks) }));
+  const a = runAdjust(s, ticks);
+  const series = creatives.map((c) => ({
+    ...c, data: adjustedSeries(ctrSeries(s.results, String(c.id), ticks), a),
+  }));
   const vis = series.flatMap((sr) => sr.data.slice(0, t + 1)).filter((v): v is number => v != null);
-  const hi = Math.max(0.01, ...vis) * 1.1;
+  const hi = Math.max(0.002, ...vis) * 1.1;
   const X = (i: number) => p.l + (iw * i) / Math.max(1, ticks - 1);
   const Y = (v: number) => p.t + ih * (1 - v / hi);
   return (
     <div className="panel">
-      <div className="ph">CTR BY DAY · PER CREATIVE</div>
+      <div className="ph">
+        CTR BY DAY · PER CREATIVE
+        {isAdjusted(a) && <span className="phnote">AT REAL CTR · RAW {fmtFactor(a)}</span>}
+      </div>
       <div className="legend">
         {series.map((sr) => (
           <span key={sr.id}><i style={{ background: sr.color }} />{sr.name}</span>

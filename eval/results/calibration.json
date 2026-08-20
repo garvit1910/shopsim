@@ -109,6 +109,31 @@
  },
  "demo_profile": {
   "achieved_p_click": 0.050033,
+  "click_gate_acceleration": {
+   "by_click_base": {
+    "2": {
+     "click_base": 2.0,
+     "multiple": 31.038,
+     "p_click": 0.27516,
+     "status": "retired hand-picked demo (pre-Phase-7; r039 realised 0.28 CTR on it)"
+    },
+    "4.07": {
+     "click_base": 4.07,
+     "multiple": 5.655,
+     "p_click": 0.050134,
+     "status": "committed demo profile (eval/profiles/demo.json)"
+    },
+    "6": {
+     "click_base": 6.0,
+     "multiple": 1.0,
+     "p_click": 0.008865,
+     "status": "calibrated (minds/calibration.py DEFAULT_STAGE_BASES)"
+    }
+   },
+   "calibrated_click_base": 6.0,
+   "note": "Model-implied P(click) over the reference trace re-scored under each CLICK base, divided by the calibrated rate. Only the click gate moves, so dividing an accelerated run's CTR (and its ROAS, which carries the same factor through revenue) by its row is the stated way to read it at the certified gate. First-order: the replay re-scores the reference contexts and cannot model the click->preference feedback loop, so a run's own realised multiple can differ (r039 on 2.0 realised 0.28; a 300x60 Nisolo run realised 0.35). Keyed by the base formatted with %g; the API matches a run's base within 1e-6.",
+   "reference_p_click": 0.008865
+  },
   "committed_click_base": 4.07,
   "multiples": {
    "bounce_rate": {

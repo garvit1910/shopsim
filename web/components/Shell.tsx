@@ -2,7 +2,8 @@
 
 /** The app shell: numbered sidebar sections + a topbar that names the run
  * you are looking at. The sidebar deep-links into the newest run/experiment
- * so "03 MARKET" always goes somewhere real. */
+ * so "03 MARKET" always goes somewhere real. The landing page at / opts out
+ * of the whole thing — see `bare` below. */
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,20 +16,28 @@ const BRAND = { name: "ShopSim", domain: "six-state shoppers on HydraDB" };
 export default function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const [runs, setRuns] = useState<RegistryRow[]>([]);
-  const [social, setSocial] = useState<SocialRunRow[]>([]);
   const [experiments, setExperiments] = useState<ExperimentSummary[]>([]);
 
+  /** The landing page is the product's front door, not part of the cockpit:
+   * no run to name, no chrome to hang, and it has to open with the engine
+   * down. Gating the poller is the load-bearing half — without it / would sit
+   * there firing two failing requests every five seconds behind the hero. */
+  const bare = path === "/";
+
   useEffect(() => {
+    if (bare) return;
     let alive = true;
     const tick = () => {
       api.runs().then((r) => alive && setRuns(r)).catch(() => {});
-      api.socialRuns().then((r) => alive && setSocial(r)).catch(() => {});
       api.experiments().then((r) => alive && setExperiments(r)).catch(() => {});
     };
     tick();
     const id = setInterval(tick, 5000);
     return () => { alive = false; clearInterval(id); };
-  }, []);
+  }, [bare]);
+
+  // After every hook, before the derived state none of which / needs.
+  if (bare) return <>{children}</>;
 
   /** 03 MARKET must only ever point at a run the cockpit can actually draw.
    * Everything config-derived there (the ad roster, the allocation river, the
@@ -53,21 +62,21 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   /** the run on screen, if the URL names one — /market/<id> or /runs/<id>/results */
   const pathRun = path.match(/^\/(?:market|runs)\/([^/]+)/)?.[1] ?? null;
   const reportRun = pathRun ?? focus?.run_id ?? null;
-  /** 04 GRAPH needs a run that actually carries TRUSTS_PERSON edges — a run
-   * without the social layer has nothing social to draw. Prefer the newest
-   * one that does; fall back to the focus run so the link still goes
-   * somewhere real, and let the page explain why it is empty. */
-  const latestSocial = social.length ? social[social.length - 1] : null;
 
   const sections: { n: string; label: string; href: string; match: (p: string) => boolean }[] = [
-    { n: "01", label: "Setup", href: "/", match: (p) => p === "/" },
+    { n: "01", label: "Setup", href: "/setup", match: (p) => p.startsWith("/setup") },
     { n: "02", label: "Studio", href: "/studio", match: (p) => p.startsWith("/studio") || p.startsWith("/launch") },
     { n: "03", label: "Market", href: focus ? `/market/${focus.run_id}` : "/studio",
       match: (p) => p.startsWith("/market") },
-    { n: "04", label: "Graph", href: latestSocial ? `/graph/${latestSocial.run_id}`
-        : (focus ? `/graph/${focus.run_id}` : "/studio"),
+    // 04 GRAPH is a fixed, committed capture — it does not follow the focused
+    // run, so unlike the others this link needs no run id to point at.
+    { n: "04", label: "Graph", href: "/graph",
       match: (p) => p.startsWith("/graph") },
-    { n: "05", label: "Learnings", href: reportRun ? `/runs/${reportRun}/results` : "/",
+    // 05 MIND is the same kind of thing one page over: the pinned shopper's
+    // frozen capture (v3.12-draft), independent of whatever is running.
+    { n: "05", label: "Mind", href: "/mind",
+      match: (p) => p.startsWith("/mind") },
+    { n: "06", label: "Learnings", href: reportRun ? `/runs/${reportRun}/results` : "/setup",
       match: (p) => p.startsWith("/experiments") || p.includes("/results") },
   ];
 

@@ -6,23 +6,29 @@
  * Money tiles: revenue is simulated (BOUGHT.price), spend is impressions
  * priced at a researched CPM — see lib/economics.ts. */
 
-import { pause, play, seek, setSpeed, useMarket } from "@/lib/market";
+import { pause, play, seek, setSpeed, useMarket, type MarketState } from "@/lib/market";
 import { derive, kpisAt, ctrSeries, revenueAt } from "@/lib/selectors";
-import { CPM_SOURCE, fmtMoney, fmtRoas, roasFor, spendFor } from "@/lib/economics";
+import {
+  CPM_SOURCE, adjusted, adjustedSeries, ctrAdjust, explainFactor, factorSourceLabel, fmtFactor,
+  fmtMoney, fmtRoas, isAdjusted, roasFor, spendFor,
+} from "@/lib/economics";
+import { REAL_CTR_BAND } from "@/lib/calibration";
 import { fmtInt, fmtPct } from "@/lib/format";
 import type { CreativeInfo } from "./panels";
 import { AdThumb } from "./AdCard";
 import { LineChart } from "./charts";
 
-/** Mid-point of the researched real-world CTR band (0.5-2%), used only to
- * tell the viewer how far an accelerated run sits from reality. */
-const REAL_CTR_REFERENCE = 0.0125;
-/** The calibrated CLICK threshold (minds/calibration.py DEFAULT_STAGE_BASES).
- * A run that lowers it has deliberately made clicking easier; a run that does
- * not, but still clicks above band, is simply a differently-calibrated run.
- * Calling both "ACCELERATED" put a demo-only word on eval runs that never
- * asked for one. */
-const CALIBRATED_CLICK_BASE = 6.0;
+const inBand = (v: number | null) => v != null && v >= REAL_CTR_BAND[0] && v <= REAL_CTR_BAND[1];
+
+/** The adjusting factor for a run, from its WHOLE-run CTR so the headline and
+ * every chart share one constant that does not wobble with the scrubber.
+ * (The published tiers are constants anyway; this only matters for the band
+ * fallback.) */
+export function runAdjust(s: MarketState, ticks: number) {
+  const d = derive(s.eventsByTick);
+  const whole = kpisAt(d, s.results, Math.max(0, Math.min(ticks, s.headTick + 1) - 1));
+  return ctrAdjust(s.config, whole.ctr, whole.imp);
+}
 
 export function FlightKpis({ t, ticks }: { t: number; ticks: number }) {
   const s = useMarket();
@@ -31,14 +37,16 @@ export function FlightKpis({ t, ticks }: { t: number; ticks: number }) {
   const revenue = revenueAt(s.eventsByTick, t);
   const spend = spendFor(k.imp);
   const roas = roasFor(revenue, spend);
-  // computed from this run's own measured CTR, so the disclosure can never
-  // drift from what the run actually did
-  const ctrMultiple = k.ctr && k.imp > 200 ? k.ctr / REAL_CTR_REFERENCE : null;
-  // Did this run actually ask to be accelerated? Only then is that the word.
-  const clickBase = (s.config?.raw as { calibration?: { stage_bases?: { CLICK?: number } } } | undefined)
-    ?.calibration?.stage_bases?.CLICK;
-  const accelerated = typeof clickBase === "number" && clickBase < CALIBRATED_CLICK_BASE;
-  const overBandLabel = accelerated ? "ACCELERATED" : "ABOVE BAND";
+
+  // The headline CTR and ROAS are ALWAYS human-scale: raw ÷ the adjusting
+  // factor (lib/economics.ts ctrAdjust — engine-published, mirrored table, or
+  // band normalisation, in that order). The raw rate and the factor are
+  // printed beside them, never hidden. A raw 35% on the retired 2.0 base reads
+  // ~1.1% here; a run on the calibrated base is shown exactly as measured.
+  const a = runAdjust(s, ticks);
+  const realCtr = adjusted(k.ctr, a);
+  const realRoas = adjusted(roas, a);
+  const why = explainFactor(a);
 
   return (
     <div className="kpirow">
@@ -64,26 +72,21 @@ export function FlightKpis({ t, ticks }: { t: number; ticks: number }) {
 
       <Tile label="CUM SPEND" value={fmtMoney(spend)} note={CPM_SOURCE} sub="SIM-SCALE $" />
       <Tile label="REVENUE" value={fmtMoney(revenue)} sub="SIM-SCALE $" />
-      <Tile label="BLENDED ROAS" value={fmtRoas(roas)}
-        tone={ctrMultiple != null && ctrMultiple > 2 ? "warn"
-          : roas != null && roas >= 1 ? "good" : roas != null ? "bad" : undefined}
-        note={ctrMultiple != null && ctrMultiple > 2 && roas != null
-          ? `Clicks above band inflate revenue but not per-impression spend, so ROAS carries the same ~${ctrMultiple.toFixed(0)}x. At real-world click rates this run would be nearer ${fmtRoas(roas / ctrMultiple)}.`
-          : "revenue is simulated; spend is impressions priced at a researched CPM"}
-        sub={ctrMultiple != null && ctrMultiple > 2 && roas != null
-          ? `~${fmtRoas(roas / ctrMultiple)} AT REAL CTR`
-          : roas != null ? (roas >= 1 ? "PROFITABLE" : "UNDERWATER") : " "} />
-      <Tile label="BLENDED CTR" value={fmtPct(k.ctr)}
-        tone={ctrMultiple != null && ctrMultiple > 2 ? "warn" : undefined}
-        note={ctrMultiple != null
-          ? `real-world paid-social CTR is 0.5-2%; this run is running about ${ctrMultiple.toFixed(0)}x that`
-            + (accelerated
-                ? ` — deliberately, this run lowers the CLICK threshold to ${clickBase}`
-                : " — this run does not lower the CLICK threshold, so that is its own calibration")
-          : undefined}
-        sub={ctrMultiple != null && ctrMultiple > 2
-          ? `${overBandLabel} ~${ctrMultiple.toFixed(0)}x`
-          : `${fmtInt(k.clicks)} CLICKS`} />
+      <Tile label="ROAS AT REAL CTR" value={fmtRoas(realRoas)}
+        tone={realRoas != null ? (realRoas >= 1 ? "good" : "bad") : undefined}
+        note={(isAdjusted(a)
+          ? `Extra clicks inflate revenue but not per-impression spend, so the blended ${fmtRoas(roas)} carries the same ${a.factor.toFixed(1)}x as the click rate — shown divided back out, with this run's own revenue per click (everything below the click gate is at its calibrated value). `
+          : "This is the blended ROAS; the run clicks at a human-scale rate. ")
+          + why + " Real-world blended e-commerce ROAS is 1.5–4×. Revenue is simulated; spend is impressions priced at a researched CPM."}
+        sub={isAdjusted(a) && roas != null
+          ? `BLENDED ${fmtRoas(roas)} ${fmtFactor(a)}`
+          : realRoas != null ? (realRoas >= 1 ? "PROFITABLE" : "UNDERWATER") : " "} />
+      <Tile label="REAL CTR" value={fmtPct(realCtr)}
+        tone={realCtr != null && k.imp > 200 && !inBand(realCtr) ? "warn" : undefined}
+        note={why + " Real-world paid-social CTR is 0.5–2%."}
+        sub={isAdjusted(a)
+          ? `RAW ${fmtPct(k.ctr)} ${fmtFactor(a)} · ${factorSourceLabel(a)}`
+          : `${fmtInt(k.clicks)} CLICKS · CALIBRATED GATE`} />
       <Tile label="IMPRESSIONS" value={fmtInt(k.imp)} sub={`${fmtInt(k.buys)} PURCHASES`} />
     </div>
   );
@@ -108,8 +111,9 @@ export function CtrSmallMultiples({ t, creatives, ticks }: {
   t: number; creatives: CreativeInfo[]; ticks: number;
 }) {
   const s = useMarket();
+  const a = runAdjust(s, ticks);
   const series = creatives.map((c) => ({
-    ...c, data: ctrSeries(s.results, String(c.id), ticks),
+    ...c, data: adjustedSeries(ctrSeries(s.results, String(c.id), ticks), a),
   }));
   const vis = series.flatMap((x) => x.data).filter((v): v is number => v != null);
   const hi = Math.max(0.005, ...vis) * 1.12;
@@ -117,7 +121,14 @@ export function CtrSmallMultiples({ t, creatives, ticks }: {
   if (!creatives.length) return null;
   return (
     <div className="panel">
-      <div className="ph">CTR BY AD · DAILY, SHARED SCALE</div>
+      <div className="ph">
+        CTR BY AD · DAILY, SHARED SCALE
+        {isAdjusted(a) && (
+          <span className="phnote" title={`raw daily CTR ${fmtFactor(a)} (${factorSourceLabel(a).toLowerCase()}); ratios between ads are unchanged`}>
+            AT REAL CTR · RAW {fmtFactor(a)}
+          </span>
+        )}
+      </div>
       <div className="pc sm">
         {series.map((c) => {
           const seen = c.data.slice(0, t + 1).filter((v): v is number => v != null);

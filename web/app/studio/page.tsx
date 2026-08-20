@@ -17,6 +17,7 @@ import { estimate, fmtDuration } from "@/lib/eta";
 import Stepper, { pipelineSteps } from "@/components/Stepper";
 import AdCard from "@/components/AdCard";
 import CreativeViewer from "@/components/CreativeViewer";
+import { selectMindAd } from "@/lib/mind";
 
 type Mode = "market" | "ladder" | "page_ab" | "scenario";
 
@@ -119,10 +120,13 @@ export default function StudioPage() {
 
   const maxPicks = mode === "ladder" ? 3 : 99;
 
-  const toggle = (id: number) =>
+  const toggle = (id: number) => {
+    // picking an ad also makes it the Mind page's current stimulus
+    if (!picked.includes(id)) selectMindAd(id);
     setPicked((p) => (p.includes(id)
       ? p.filter((x) => x !== id)
       : p.length >= maxPicks ? [...p.slice(1), id] : [...p, id]));
+  };
 
   const onFiles = async (files: FileList | null) => {
     if (!files) return;
@@ -384,7 +388,8 @@ export default function StudioPage() {
                 produces a readable funnel and real revenue.
                 <span style={{ color: "var(--muted)" }}> Off = the researched 0.5–2% CTR band,
                 where {population} shoppers over {ticks} days yield almost no purchases. Either way
-                the market page prints the CTR multiple against the real-world band.</span>
+                the market page shows CTR and ROAS at the calibrated gate — divided back by the
+                published ~5.7× acceleration, raw rate printed beside them.</span>
               </span>
             </label>
           )}

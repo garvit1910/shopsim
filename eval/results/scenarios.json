@@ -2,6 +2,16 @@
  "profile": "demo",
  "profile_reason": "the demo profile accelerates ONLY the click gate (multiple 1.0 on every post-click gate, see calibration.json demo_multiples), so it draws more samples of the gates these laws test without changing them; on the reference profile F5 got 17 page visits total and reported a coin flip",
  "runs": {
+  "F12:rotation": {
+   "adopted": true,
+   "arm": "rotation",
+   "dir": "/Users/garvit/shopsim/runs/r066-f12-fatigue-rotation",
+   "label": "f12-fatigue",
+   "run_id": "r066-f12-fatigue-rotation",
+   "seed": 523,
+   "ticks": 16,
+   "wall_s": 2680.217
+  },
   "F12:same_concept": {
    "adopted": true,
    "arm": "same_concept",

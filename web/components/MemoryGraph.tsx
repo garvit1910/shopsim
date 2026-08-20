@@ -8,7 +8,7 @@
  * simulation (link distance, forceCenter offset by +60, charge -150, forceX/Y,
  * alphaTarget 1), the same elliptical-arc `step()`, the same drag with a
  * `pinned` class on release and dblclick to unpin, and the same encodings —
- * radius `3 + weight * 2`, fill `hsl(h, 94%, 99 - weight * 7)`, label offset
+ * radius `3 + weight * 2`, `hsl(h, 94%, L(weight))`, label offset
  * `-10 + weight * -2`. `weight` is the node's edge count, exactly as the pen
  * computes it, so size and saturation still mean "how connected is this".
  *
@@ -24,8 +24,17 @@
  *     legend copy ("direct" vs "indirect") survives almost unchanged.
  *   - hue splits three ways instead of one, because a worldview has parts a
  *     board-game graph does not: cyan for the objective world, green for the
- *     people, gold for the mind. The lightness and radius formulas — the
- *     pen's actual signature — are untouched.
+ *     people, gold for the mind. The radius formula is untouched.
+ *   - the lightness ramp is inverted, because the ground is. The pen ramps
+ *     lightness DOWN with connectivity (`99 - w*7`), which on white makes a
+ *     hub darker and bolder than its neighbours. Against a near-black canvas
+ *     that same ramp makes the LEAST connected nodes the brightest things on
+ *     screen. Same hues, same 94% saturation, same linear form, same 49-point
+ *     span — only the direction flips, so "more edges, stronger hue" still
+ *     holds, now measured against dark. The range sits at 34..83 rather than
+ *     climbing to 99: at 94% saturation the top of the scale washes out to
+ *     near-white, and a hub that loses its hue stops saying which family it
+ *     belongs to.
  */
 
 import { useEffect, useMemo, useRef } from "react";
@@ -231,12 +240,13 @@ export default function MemoryGraph({
         cbRef.current.onSelect({ node: d });
       })
       .append("circle")
-      // the pen's formulas, on the rescaled weight
+      // the pen's radius formula, on the rescaled weight
       .attr("r", (d) => {
         const w = penWeight(d);
         return (d.kind === "shopper" ? 6 : 3) + w * 2;
       })
-      .attr("fill", (d) => `hsl(${HUE[d.kind] ?? 202},94%,${99 - penWeight(d) * 7}%)`);
+      // the pen's formula with the ramp flipped for a dark ground (see header)
+      .attr("fill", (d) => `hsl(${HUE[d.kind] ?? 202},94%,${34 + penWeight(d) * 7}%)`);
 
     circle.append("text")
       .attr("y", (d) => -10 + Math.sqrt((d.weight ?? 0) / maxWeight) * PEN_MAX_WEIGHT * -2)

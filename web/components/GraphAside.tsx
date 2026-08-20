@@ -53,8 +53,13 @@ export default function GraphAside({
   return (
     <aside>
       <h1>Social Memory</h1>
-      <h2>Graph (Force-Directed)</h2>
-      <h3>HydraDB · {graph.run_id}</h3>
+      {/* A frozen graph that looks live is a lie, so the subtitle names the run
+          it is a photograph of rather than whatever is currently focused. */}
+      <h3>
+        {graph.captured
+          ? `captured · ${graph.captured.label ?? graph.captured.run_id} · day ${graph.captured.head_tick}`
+          : `HydraDB · live · ${graph.run_id}`}
+      </h3>
 
       <div className="gtabs">
         {(["people", "inspect", "explain"] as Mode[]).map((m) => (
@@ -109,9 +114,9 @@ export default function GraphAside({
 
       <strong>Legend</strong>
       <div className="glegend">
-        <div><i style={{ background: "hsl(152,94%,72%)" }} />people — shoppers and their friends</div>
-        <div><i style={{ background: "hsl(202,94%,78%)" }} />the world — ads, pages, products, brands, concepts</div>
-        <div><i style={{ background: "hsl(42,94%,72%)" }} />the mind — beliefs, needs, expectations</div>
+        <div><i style={{ background: "hsl(152,94%,70%)" }} />people — shoppers and their friends</div>
+        <div><i style={{ background: "hsl(202,94%,70%)" }} />the world — ads, pages, products, brands, concepts</div>
+        <div><i style={{ background: "hsl(42,94%,70%)" }} />the mind — beliefs, needs, expectations</div>
         <div><i style={{ background: "var(--gold)", outline: "2px dashed #000", outlineOffset: 2 }} />pinned</div>
       </div>
       <p>
@@ -144,7 +149,7 @@ function PeoplePanel({ graph, focus, isolated, setIsolated, asOf }: {
           return (
             <button key={n.id} className={`gperson ${isolated === n.id ? "on" : ""}`}
                     onClick={() => setIsolated(isolated === n.id ? null : n.id)}>
-              <i style={{ background: "hsl(152,94%,72%)" }} />
+              <i style={{ background: "hsl(152,94%,70%)" }} />
               <b>{shopperName(off)}</b>
               <span>{padOffset(off)} · {segmentName(Number(n.props.segment_id))}
                 {bought ? ` · ${bought} bought` : ""}</span>

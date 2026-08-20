@@ -177,6 +177,15 @@ export interface RunConfigPayload {
     goal_overrides: Record<string, unknown>;
     goal_waves: { category_id: number; start_tick: number; end_tick: number; rate_multiplier: number }[];
     arms: string[];
+    /** v3.13-draft: the run's CLICK base and its published multiple vs the
+     * calibrated gate (eval/results/calibration.json, reference-trace replay).
+     * `acceleration` is null when the table has no row for this base. */
+    click_gate?: {
+      base: number; calibrated_base: number;
+      acceleration: number | null;
+      p_click_reference: number | null; p_click_model: number | null;
+      source: string;
+    };
   };
 }
 
@@ -370,6 +379,17 @@ export interface TriadCandidate {
   why: string;
 }
 
+/** One captured `get_trace` result: the motif paths retrieval actually walked
+ * for a shopper x stimulus. Frozen alongside the graph because Explain reads
+ * them, and recomputing motifs in the browser would mean the dashboard
+ * inventing graph structure. */
+export interface FrozenTrace {
+  shopper_id?: number;
+  stimulus_id?: number;
+  scalars?: Record<string, unknown>;
+  motifs: MotifPayload[];
+}
+
 export interface MemoryGraph {
   run_id: string;
   run_index: number;
@@ -382,6 +402,27 @@ export interface MemoryGraph {
   candidates: TriadCandidate[];
   nodes: GraphNode[];
   edges: GraphEdge[];
+  /** Present only on the frozen fixture (GET /memory-graph), keyed
+   * offset -> stimulus id. Absent on a live per-run read. */
+  traces?: Record<string, Record<string, FrozenTrace>>;
+  /** Provenance of the frozen capture — which run it is a photograph of. */
+  captured?: {
+    run_id: string; run_index: number;
+    arm?: string | null; label?: string | null; head_tick: number;
+  };
+  comment?: string;
+}
+
+/** GET /shopper-mind (v3.12-draft) — the frozen Shopper Mind capture. The
+ * v3.11 frozen envelope plus: the catalog whose ads are the demo stimuli,
+ * the (creative, landing page) pairs baked for the pinned shopper, and the
+ * exact decision-preview envelopes computed at export time by the same
+ * appraise()/stage_probabilities() the live endpoint runs. Keyed offset ->
+ * stimulus id, like `traces`. The pinned shopper is focus[0]. */
+export interface FrozenMind extends MemoryGraph {
+  catalog_key: string;
+  demo_stimuli: { creative_id: number; page_id: number | null }[];
+  previews: Record<string, Record<string, DecisionPreview>>;
 }
 
 export interface SocialRunRow {

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="400" viewBox="0 0 720 400" font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+<rect width="720" height="400" fill="#ffffff"/>
+<text x="68" y="24" font-size="15" font-weight="600" fill="#1c1c1c">F12 · same story wears out faster than a rotated one</text>
+<text x="68" y="39" font-size="11" fill="#6b6b6b">identical impression budget and identical asset-level wearout; only the shared CONCEPT differs</text>
+<text x="14" y="203" font-size="11" fill="#6b6b6b" transform="rotate(-90 14 203)" text-anchor="middle">CTR</text>
+<text x="382" y="372" font-size="11" fill="#6b6b6b" text-anchor="middle">simulated day</text>
+<rect x="68" y="46" width="10" height="10" fill="#c0562e" rx="2"/>
+<text x="83" y="55" font-size="11" fill="#1c1c1c">same concept</text>
+<rect x="174" y="46" width="10" height="10" fill="#2f6fb0" rx="2"/>
+<text x="189" y="55" font-size="11" fill="#1c1c1c">concept rotation</text>
+<line x1="68" y1="336.0" x2="696" y2="336.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="340.0" text-anchor="end" font-size="11" fill="#6b6b6b">0</text>
+<line x1="68" y1="282.8" x2="696" y2="282.8" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="286.8" text-anchor="end" font-size="11" fill="#6b6b6b">0.025</text>
+<line x1="68" y1="229.6" x2="696" y2="229.6" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="233.6" text-anchor="end" font-size="11" fill="#6b6b6b">0.05</text>
+<line x1="68" y1="176.4" x2="696" y2="176.4" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="180.4" text-anchor="end" font-size="11" fill="#6b6b6b">0.075</text>
+<line x1="68" y1="123.2" x2="696" y2="123.2" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="127.2" text-anchor="end" font-size="11" fill="#6b6b6b">0.1</text>
+<line x1="68" y1="70.0" x2="696" y2="70.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="74.0" text-anchor="end" font-size="11" fill="#6b6b6b">0.125</text>
+<text x="68.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">0</text>
+<text x="172.7" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">2.5</text>
+<text x="277.3" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">5</text>
+<text x="382.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">7.5</text>
+<text x="486.7" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">10</text>
+<text x="591.3" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">12.5</text>
+<text x="696.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">15</text>
+<line x1="68" y1="336" x2="696" y2="336" stroke="#1c1c1c" stroke-width="1.2"/>
+<path d="M68.0,248.7 L109.9,232.2 L151.7,210.4 L193.6,237.9 L235.5,199.4 L277.3,210.8 L319.2,279.1 L361.1,259.2 L402.9,186.3 L444.8,209.2 L486.7,241.9 L528.5,252.3 L570.4,236.2 L612.3,255.3 L654.1,214.0 L696.0,200.3" fill="none" stroke="#c0562e" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="68.0" cy="248.7" r="2.8" fill="#c0562e"/>
+<circle cx="109.9" cy="232.2" r="2.8" fill="#c0562e"/>
+<circle cx="151.7" cy="210.4" r="2.8" fill="#c0562e"/>
+<circle cx="193.6" cy="237.9" r="2.8" fill="#c0562e"/>
+<circle cx="235.5" cy="199.4" r="2.8" fill="#c0562e"/>
+<circle cx="277.3" cy="210.8" r="2.8" fill="#c0562e"/>
+<circle cx="319.2" cy="279.1" r="2.8" fill="#c0562e"/>
+<circle cx="361.1" cy="259.2" r="2.8" fill="#c0562e"/>
+<circle cx="402.9" cy="186.3" r="2.8" fill="#c0562e"/>
+<circle cx="444.8" cy="209.2" r="2.8" fill="#c0562e"/>
+<circle cx="486.7" cy="241.9" r="2.8" fill="#c0562e"/>
+<circle cx="528.5" cy="252.3" r="2.8" fill="#c0562e"/>
+<circle cx="570.4" cy="236.2" r="2.8" fill="#c0562e"/>
+<circle cx="612.3" cy="255.3" r="2.8" fill="#c0562e"/>
+<circle cx="654.1" cy="214.0" r="2.8" fill="#c0562e"/>
+<circle cx="696.0" cy="200.3" r="2.8" fill="#c0562e"/>
+<path d="M68.0,275.6 L109.9,298.9 L151.7,254.7 L193.6,215.3 L235.5,199.4 L277.3,190.0 L319.2,215.0 L361.1,147.6 L402.9,121.2 L444.8,159.8 L486.7,169.5 L528.5,182.5 L570.4,163.1 L612.3,196.6 L654.1,99.6 L696.0,107.5" fill="none" stroke="#2f6fb0" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="68.0" cy="275.6" r="2.8" fill="#2f6fb0"/>
+<circle cx="109.9" cy="298.9" r="2.8" fill="#2f6fb0"/>
+<circle cx="151.7" cy="254.7" r="2.8" fill="#2f6fb0"/>
+<circle cx="193.6" cy="215.3" r="2.8" fill="#2f6fb0"/>
+<circle cx="235.5" cy="199.4" r="2.8" fill="#2f6fb0"/>
+<circle cx="277.3" cy="190.0" r="2.8" fill="#2f6fb0"/>
+<circle cx="319.2" cy="215.0" r="2.8" fill="#2f6fb0"/>
+<circle cx="361.1" cy="147.6" r="2.8" fill="#2f6fb0"/>
+<circle cx="402.9" cy="121.2" r="2.8" fill="#2f6fb0"/>
+<circle cx="444.8" cy="159.8" r="2.8" fill="#2f6fb0"/>
+<circle cx="486.7" cy="169.5" r="2.8" fill="#2f6fb0"/>
+<circle cx="528.5" cy="182.5" r="2.8" fill="#2f6fb0"/>
+<circle cx="570.4" cy="163.1" r="2.8" fill="#2f6fb0"/>
+<circle cx="612.3" cy="196.6" r="2.8" fill="#2f6fb0"/>
+<circle cx="654.1" cy="99.6" r="2.8" fill="#2f6fb0"/>
+<circle cx="696.0" cy="107.5" r="2.8" fill="#2f6fb0"/>
+</svg>

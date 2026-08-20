@@ -4,13 +4,25 @@
  *
  * Three mutually-trusting shoppers and their real HydraDB neighbourhoods, in
  * one connected graph. The engine picks the triple (the best one that can
- * actually show TRUSTS_PERSON → BOUGHT → EXPERIENCED), returns the topology
+ * actually show TRUSTS_PERSON → BOUGHT → EXPERIENCED), hands over the topology
  * with every edge's version history, and this page owns time, selection and
  * explanation. Nothing here synthesises graph structure.
+ *
+ * By default this reads the COMMITTED capture (`GET /memory-graph`), not the
+ * live store. Shopper worldviews exist only in HydraDB, and that store gets
+ * archived and recreated routinely — reading it live meant the exhibit blanked
+ * after every reset and reshaped itself run to run. So the graph is fixed: the
+ * same real, captured picture whatever simulation is loaded or running. The
+ * aside says which run it is a photograph of, because a frozen graph that
+ * looks live is a lie.
+ *
+ * `?run=<id>` still reads that run's graph out of the store — the live path,
+ * kept for regenerating the capture and for looking at a specific run.
  */
 
-import { Suspense, use, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import type { GraphEdge, MemoryGraph, MotifPayload, SocialRunRow } from "@/lib/types";
 import { shopperName } from "@/lib/format";
@@ -20,24 +32,34 @@ import {
 import MemoryGraphCanvas, { type SimEdge, type SimNode } from "@/components/MemoryGraph";
 import GraphAside, { type Mode } from "@/components/GraphAside";
 
-export default function GraphPage({ params }: { params: Promise<{ runId: string }> }) {
-  const { runId } = use(params);
+export default function GraphPage() {
   return (
-    <Suspense fallback={<Booting runId={runId} />}>
-      <GraphView runId={runId} />
+    <Suspense fallback={<Booting />}>
+      <GraphRoute />
     </Suspense>
   );
 }
 
-function Booting({ runId }: { runId: string }) {
+function GraphRoute() {
+  // ?run=<id> opts into the live store read; absent means the frozen capture.
+  const runId = useSearchParams().get("run");
+  return <GraphView runId={runId} />;
+}
+
+function Booting({ runId }: { runId?: string | null }) {
   return (
     <div className="graphpage">
-      <section><div className="gempty"><b>Reading the graph</b><span>{runId}</span></div></section>
+      <section>
+        <div className="gempty">
+          <b>Reading the graph</b>
+          <span>{runId ?? "committed capture"}</span>
+        </div>
+      </section>
     </div>
   );
 }
 
-function GraphView({ runId }: { runId: string }) {
+function GraphView({ runId }: { runId: string | null }) {
   const [graph, setGraph] = useState<MemoryGraph | null>(null);
   const [socialRuns, setSocialRuns] = useState<SocialRunRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -51,12 +73,15 @@ function GraphView({ runId }: { runId: string }) {
   const [motifs, setMotifs] = useState<MotifPayload[] | null>(null);
   const [explainLoading, setExplainLoading] = useState(false);
 
+  const live = runId != null;
+
   useEffect(() => {
     let alive = true;
-    api.socialRuns().then((r) => alive && setSocialRuns(r)).catch(() => {});
     setGraph(null);
     setError(null);
-    api.memoryGraph(runId)
+    if (live) api.socialRuns().then((r) => alive && setSocialRuns(r)).catch(() => {});
+    const load = live ? api.memoryGraph(runId!) : api.frozenGraph();
+    load
       .then((g) => {
         if (!alive) return;
         setGraph(g);
@@ -65,7 +90,7 @@ function GraphView({ runId }: { runId: string }) {
       .catch((e) => alive && setError(
         e instanceof ApiError ? `${e.status} · ${e.message}` : String(e)));
     return () => { alive = false; };
-  }, [runId]);
+  }, [runId, live]);
 
   // ---- the graph as it stood on `day` ------------------------------------
   const at = useMemo(() => (graph ? graphAtDay(graph, day) : null), [graph, day]);
@@ -102,15 +127,23 @@ function GraphView({ runId }: { runId: string }) {
       setMotifs(null);
       return;
     }
-    let alive = true;
     const offset = Number(graph.nodes.find((n) => n.id === isolated)?.props.offset);
+
+    // Frozen: the traces were captured by the same get_trace call the live
+    // path makes, so the numbers on screen are the engine's either way.
+    if (!live) {
+      setMotifs(graph.traces?.[String(offset)]?.[String(stimulus)]?.motifs ?? []);
+      setExplainLoading(false);
+      return;
+    }
+    let alive = true;
     setExplainLoading(true);
-    api.trace(runId, offset, stimulus)
+    api.trace(runId!, offset, stimulus)
       .then((t) => alive && setMotifs(t.motifs))
       .catch(() => alive && setMotifs([]))
       .finally(() => alive && setExplainLoading(false));
     return () => { alive = false; };
-  }, [mode, isolated, stimulus, runId, graph]);
+  }, [mode, isolated, stimulus, runId, live, graph]);
 
   const explain: ExplainResult | null = useMemo(() => {
     if (mode !== "explain" || !motifs || !at) return null;
@@ -149,8 +182,12 @@ function GraphView({ runId }: { runId: string }) {
             <b>The graph could not be read</b>
             <span>{error}</span>
             <span className="gnote">
-              The engine reads HydraDB live for this view — if the store is down,
-              start it with <code>infra/up.sh</code>.
+              {live
+                ? <>This view reads HydraDB live — if the store is down, start it
+                   with <code>infra/up.sh</code>.</>
+                : <>The committed capture lives at{" "}
+                   <code>fixtures/social-graph/memory-graph.json</code>. Regenerate it
+                   with <code>python -m shopsim.runner export-graph</code>.</>}
             </span>
           </div>
         </section>
@@ -230,18 +267,17 @@ function GraphView({ runId }: { runId: string }) {
   );
 }
 
-function SocialRunSwitcher({ runs, current }: { runs: SocialRunRow[]; current: string }) {
+function SocialRunSwitcher({ runs, current }: { runs: SocialRunRow[]; current: string | null }) {
   const others = runs.filter((r) => r.run_id !== current);
   return (
     <aside>
       <h1>Social Memory</h1>
-      <h2>Graph (Force-Directed)</h2>
       <h3>no trust layer here</h3>
       <strong>Runs that have one</strong>
       {others.length ? (
         <div className="gpeople">
           {others.map((r) => (
-            <Link key={r.run_id} href={`/graph/${r.run_id}`} className="gperson">
+            <Link key={r.run_id} href={`/graph?run=${r.run_id}`} className="gperson">
               <i style={{ background: "hsl(152,94%,72%)" }} />
               <b>{r.label}</b>
               <span>{r.ticks} days</span>

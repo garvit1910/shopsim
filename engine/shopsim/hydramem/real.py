@@ -251,9 +251,14 @@ class HydraMem:
                 for t in tris[:limit]]
 
     def get_memory_graph(self, focus_ids: Iterable[int],
-                         *, creative_names: Mapping[str, str] | None = None) -> dict:
+                         *, creative_names: Mapping[str, str] | None = None,
+                         extra_stimuli: Iterable[int] = ()) -> dict:
         """{nodes, edges} for a shopper cohort, full edge history included so
-        the client owns the as-of scrub (see memgraph's module docstring)."""
+        the client owns the as-of scrub (see memgraph's module docstring).
+
+        `extra_stimuli` forces creatives/pages the cohort never met onto the
+        canvas, closed over their objective edges only (v3.12-draft — the
+        Shopper Mind capture needs every demo ad on screen, met or not)."""
         focus = [int(f) for f in focus_ids]
         self.cache.build(self._now)
 
@@ -305,7 +310,8 @@ class HydraMem:
             focus_ids=focus, rows_by_shopper=rows_by_shopper,
             belief_rows=belief_rows, peer_rows=peer_rows,
             product_rows=product_rows, cache=self.cache,
-            creative_names=dict(creative_names or {}))
+            creative_names=dict(creative_names or {}),
+            extra_stimuli=extra_stimuli)
 
     def get_preference_history(self, shopper_id: int, concept_id: int) -> list[dict]:
         """The full supersession chain with receipts — the UI timeline."""

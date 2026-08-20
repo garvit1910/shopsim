@@ -23,10 +23,10 @@ import os
 import subprocess
 import sys
 import threading
-from dataclasses import is_dataclass
-from enum import Enum
-from functools import partial
 from pathlib import Path
+
+from .preview import (
+    _jsonable, build_population, build_preview_ctx, compute_preview)
 
 
 # A "running" row with no progress for this long is presumed dead — but only
@@ -103,18 +103,6 @@ def _any_live_writer() -> dict | None:
         except ValueError:
             continue
     return None
-
-
-def _jsonable(obj):
-    if isinstance(obj, Enum):
-        return obj.value
-    if is_dataclass(obj) and not isinstance(obj, type):
-        return {f: _jsonable(getattr(obj, f)) for f in obj.__dataclass_fields__}
-    if isinstance(obj, dict):
-        return {str(k): _jsonable(v) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple)):
-        return [_jsonable(v) for v in obj]
-    return obj
 
 
 def create_app(runs_dir: Path):
@@ -265,6 +253,39 @@ def create_app(runs_dir: Path):
 
     # ---- v3.5-draft: config + population -----------------------------------
 
+    def _click_gate(cfg) -> dict:
+        """The run's CLICK base and how far it sits from the calibrated gate.
+
+        The multiple comes from `eval/results/calibration.json` ->
+        demo_profile.click_gate_acceleration, the reference-trace replay that
+        also publishes the demo profile's 5.6x (v3.13-draft). The market page
+        divides its headline CTR and ROAS by it and prints the raw rate beside
+        them; a base the table does not carry yields `acceleration: null`, and
+        the page then falls back to the raw rate with its band disclosure.
+        Read per request, like the other committed-file reads off `root`: the
+        table is small and a stale cache would outlive a re-calibration.
+        """
+        _ap, _cp, stage_bases = cfg.calibration()
+        base = float(dict(stage_bases)["CLICK"])
+        from ..minds.calibration import DEFAULT_STAGE_BASES
+        calibrated = float(dict(DEFAULT_STAGE_BASES)["CLICK"])
+        out = {"base": base, "calibrated_base": calibrated, "acceleration": None,
+               "p_click_reference": None, "p_click_model": None,
+               "source": "eval/results/calibration.json "
+                         "demo_profile.click_gate_acceleration (reference-trace replay)"}
+        path = root / "eval" / "results" / "calibration.json"
+        try:
+            table = json.loads(path.read_text())["demo_profile"]["click_gate_acceleration"]
+        except (OSError, ValueError, KeyError):
+            return out
+        out["p_click_reference"] = table.get("reference_p_click")
+        for entry in table.get("by_click_base", {}).values():
+            if abs(float(entry["click_base"]) - base) < 1e-6:
+                out["acceleration"] = entry.get("multiple")
+                out["p_click_model"] = entry.get("p_click")
+                break
+        return out
+
     @app.get("/runs/{run_id}/config")
     def run_config(run_id: str) -> dict:
         row, cfg = _cfg_for(run_id)
@@ -299,6 +320,7 @@ def create_app(runs_dir: Path):
                 "goal_overrides": cfg.goal_overrides(arm),
                 "goal_waves": [dict(w) for w in goal_cfg.waves],
                 "arms": [a.name for a in cfg.arms],
+                "click_gate": _click_gate(cfg),
             },
         }
 
@@ -308,17 +330,10 @@ def create_app(runs_dir: Path):
         if cached is not None:
             return cached
         row, cfg = _cfg_for(run_id)
-        from ..population.factory import (
-            PopulationConfig, generate_population, load_segment_specs)
-        _ap, _cp, stage_bases = cfg.calibration()
-        specs = load_segment_specs(cfg.personas_path)
-        shoppers = generate_population(PopulationConfig(
-            seed=cfg.seed, population_size=cfg.population_size,
-            segments=specs, run_index=row["run_index"],
-            stage_bases=stage_bases))
+        built = build_population(cfg, row["run_index"])
         with _global_lock:
-            _pops[run_id] = (specs, shoppers)
-        return specs, shoppers
+            _pops[run_id] = built
+        return built
 
     @app.get("/runs/{run_id}/population")
     def population(run_id: str) -> dict:
@@ -399,6 +414,55 @@ def create_app(runs_dir: Path):
             # Labels are decoration. A missing, moved or malformed catalog must
             # never take the graph itself down — the ads just show as ids.
             return {}
+
+    @app.get("/memory-graph")
+    def frozen_memory_graph() -> dict:
+        """The committed 04 Graph exhibit — run-independent, store-independent.
+
+        Reads `fixtures/social-graph/memory-graph.json` the same way /catalogs
+        reads its fixtures, off `root = runs_dir.parent`. Deliberately NOT a
+        store read: shopper worldviews live only in HydraDB, and that store is
+        archived and recreated routinely, so a live read blanked the exhibit
+        after every reset. The payload is a frozen capture of one real run and
+        says so in its own `comment` and `captured` block.
+        """
+        path = root / "fixtures" / "social-graph" / "memory-graph.json"
+        if not path.exists():
+            raise HTTPException(
+                status_code=404,
+                detail="no frozen memory graph committed; regenerate with "
+                       "`python -m shopsim.runner export-graph --config CFG "
+                       "--run RUN_ID --out fixtures/social-graph/memory-graph.json`")
+        try:
+            return json.loads(path.read_text())
+        except ValueError as ex:
+            raise HTTPException(status_code=500,
+                                detail=f"frozen memory graph is not valid JSON: {ex}")
+
+    @app.get("/shopper-mind")
+    def frozen_shopper_mind() -> dict:
+        """The committed 05 Mind exhibit (v3.12-draft) — the pinned shopper.
+
+        Same move as /memory-graph one fixture over: a frozen capture of one
+        real run, extended by `export-graph --previews` with `catalog_key`,
+        `demo_stimuli` and `previews` so the Mind page can show retrieval
+        paths AND decision math with the store archived. Never a store read —
+        the mind is chosen once and always exists.
+        """
+        path = root / "fixtures" / "shopper-mind" / "mind.json"
+        if not path.exists():
+            raise HTTPException(
+                status_code=404,
+                detail="no frozen shopper mind committed; regenerate with "
+                       "`python -m shopsim.runner export-graph --config "
+                       "runs/experiments/shopper-mind-demo/run_config.json "
+                       "--run RUN_ID --out fixtures/shopper-mind/mind.json "
+                       "--previews`")
+        try:
+            return json.loads(path.read_text())
+        except ValueError as ex:
+            raise HTTPException(status_code=500,
+                                detail=f"frozen shopper mind is not valid JSON: {ex}")
 
     @app.get("/social-runs")
     def social_runs() -> list[dict]:
@@ -485,28 +549,10 @@ def create_app(runs_dir: Path):
         if cached is not None:
             return cached
         row, cfg = _cfg_for(run_id)
-        from ..minds import FormulaMind, ObjectiveView
-        from ..perception.cache import perceived_maps
-        from ..perception.perceive import perceive_catalog
-        from . import steps
-
-        def _no_llm(*_a, **_k):
-            raise HTTPException(status_code=503,
-                                detail="perception cache incomplete for this run")
-
-        perceived, calls = perceive_catalog(
-            cfg.catalog_dir, cache_dir=cfg.perception_cache, call=_no_llm)
-        assert calls == 0
-        claims, offers = perceived_maps(perceived)
-        view = ObjectiveView.from_catalog(cfg.catalog_dir, claims, offers)
-        ap, cp, _sb = cfg.calibration()
-        arm = cfg.arm(row["arm"])
-        sched = cfg.schedule_for(arm)
-        page_of = partial(steps.page_for, cfg.seed,
-                          cfg.page_splits(sched), cfg.resolve_pages(view, sched))
-        built = {"view": view,
-                 "mind": FormulaMind(view, appraisal_params=ap, choice_params=cp),
-                 "cp": cp, "page_of": page_of}
+        try:
+            built = build_preview_ctx(cfg, row["arm"])
+        except ValueError as ex:  # incomplete perception cache
+            raise HTTPException(status_code=503, detail=str(ex))
         with _global_lock:
             _previews[run_id] = built
         return built
@@ -524,37 +570,8 @@ def create_app(runs_dir: Path):
         sh = shoppers[offset]
         ctx = _shopper_read(run_id, offset,
                             lambda mem, sid: mem.get_decision_context(sid, stimulus_id))
-        bound = pv["mind"].for_stimulus(stimulus_id)
-        from dataclasses import replace
-        from ..minds.choice import stage_probabilities
-        a = bound.appraise(ctx, sh.traits)
-        probs = stage_probabilities(a, ctx.scalars, sh.coeffs,
-                                    kind=facts.kind, params=pv["cp"])
-        counterfactual = None
-        if ctx.scalars.active_need is not None:
-            ctx2 = replace(
-                ctx,
-                scalars=replace(ctx.scalars, active_need=None),
-                motifs=[m for m in ctx.motifs if m.type.value != "goal_fit"])
-            a2 = bound.appraise(ctx2, sh.traits)
-            counterfactual = {
-                "label": "same context, need removed",
-                "appraisal": _jsonable(a2),
-                "probabilities": stage_probabilities(
-                    a2, ctx2.scalars, sh.coeffs, kind=facts.kind, params=pv["cp"]),
-            }
         tick, _now, _man = _clock(run_id)
-        return {
-            "tick": tick,
-            "stimulus": {"id": stimulus_id, "kind": facts.kind,
-                         "page_id": (pv["page_of"](offset, stimulus_id)
-                                     if facts.kind == "creative" else None)},
-            "scalars": _jsonable(ctx.scalars),
-            "motifs": _jsonable(list(ctx.motifs)),
-            "appraisal": _jsonable(a),
-            "probabilities": probs,
-            "counterfactual_need_off": counterfactual,
-        }
+        return compute_preview(pv, ctx, sh, offset, stimulus_id, tick)
 
     # ---- v3.5-draft: experiments -------------------------------------------
 

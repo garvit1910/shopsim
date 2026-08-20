@@ -7,6 +7,9 @@ shared nodes, and version folding — plus the as-of discipline the client
 depends on to scrub through days.
 """
 
+import itertools
+import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -295,3 +298,123 @@ def test_trusts_person_is_still_the_only_shopper_valued_relationship(rel):
     relationship is ever added, the shopper-set closure must learn about it."""
     assert rel == "TRUSTS_PERSON"
     assert len(schema.SOCIAL_EDGES) == 1
+
+
+# ---------------------------------------------------------------------------
+# the committed capture (no database — the golden-run pattern)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def frozen():
+    path = (Path(__file__).resolve().parents[2]
+            / "fixtures" / "social-graph" / "memory-graph.json")
+    assert path.exists(), (
+        "fixtures/social-graph/memory-graph.json is missing — regenerate with "
+        "`python -m shopsim.runner export-graph` (see the README beside it)")
+    return json.loads(path.read_text())
+
+
+def test_the_capture_says_what_it_is_a_photograph_of(frozen):
+    """A frozen graph that does not name its source reads as live state."""
+    cap = frozen["captured"]
+    assert cap["run_id"] and isinstance(cap["run_index"], int)
+    assert 0 <= cap["head_tick"] < frozen["ticks"]
+    assert frozen["head_tick"] == cap["head_tick"]
+    assert "frozen capture" in frozen["comment"].lower()
+    assert "export-graph" in frozen["comment"]
+
+
+def test_every_frozen_edge_resolves_to_a_node(frozen):
+    """d3.forceLink throws on an id it cannot resolve, so one dangling edge
+    blanks the whole canvas. This is the check a bad regeneration must fail."""
+    ids = {n["id"] for n in frozen["nodes"]}
+    dangling = [e["id"] for e in frozen["edges"]
+                if e["source"] not in ids or e["target"] not in ids]
+    assert not dangling, dangling[:5]
+
+
+def test_the_focus_offsets_are_real_shopper_nodes(frozen):
+    by_offset = {n["props"].get("offset"): n for n in frozen["nodes"]
+                 if n["kind"] == "shopper"}
+    assert len(frozen["focus"]) == 3
+    for off in frozen["focus"]:
+        assert off in by_offset, off
+        assert by_offset[off]["props"]["focus"] is True
+
+
+def test_the_three_are_mutually_trusting(frozen):
+    """The exhibit's premise. If the triple is not a triangle it is not the
+    picture the aside claims it is."""
+    sids = [n["id"] for n in frozen["nodes"]
+            if n["kind"] == "shopper" and n["props"].get("offset") in frozen["focus"]]
+    trust = {(e["source"], e["target"]) for e in frozen["edges"]
+             if e["rel"] == "TRUSTS_PERSON"}
+    for a, b in itertools.permutations(sids, 2):
+        assert (a, b) in trust, (a, b)
+
+
+def test_the_social_proof_chain_is_present(frozen):
+    """TRUSTS_PERSON -> BOUGHT -> EXPERIENCED, on the same product, by someone
+    a focus shopper trusts — the one path this whole view exists to show."""
+    trust = {(e["source"], e["target"]) for e in frozen["edges"]
+             if e["rel"] == "TRUSTS_PERSON"}
+    bought = {(e["source"], e["target"]) for e in frozen["edges"]
+              if e["rel"] == "BOUGHT"}
+    lived = {(e["source"], e["target"]) for e in frozen["edges"]
+             if e["rel"] == "EXPERIENCED"}
+    chains = [(a, b, p) for (a, b) in trust
+              for (peer, p) in bought if peer == b and (b, p) in lived]
+    assert chains, "no trusted peer both bought and took delivery of anything"
+
+
+def test_every_trace_maps_to_a_focus_shopper_and_a_visible_stimulus(frozen):
+    """Explain reads these by (offset, stimulus id); a key that matches nothing
+    on screen is a silently dead tab."""
+    node_ids = {n["id"] for n in frozen["nodes"]}
+    assert set(frozen["traces"]) == {str(o) for o in frozen["focus"]}
+    for offset, by_stim in frozen["traces"].items():
+        assert by_stim, f"offset {offset} has no traces"
+        for stim, trace in by_stim.items():
+            assert int(stim) in node_ids, (offset, stim)
+            assert isinstance(trace["motifs"], list)
+
+
+def test_the_frozen_traces_carry_the_social_proof_motif(frozen):
+    """With its required fields — the same ones C1 enforces on a live read."""
+    motifs = [m for by_stim in frozen["traces"].values()
+              for t in by_stim.values() for m in t["motifs"]
+              if m["type"] == "social_proof"]
+    assert motifs, "no social_proof motif survived the capture"
+    for m in motifs:
+        for field in ("valence", "peer_trust", "experience"):
+            assert isinstance(m[field], (int, float)), (field, m)
+        assert 0.0 <= m["valence"] <= 1.0
+        shopper, rel, peer, rel2, product = m["path"]
+        assert rel == "TRUSTS_PERSON" and rel2 == "BOUGHT"
+
+
+def test_motif_paths_reference_nodes_that_are_on_screen(frozen):
+    """explainMotifs looks each hop up against the rendered graph; a path whose
+    endpoints are absent lights nothing and the tab looks broken."""
+    node_ids = {n["id"] for n in frozen["nodes"]}
+    missing = set()
+    for by_stim in frozen["traces"].values():
+        for trace in by_stim.values():
+            for m in trace["motifs"]:
+                for hop in m.get("path", []):
+                    if isinstance(hop, int) and hop not in node_ids:
+                        missing.add(hop)
+    assert not missing, f"motif paths reference absent nodes: {sorted(missing)[:5]}"
+
+
+def test_the_frozen_payload_matches_the_live_envelope(frozen):
+    """The client types one shape for both paths, so the capture must carry
+    every key a live /runs/{id}/memory-graph read carries."""
+    for key in ("run_id", "run_index", "t0", "tick_seconds", "ticks",
+                "head_tick", "social_enabled", "focus", "candidates",
+                "nodes", "edges"):
+        assert key in frozen, key
+    for e in frozen["edges"]:
+        assert e["time"] in ("static", "event", "bitemporal"), e["id"]
+        assert e["versions"], e["id"]

@@ -588,16 +588,17 @@
    "note": "Exposure touches awareness, adstock and EXPECTS only (evidence.py: SAW carries pref_weight 0.0). This audit is the thing that would catch one confused updater putting taste back on the exposure channel.",
    "numbers": {
     "forbidden_causes_seen": {},
-    "learned_versions": 4594,
+    "learned_versions": 5800,
     "pooled_cause_kinds": {
-     "BOUGHT": 267,
-     "BROWSED": 1694,
-     "CARTED": 230,
-     "CLICKED": 2021,
-     "EXPERIENCED": 288,
-     "VISITED": 94
+     "BOUGHT": 337,
+     "BROWSED": 2104,
+     "CARTED": 295,
+     "CLICKED": 2615,
+     "EXPERIENCED": 333,
+     "VISITED": 116
     },
     "runs_audited": [
+     "F12:rotation",
      "F12:same_concept",
      "F5:split",
      "F9:need_off",
@@ -720,14 +721,165 @@
    },
    "threshold": "a low-evidence belief must move strictly further than a high-evidence one under identical contradiction",
    "tier": "analytic"
+  },
+  {
+   "id": "F12",
+   "name": "repetition decays CTR faster than concept rotation",
+   "never_drop": false,
+   "note": "",
+   "numbers": {
+    "decay_gap": 0.55593,
+    "mean_brand_fatigue_repetition": 0.45293,
+    "mean_brand_fatigue_rotation": 0.0,
+    "repetition_ctr_first_half": 0.047479,
+    "repetition_ctr_second_half": 0.052588,
+    "repetition_decay": -0.10761,
+    "rotation_ctr_first_half": 0.052521,
+    "rotation_ctr_second_half": 0.087371,
+    "rotation_decay": -0.66354
+   },
+   "passed": true,
+   "series": {
+    "fatigue_ctr": {
+     "repetition": [
+      {
+       "ctr": 0.04101,
+       "tick": 0
+      },
+      {
+       "ctr": 0.04878,
+       "tick": 1
+      },
+      {
+       "ctr": 0.05903,
+       "tick": 2
+      },
+      {
+       "ctr": 0.0461,
+       "tick": 3
+      },
+      {
+       "ctr": 0.06419,
+       "tick": 4
+      },
+      {
+       "ctr": 0.05882,
+       "tick": 5
+      },
+      {
+       "ctr": 0.02676,
+       "tick": 6
+      },
+      {
+       "ctr": 0.03607,
+       "tick": 7
+      },
+      {
+       "ctr": 0.07034,
+       "tick": 8
+      },
+      {
+       "ctr": 0.0596,
+       "tick": 9
+      },
+      {
+       "ctr": 0.04422,
+       "tick": 10
+      },
+      {
+       "ctr": 0.03934,
+       "tick": 11
+      },
+      {
+       "ctr": 0.04688,
+       "tick": 12
+      },
+      {
+       "ctr": 0.03793,
+       "tick": 13
+      },
+      {
+       "ctr": 0.05735,
+       "tick": 14
+      },
+      {
+       "ctr": 0.06376,
+       "tick": 15
+      }
+     ],
+     "rotation": [
+      {
+       "ctr": 0.02839,
+       "tick": 0
+      },
+      {
+       "ctr": 0.01742,
+       "tick": 1
+      },
+      {
+       "ctr": 0.03819,
+       "tick": 2
+      },
+      {
+       "ctr": 0.05674,
+       "tick": 3
+      },
+      {
+       "ctr": 0.06419,
+       "tick": 4
+      },
+      {
+       "ctr": 0.06863,
+       "tick": 5
+      },
+      {
+       "ctr": 0.05686,
+       "tick": 6
+      },
+      {
+       "ctr": 0.08852,
+       "tick": 7
+      },
+      {
+       "ctr": 0.10092,
+       "tick": 8
+      },
+      {
+       "ctr": 0.08278,
+       "tick": 9
+      },
+      {
+       "ctr": 0.07823,
+       "tick": 10
+      },
+      {
+       "ctr": 0.07213,
+       "tick": 11
+      },
+      {
+       "ctr": 0.08125,
+       "tick": 12
+      },
+      {
+       "ctr": 0.06552,
+       "tick": 13
+      },
+      {
+       "ctr": 0.11111,
+       "tick": 14
+      },
+      {
+       "ctr": 0.10738,
+       "tick": 15
+      }
+     ]
+    }
+   },
+   "threshold": "repetition CTR decay exceeds rotation decay by >= 10% (half-run vs half-run)",
+   "tier": "scenario"
   }
  ],
  "laws_not_run": [
-  {
-   "id": "F12",
-   "never_drop": false,
-   "reason": "needs both fatigue arms"
-  },
   {
    "id": "F7b",
    "never_drop": true,
@@ -747,6 +899,7 @@
  "plots": [
   "plots/calibration_before_after.svg",
   "plots/ctr_by_day_reference.svg",
+  "plots/f12_fatigue_separation.svg",
   "plots/f1_frequency_response.svg",
   "plots/f3_discount_ladder.svg",
   "plots/f6_abstention.svg",
@@ -873,6 +1026,17 @@
   "worst_spearman": 0.7
  },
  "runs": [
+  {
+   "adopted": true,
+   "arm": "rotation",
+   "dir": "/Users/garvit/shopsim/runs/r066-f12-fatigue-rotation",
+   "label": "f12-fatigue",
+   "population": null,
+   "run_id": "r066-f12-fatigue-rotation",
+   "seed": 523,
+   "ticks": 16,
+   "wall_s": 2680.217
+  },
   {
    "adopted": true,
    "arm": "same_concept",

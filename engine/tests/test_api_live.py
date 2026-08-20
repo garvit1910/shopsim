@@ -157,6 +157,28 @@ def test_config_effective_matches_runconfig(repo_client):
     assert isinstance(eff["goal_waves"], list)
 
 
+def test_config_click_gate_states_the_published_acceleration(repo_client):
+    """v3.13-draft: the run's CLICK base and its multiple vs the calibrated
+    gate, read from the committed calibration table — never a number the API
+    works out for itself. R010 runs on the retired 2.0, the base the market
+    page most needs a multiple for."""
+    import json as _json
+    from shopsim.minds.calibration import DEFAULT_STAGE_BASES
+    from shopsim.runner.config import RunConfig
+    gate = repo_client.get(f"/runs/{R010}/config").json()["effective"]["click_gate"]
+    cfg = RunConfig.load(REPO_RUNS / "experiments" / "image-ads-demo" / "run_config.json")
+    _ap, _cp, bases = cfg.calibration()
+    assert gate["base"] == dict(bases)["CLICK"] == 2.0
+    assert gate["calibrated_base"] == dict(DEFAULT_STAGE_BASES)["CLICK"]
+    table = _json.loads((REPO_RUNS.parent / "eval" / "results" / "calibration.json")
+                        .read_text())["demo_profile"]["click_gate_acceleration"]
+    row = next(e for e in table["by_click_base"].values() if e["click_base"] == gate["base"])
+    assert gate["acceleration"] == row["multiple"] > 1.0
+    assert gate["p_click_model"] == row["p_click"]
+    assert gate["p_click_reference"] == table["reference_p_click"]
+    assert "calibration.json" in gate["source"]
+
+
 def test_population_matches_factory_and_leaks_nothing(repo_client):
     from shopsim.contracts.ids import shopper_offset
     from shopsim.population.factory import (

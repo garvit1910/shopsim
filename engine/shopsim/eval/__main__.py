@@ -180,6 +180,61 @@ def cmd_fit(args) -> int:
 # existed. That asymmetry is reported rather than papered over.
 PRE_PHASE7 = {"stage_bases_BUY": 3.2, "pref_half_life_days": 3.0}
 
+# Every CLICK base a dashboard run has ever shipped on, besides the calibrated
+# default and the committed demo profile (both read from disk at calibrate
+# time). The market page divides its headline CTR and ROAS back by the
+# acceleration of the base a run actually used, so a base that is no longer
+# offered still needs a published multiple while runs on it exist.
+RETIRED_CLICK_BASES = {
+    2.0: "retired hand-picked demo (pre-Phase-7; r039 realised 0.28 CTR on it)",
+}
+
+
+def click_gate_acceleration(rows, profile, traced_bases, demo_block) -> dict:
+    """CTR multiple vs the calibrated gate, per shipped CLICK base.
+
+    The same first-order replay that publishes `multiples` (reference-trace
+    contexts re-scored under each base), tabulated so a run's own CLICK base
+    can be looked up: `/runs/{id}/config` serves the row for the run, and the
+    market page shows CTR and ROAS at the calibrated gate with the raw rate
+    beside them. First-order means the feedback loop (more clicks teach more
+    preferences) is not modelled — the Nisolo 300x60 run on 2.0 realised
+    0.35 where this table says 0.275, so read ~30x, not 31.038x.
+    """
+    from ..minds.calibration import DEFAULT_STAGE_BASES
+    calibrated = dict(DEFAULT_STAGE_BASES)["CLICK"]
+    committed = (demo_block.get("stage_bases") or {}).get("CLICK")
+    bases = {calibrated: "calibrated (minds/calibration.py DEFAULT_STAGE_BASES)"}
+    if committed is not None:
+        bases[float(committed)] = "committed demo profile (eval/profiles/demo.json)"
+    bases.update(RETIRED_CLICK_BASES)
+    ref = calibrate.evaluate(rows, profile, traced_bases).get("p_click")
+    table = {}
+    for base, status in sorted(bases.items()):
+        p = calibrate.evaluate(rows, calibrate._with(profile, ("stage_bases", "CLICK"), base),
+                               traced_bases).get("p_click")
+        table[f"{base:g}"] = {
+            "click_base": base,
+            "p_click": None if p is None else round(p, 6),
+            "multiple": None if p is None or not ref else round(p / ref, 3),
+            "status": status,
+        }
+    return {
+        "calibrated_click_base": calibrated,
+        "reference_p_click": None if ref is None else round(ref, 6),
+        "by_click_base": table,
+        "note": "Model-implied P(click) over the reference trace re-scored under "
+                "each CLICK base, divided by the calibrated rate. Only the click "
+                "gate moves, so dividing an accelerated run's CTR (and its ROAS, "
+                "which carries the same factor through revenue) by its row is "
+                "the stated way to read it at the certified gate. First-order: "
+                "the replay re-scores the reference contexts and cannot model "
+                "the click->preference feedback loop, so a run's own realised "
+                "multiple can differ (r039 on 2.0 realised 0.28; a 300x60 "
+                "Nisolo run realised 0.35). Keyed by the base formatted with "
+                "%g; the API matches a run's base within 1e-6.",
+    }
+
 # The pre-Phase-7 engine MEASURED, not reconstructed. Model-implied rates over
 # the decision trace of the baseline reference run (r048-eval-reference, 300
 # shoppers x 24 days, seed 101, 2026-08-20) on the engine as it stood before any
@@ -289,6 +344,8 @@ def cmd_calibrate(args) -> int:
             "achieved_p_click": None if solved_rate is None else round(solved_rate, 6),
             "committed_click_base": demo_block.get("stage_bases", {}).get("CLICK"),
             "multiples": calibrate.acceleration_multiples(after, demo_rates),
+            "click_gate_acceleration": click_gate_acceleration(
+                rows, after_profile, traced_bases, demo_block),
             "note": "Only the CLICK threshold moves. BROWSE, CART and BUY stay at "
                     "their calibrated values, so everything below the click is "
                     "still the certified funnel.",

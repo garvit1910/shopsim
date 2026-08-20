@@ -3,9 +3,9 @@
 import type {
   AdsManifestPayload, CatalogSummary, CreativeCard, DecisionPreview,
   EngineBusy, EnginePace, EventsPage, ExperimentDetail,
-  ExperimentSummary, Manifest, MemoryGraph, Population, PrefVersion, Progress,
-  RegistryRow, ResultsLive, RunConfigPayload, SocialRunRow, TracePayload,
-  Worldview,
+  ExperimentSummary, FrozenMind, Manifest, MemoryGraph, Population,
+  PrefVersion, Progress, RegistryRow, ResultsLive, RunConfigPayload,
+  SocialRunRow, TracePayload, Worldview,
 } from "./types";
 
 const BASE = "/api/sim";
@@ -53,7 +53,16 @@ export const api = {
     get<TracePayload>(`/runs/${id}/shoppers/${offset}/trace/${stimulus}`),
   decisionPreview: (id: string, offset: number, stimulus: number) =>
     get<DecisionPreview>(`/runs/${id}/shoppers/${offset}/decision-preview/${stimulus}`),
-  /** Runs that carry a TRUSTS_PERSON layer — the ones 04 Graph can draw. */
+  /** The committed 04 Graph exhibit: one frozen capture of a real run, served
+   * from fixtures/. Independent of which simulation is loaded and of whatever
+   * the graph store currently holds — which is the point, since the store is
+   * archived and recreated routinely. */
+  frozenGraph: () => get<MemoryGraph>("/memory-graph"),
+  /** The committed 05 Mind exhibit (v3.12-draft): the pinned shopper's frozen
+   * capture, extended with baked decision previews so the page never needs
+   * the live store. The mind is chosen once and always exists. */
+  frozenMind: () => get<FrozenMind>("/shopper-mind"),
+  /** Runs that carry a TRUSTS_PERSON layer — the ones the live path can draw. */
   socialRuns: () => get<SocialRunRow[]>("/social-runs"),
   /** Omit `focus` to let the engine pick the best mutually-trusting triple. */
   memoryGraph: (id: string, focus?: number[]) =>

@@ -39,5 +39,6 @@ export const segmentName = (id: number | null | undefined) =>
  * back to its id rather than inventing a label. */
 const BRAND_NAMES: Record<number, string> = {
   6001: "ShoeCo", 6002: "TrailForge", 6003: "UrbanStride",
+  6100: "Nisolo",
 };
 export const brandName = (id: number) => BRAND_NAMES[id] ?? `Brand ${id}`;

@@ -14,6 +14,7 @@ import { followHead, openRun, seek, useMarket } from "@/lib/market";
 import { ctrSeries, derive } from "@/lib/selectors";
 import { detectEvents, scheduledEvents } from "@/lib/detectors";
 import { api, proxied } from "@/lib/api";
+import { adjusted } from "@/lib/economics";
 import type { ExperimentDetail } from "@/lib/types";
 import MasterTimeline from "@/components/MasterTimeline";
 import Tape from "@/components/Tape";
@@ -23,7 +24,7 @@ import AllocationRiver, { type RiverSeries } from "@/components/AllocationRiver"
 import { AdRoster } from "@/components/AdCard";
 import Stepper, { pipelineSteps } from "@/components/Stepper";
 import EnginePreflight, { EtaChip } from "@/components/EnginePreflight";
-import { CtrSmallMultiples, FlightKpis } from "@/components/market";
+import { CtrSmallMultiples, FlightKpis, runAdjust } from "@/components/market";
 import {
   ActivityPanel, CtrByDayPanel, EventsLedgerPanel, FunnelByCreativePanel,
   KpiTiles, PageAbPanel, SmallMultiples, creativesFromConfig,
@@ -81,10 +82,11 @@ function MarketInner({ runId }: { runId: string }) {
     const today = d.sawPerTick[t] ?? {};
     const total = Object.values(today).reduce((a, b) => a + b, 0) || 1;
     const cum = d.funnelCum[t] ?? {};
+    const a = runAdjust(s, ticks);  // per-ad CTR at the same human-scale factor as the tiles
     return Object.fromEntries(creatives.map((c) => {
       const row = cum[String(c.id)] ?? {};
       const saw = row.SAW ?? 0;
-      const ctr = saw ? (row.CLICKED ?? 0) / saw : null;
+      const ctr = adjusted(saw ? (row.CLICKED ?? 0) / saw : null, a);
       return [c.id, (
         <>
           <b>{Math.round((100 * (today[String(c.id)] ?? 0)) / total)}%</b> of today
@@ -92,7 +94,7 @@ function MarketInner({ runId }: { runId: string }) {
         </>
       )];
     }));
-  }, [creatives, d.sawPerTick, d.funnelCum, t]);
+  }, [creatives, d.sawPerTick, d.funnelCum, t, s, ticks]);
 
   const allocated = Boolean(
     (s.config?.raw as { exposure?: { allocation?: { enabled?: boolean } } })

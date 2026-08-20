@@ -1,11 +1,13 @@
 # CONTRACT.md — the three inter-lane contracts
 
-**Version: 3.10-draft** (3.3 flagged to Garvit 2026-08-17 and built on by
+**Version: 3.12-draft** (3.3 flagged to Garvit 2026-08-17 and built on by
 Phase 4; 3.4-draft added the experiment-adapter conventions, 3.5-draft the
 live dashboard data plane, 3.6-draft the shared ad market + pricing ladder, 3.7-draft the creative-text
 read surface + the Nisolo brand fixture, 3.8-draft the Phase-6 analytics that
 fill C3's remaining placeholders + the opt-in social layer, 3.9-draft the
 memory-graph read surface behind the dashboard's 04 Graph exhibit,
+3.11-draft the frozen 04 Graph capture,
+3.12-draft the frozen Shopper Mind capture behind 05 Mind,
 3.10-draft the Phase-7 calibration layer — a `calibration.retrieval` sub-block,
 two split retrieval constants, a learning cold-start prior and an opt-in
 decision trace. All additive to the *interfaces*: no C1/C2/C3 signature, enum,
@@ -14,7 +16,7 @@ and still frozen by hash. **3.10-draft does change BEHAVIOUR** — it is the
 first version that deliberately moves numbers rather than only adding keys, so
 it re-hashes runs and regenerates `fixtures/golden-run`; see the change log and
 `eval/calibration.md` for what moved and why. Plus one C1 scalar bug-fix in 3.4
-(cart re-derivation) — see change log; **3.4-draft through 3.10-draft all
+(cart re-derivation) — see change log; **3.4-draft through 3.11-draft all
 pending Atishay's ack at the next sync**. Note: this header sat at 3.4-draft while the
 3.5-draft change-log entry was already written — the bump was missed then and
 is corrected here.)
@@ -1101,3 +1103,167 @@ numbers; none of them changes a signature, an enum, a taxonomy row or
     it induces on every metric. This replaces the ad-hoc
     `{"stage_bases": {"CLICK": 2.0}}` that was copy-pasted into spec files and
     ran at ~28% CTR (~22x the band, blended ROAS ~46x).
+
+---
+
+## v3.11-draft — the frozen 04 Graph capture (2026-08-20)
+
+Additive only: one read endpoint and one committed fixture. No signature, enum,
+taxonomy or ENTRY_POINTS change, no new Cypher, and **no behaviour change** —
+nothing here moves a number.
+
+ 1. **`GET /memory-graph` — run-independent and store-independent.** Serves
+    `fixtures/social-graph/memory-graph.json` off `root = runs_dir.parent`, the
+    same way `/catalogs` reaches its fixtures. Its 404 names the regeneration
+    command. `GET /runs/{id}/memory-graph` and `GET /social-runs` are unchanged
+    and still read the store.
+
+ 2. **Why a fixture and not a live read.** Shopper worldviews exist ONLY in
+    HydraDB. `runs/` keeps events and results, but the graph goes with the
+    store, and the store is archived and recreated routinely (`infra/README.md`,
+    "Before a demo or a timed run" — three times on 2026-08-20 alone). A live
+    read meant the dashboard's `04 Graph` blanked after every reset and reshaped
+    itself run to run. This is the move `export-fixtures` / `_export_shoppers`
+    already makes for worldview and trace samples, one level up.
+
+ 3. **Payload = the v3.9-draft envelope plus three keys.**
+    `captured` (`run_id`, `run_index`, `arm`, `label`, `head_tick`) is
+    provenance the UI is required to display — a frozen graph that does not name
+    its source reads as live state, and the aside's subtitle is where it says
+    so. `traces` maps `offset -> stimulus_id -> {motifs, scalars}`, captured
+    from the same `get_trace` the live path calls, because Explain reads them
+    and recomputing motifs client-side would mean the dashboard inventing graph
+    structure. `comment` carries the usual fixture rationale. Every other key is
+    shape-identical to a live read, so one TypeScript type serves both paths.
+
+ 4. **`export-graph` writes it.**
+    `python -m shopsim.runner export-graph --config CFG --run RUN_ID --out FILE`,
+    pinned to the last consolidated tick via `mem.set_tick` and serialized with
+    `write_json_atomic` like every other committed capture. Traces are taken
+    only for stimuli the shopper actually met, read off the edges just captured.
+
+ 5. **Pinned without a database**, in the `test_golden_run.py` style
+    (`engine/tests/test_memory_graph.py`): every edge endpoint resolves, the
+    focus triple is genuinely mutually trusting, the
+    `TRUSTS_PERSON -> BOUGHT -> EXPERIENCED` chain is present, every trace key
+    maps to a focus shopper and an on-screen stimulus, and every motif path
+    references a node that exists. A frozen exhibit **can** go stale against a
+    changed retrieval layer or motif library; these tests and
+    `fixtures/social-graph/README.md` are what make that loud rather than
+    silent. Regenerate after touching `hydramem/reads.py` or `contracts/enums.py`.
+
+---
+
+## v3.12-draft — the frozen Shopper Mind capture (2026-08-21)
+
+Additive only: one read endpoint, one committed fixture, one exporter flag and
+one optional read parameter. No signature, enum, taxonomy or ENTRY_POINTS
+change, no new Cypher, and **no behaviour change** — nothing here moves a
+number, and the default `export-graph` output stays byte-identical.
+
+ 1. **`GET /shopper-mind` — the pinned mind, run- and store-independent.**
+    Serves `fixtures/shopper-mind/mind.json` off `root`, mirroring
+    `GET /memory-graph` (v3.11 item 1). The 05 Mind page's premise is that its
+    shopper is chosen ONCE and always exists — so the page never reads the
+    store, never blanks on the reset ritual, and never quietly becomes a
+    different shopper when a new simulation loads. The pinned shopper is
+    `focus[0]` of the capture; the page hard-codes nothing.
+
+ 2. **Payload = the v3.11 frozen envelope plus three keys.** `catalog_key`
+    names the catalog the demo stimuli come from, so the UI can load the ad
+    cards. `demo_stimuli` lists the baked `{creative_id, page_id}` pairs —
+    landing pages are per-shopper seeded (`steps.page_for`), so these are the
+    pinned shopper's own pages. `previews` maps
+    `offset -> stimulus_id -> ` the exact **decision-preview envelope**
+    (v3.5-draft item 2: `tick`, `stimulus`, `scalars`, `motifs`, `appraisal`,
+    `probabilities`, `counterfactual_need_off`), computed at export time by
+    the same `appraise()`/`stage_probabilities()` the live endpoint runs.
+    The shared plumbing now lives in `runner/preview.py`
+    (`build_preview_ctx` / `build_population` / `compute_preview`); api.py
+    delegates to it, payloads unchanged. Law 12/15 unchanged: traits, coeffs
+    and latent quality never appear — appraisal dims and gate probabilities
+    are already-served HTTP shapes, and `test_shopper_mind_fixture.py` scans
+    the whole payload for the forbidden keys.
+
+ 3. **`export-graph --previews` writes it**; `get_memory_graph` grows an
+    optional `extra_stimuli` (default `()`, so v3.9/v3.11 reads are
+    untouched). `--previews` forces every scheduled creative and its landing
+    page for `focus[0]` on screen, met or not: `extra_stimuli` seeds them into
+    the accumulator before the objective closure, which emits their real
+    CLAIMS/OFFERS/PROMOTES/SHOWS/PAGE_FOR edges from the objective cache —
+    **objective edges only; nothing subjective is invented for an ad the
+    shopper never saw**. Traces for `focus[0]` cover met ∪ demo stimuli, so
+    the retrieval path exists for every previewed ad.
+
+ 4. **Provenance display is REQUIRED**, as in v3.11 item 3: the page must
+    name `captured.run_id` and the as-of day — a frozen mind that does not
+    say so reads as live state. Additionally: the Mind page's lobe layout and
+    its labelled inter-lobe connectors (INFLUENCES, SHAPES, INFORMS, …) are
+    the reference design's **architecture legend — presentation, not stored
+    relationships** — and must render in a style visibly distinct from stored
+    (solid) and derived (dashed) edges.
+
+ 5. **Pinned without a database** by `engine/tests/test_shopper_mind_fixture.py`:
+    envelope keys, edge resolution, a creative AND page preview per demo
+    stimulus with probabilities in [0,1] and matching `page_id`, appraisal
+    dims present and in range, a trace for every previewed stimulus whose
+    motif paths reference only on-screen nodes, and the forbidden-key scan.
+    Source spec: `fixtures/run-configs/shopper-mind-demo.json` (nisolo
+    catalog + `population.social`, the social-graph-demo calibration recipe).
+    Regenerate after touching `hydramem/reads.py`, `minds/appraisal.py`,
+    `minds/choice.py` or `contracts/enums.py` — see
+    `fixtures/shopper-mind/README.md`.
+
+## v3.13-draft — CTR and ROAS read at the calibrated gate (2026-08-21)
+
+Additive only: one published table, one field on an existing read endpoint
+and a display rule. No signature, enum, taxonomy or ENTRY_POINTS change, and
+**no behaviour change** — no simulated number moves; the dashboard divides.
+
+ 1. **`calibration.json` → `demo_profile.click_gate_acceleration`.** The
+    reference-trace replay that already publishes the demo profile's 5.6x
+    (v3.10 item 4, `calibrate.evaluate` over the traced contexts), tabulated
+    per shipped CLICK base: the calibrated default (`DEFAULT_STAGE_BASES`,
+    multiple exactly 1.0), the committed `eval/profiles/demo.json` base, and
+    every retired base named in `eval/__main__.py::RETIRED_CLICK_BASES` (2.0,
+    the pre-Phase-7 hand-pick, kept while runs on it exist). Each row carries
+    `click_base`, model-implied `p_click`, `multiple` vs the calibrated rate
+    and a `status` string; the block names `calibrated_click_base` and
+    `reference_p_click`. Regenerated by `make eval-calibrate`; its `note`
+    states the first-order caveat (the replay re-scores reference contexts
+    and cannot model the click→preference feedback loop — r039 on 2.0
+    realised 0.28 against a tabulated 0.275; a 300x60 Nisolo run realised
+    0.35).
+
+ 2. **`GET /runs/{id}/config` → `effective.click_gate`** =
+    `{base, calibrated_base, acceleration, p_click_reference, p_click_model,
+    source}`. `base` is the run's own `stage_bases.CLICK` (the module default
+    when the config has no calibration block); `acceleration` is the
+    table's `multiple` for that base matched within 1e-6, or **null** when
+    the table has no row — the API never computes a factor of its own, and
+    never falls back to a band mid-point. Read per request off `root`, like
+    the fixture reads, so a re-calibration is served without a restart.
+    Pinned by `test_api_live.py::test_config_click_gate_states_the_published_acceleration`
+    and `test_studio_profile.py` (both Studio bases tabulated, calibrated at
+    1.0, retired 2.0 present).
+
+ 3. **Display rule (03 Market).** The headline tiles are ALWAYS human-scale:
+    **REAL CTR** = raw CTR ÷ factor and **ROAS AT REAL CTR** = blended ROAS ÷
+    the same factor (only the click gate moves — 1.0x on every post-click
+    metric — so CTR divides straight through and ROAS carries the same
+    factor via revenue, keeping the run's own revenue per click). The per-ad
+    CTR charts and roster rates use the same factor, so the page is coherent.
+    The factor comes from, in priority order: (a) `effective.click_gate`
+    (item 2); (b) the same table mirrored in `web/lib/calibration.ts`, keyed
+    by the run's own `stage_bases.CLICK` — for an engine process that
+    predates this field — pinned identical to the JSON by
+    `test_studio_profile.py`; (c) **band normalisation**, only when the
+    engine cannot state a multiple at all (no `run_config`, or an
+    untabulated base): factor = raw CTR ÷ the researched 1.25% mid-point,
+    applied only above the 0.5–2% band with >200 impressions. The raw rate,
+    the factor and its source are **always printed beside the headline**
+    (`RAW 34.97% ÷31.0 · PUBLISHED`, `BLENDED 173.85× ÷31.0`,
+    `… · BAND-NORMALISED`) — an accelerated run must never read as a
+    calibrated one, and a normalised one must never read as a published
+    one. A run on the calibrated base shows its measured rate unchanged and
+    says `CALIBRATED GATE`. The raw blended figures never headline a tile.

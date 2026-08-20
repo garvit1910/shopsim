@@ -228,6 +228,7 @@ def assemble_memory_graph(
     product_rows: dict[int, dict[str, list[dict]]],
     cache: Any,
     creative_names: dict[str, str] | None = None,
+    extra_stimuli: Iterable[int] = (),
 ) -> dict:
     """Build {nodes, edges} from raw rows. Pure: `cache` only needs the
     reads.ObjectiveCache attribute surface (creatives, pages, product_brand,
@@ -321,6 +322,11 @@ def assemble_memory_graph(
     # This is what makes a concept, brand or product that two shoppers both
     # touch ONE node rather than two copies: every creative/page/product on
     # screen is closed over its own objective edges, which are global.
+    # `extra_stimuli` (v3.12-draft) seeds never-met creatives/pages into the
+    # accumulator first, so the closure gives them their real CLAIMS/OFFERS/
+    # PROMOTES/SHOWS/PAGE_FOR edges — nothing subjective is invented for them.
+    for nid in extra_stimuli:
+        acc.node(int(nid))
     _close_objective(acc, cache, product_rows)
 
     # -- labels -------------------------------------------------------------
