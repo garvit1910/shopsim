@@ -1,0 +1,11 @@
+# Engine runtime pins for the Railway image — the versions installed in
+# engine/.venv on 2026-08-21 (the laptop the deploy mirrors). Direct deps from
+# engine/pyproject.toml plus the two framework libs whose versions matter;
+# everything else resolves from these. No dev/perception extras: the serve
+# path never imports pytest/httpx/openai.
+fastapi==0.141.1
+starlette==1.6.0
+pydantic==2.13.4
+uvicorn==0.52.3
+neo4j==6.2.0
+numpy==2.4.6
