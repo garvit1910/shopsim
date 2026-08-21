@@ -265,7 +265,7 @@ def assemble_context(
             continue
         pref_hits.append((w * strength, {
             "type": MotifType.PREFERENCE_FIT.value, "strength": w, "evidence": e,
-            "recency": _decay(now - t, params.recency_half_life_s),
+            "recency": _decay(now - t, params.pref_recency_half_life_s),
             "path": [shopper_id, "PREFERS", concept, "CLAIMS", stim.stimulus_id]}))
     pref_hits.sort(key=lambda x: -x[0])
     motifs += [m for _, m in (pref_hits if trace else pref_hits[:1])]
@@ -331,8 +331,10 @@ def assemble_context(
 
     # expectation_violation: page stimuli only — EXPECTS(brand) minus SHOWS
     if stim.kind == "page":
+        floor = 0.0 if trace else params.violation_min_strength
         violated = [(s, concept) for concept, about, s in expects
-                    if about == stim.brand_id and concept not in stim.shows]
+                    if about == stim.brand_id and concept not in stim.shows
+                    and s >= floor]
         if violated:
             violated.sort(key=lambda x: -x[0])
             strength, concept = violated[0]

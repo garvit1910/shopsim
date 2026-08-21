@@ -256,11 +256,11 @@ def test_provenance_is_complete_and_never_cites_exposure(results):
     CLICKED does not appear on its own."""
     pc = results["provenance_coverage"]
     assert pc["coverage"] == 1.0 and pc["belief_scope"] == "live"
-    assert pc["prefers"]["with_cause"] == pc["prefers"]["learned_versions"] == 29
-    assert pc["prefers"]["versions"] == 47  # 18 priors + 29 learned versions
+    assert pc["prefers"]["with_cause"] == pc["prefers"]["learned_versions"] == 35
+    assert pc["prefers"]["versions"] == 53  # 18 priors + 35 learned versions
     assert pc["beliefs"]["with_provenance"] == pc["beliefs"]["versions"] == 5
     kinds = pc["prefers"]["cause_kinds"]
-    assert kinds == {"BOUGHT": 1, "BROWSED": 25, "EXPERIENCED": 3}
+    assert kinds == {"BOUGHT": 3, "BROWSED": 28, "EXPERIENCED": 4}
     assert "SAW" not in kinds and "none" not in kinds
 
 
@@ -306,17 +306,53 @@ def test_shelf_never_moves_and_the_reference_price_learns_it(results):
     assert [r["n_holders"] for r in traj] == [1, 5, 5]
 
 
-def test_first_learned_version_of_an_unheld_concept_saturates(results):
-    """A pinned OBSERVATION, not an endorsement.
+def test_an_unheld_concept_starts_neutral_and_learns_gradually(results):
+    """The Phase-7 cold-start rule, pinned.
 
-    evidence.blend() starts an unheld concept at (w=0, E=0), so the first
-    behavioral event sets w = PREF_TARGET = 1.0 outright: with no prior
-    evidence, the observation is all the evidence there is. Shoppers who DID
-    hold a prior (E0 = 2) blend normally. The effect predates Phase 6 and lives
-    in evidence.py, which is frozen by hash (Law 13) — it is pinned here so
-    that if anyone ever changes the cold-start rule, this fails loudly and on
-    purpose rather than silently reshaping every drift chart.
+    THIS TEST REPLACED `test_first_learned_version_of_an_unheld_concept_saturates`
+    on 2026-08-20, and the replacement is the point of that test having existed.
+
+    What it used to pin: the applier started an unheld concept at (w=0, E=0),
+    which makes blend() degenerate — with no prior evidence the first
+    observation IS all the evidence — so a single behavioural event set
+    w = PREF_TARGET = 1.0 outright and every drift series for such a concept
+    read a flat 1.0. The old test asserted that as an observation, not an
+    endorsement, so that changing the rule would fail loudly. It did.
+
+    What it pins now: the applier starts an unheld concept at
+    (COLD_START_W = 0.5, COLD_START_E = 1.0) — neutral, with about half a
+    seeded prior's worth of evidence — so learning is a curve. evidence.py is
+    still untouched and still frozen: only the caller's choice of starting
+    state moved.
+
+    The arithmetic below is hand-checked through evidence.blend(), in the order
+    the same-tick fold applies it (CLICKED 0.10, then VISITED 0.25, then
+    BROWSED 0.25):
+
+        CLICKED   (1.00*0.5  + 0.10)/1.10 = 0.545454
+        VISITED   (1.10*0.545454 + 0.25)/1.35 = 0.629629
+        BROWSED   (1.35*0.629629 + 0.25)/1.60 = 0.687500
     """
-    saturated = [row for row in results["preference_drift"]
-                 if all(v in (None, 1.0) for v in row["series"])]
-    assert saturated, "expected cold-start concepts pinned at 1.0"
+    from shopsim.contracts import evidence
+    from shopsim.minds.calibration import COLD_START_E, COLD_START_W
+
+    w, e = COLD_START_W, COLD_START_E
+    for weight in (0.10, 0.25, 0.25):
+        w, e = evidence.blend(w, e, evidence.PREF_TARGET, weight)
+    assert w == pytest.approx(0.6875, abs=1e-6)
+
+    series = [row["series"] for row in results["preference_drift"]]
+    assert series, "the golden run must track at least one preference series"
+    assert not any(all(v in (None, 1.0) for v in s) for s in series), \
+        "no series may sit at a flat 1.0 — that was the pre-Phase-7 artifact"
+
+    # A shopper who arrived holding a prior is unaffected: this change touches
+    # ONLY concepts that were never held.
+    seg_1001_eco = next(r for r in results["preference_drift"]
+                        if r["concept"] == 5003 and r["segment"] == 1001)
+    assert seg_1001_eco["series"] == [0.66053, 0.73887, 0.78783]
+
+    # And a concept first met inside the run starts from the neutral prior.
+    cold = next(r for r in results["preference_drift"]
+                if r["concept"] == 5003 and r["segment"] == 1004)
+    assert cold["series"][0] is None and cold["series"][1] == pytest.approx(0.6875)

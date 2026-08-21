@@ -154,6 +154,8 @@ input[type="range"] { accent-color: var(--accent); }
 }
 .statuschip.done { border-color: var(--hair); color: var(--ink-2); }
 .statuschip.err { border-color: var(--bad); color: var(--bad); }
+/* a writer the dashboard did not start — launches are serialized behind it */
+.statuschip.busy { border-color: var(--gold); color: var(--gold); }
 .tr { display: flex; align-items: center; gap: 9px; margin-left: auto; font-family: var(--mono); }
 .tr button {
   border: 1px solid var(--line); border-radius: 6px; padding: 3px 10px; font-size: 12px;
@@ -559,4 +561,940 @@ button.adcard:hover { border-color: var(--line); }
 .depth.on { border-color: var(--accent); color: var(--accent); background: var(--tint-accent); }
 .depth.control {
   border-style: dashed; border-color: var(--muted); color: var(--muted); cursor: default;
+}
+
+/* ==========================================================================
+   04 GRAPH — the P1 Social Memory Graph (Phase 5.9)
+
+   Adapted from AlexVanK's force-directed pen (codepen.io/AlexVanK/pen/dygjEWP).
+   The composition, the geometry and the encodings are the pen's and stay that
+   way: curved organic arcs, Archivo Black in the aside, node radius and colour
+   saturation driven by connectivity, drag-to-pin with a dashed outline.
+
+   What moved is the ground. The pen is black-on-white with a hazard stripe;
+   this sits inside a committed dark terminal, so the canvas takes --page, the
+   aside takes --surface, both wear the app's own .panel border, and the stripe
+   is gone. Node HUES are untouched (cyan world / green people / gold mind) —
+   the only colour change the dark ground forces is the lightness RAMP, which
+   is inverted in MemoryGraph.tsx and explained there.
+
+   Everything is scoped under .graphpage. Local --g-* tokens alias the app's
+   palette so this block never hardcodes a hex the theme does not own.
+   ========================================================================== */
+
+.graphpage {
+  --g-canvas: var(--page);      /* darkest ground: the nodes carry the contrast */
+  --g-panel: var(--surface);
+  --g-card: var(--card);
+  --g-ink: var(--ink);
+  --g-ink-2: var(--ink-2);
+  --g-mute: var(--muted);
+  --g-hair: var(--hair);
+  --g-line: var(--line);
+  /* semi-transparent strokes ACCUMULATE where edges overlap. On white that
+     reads as depth (it gets darker); on black it reads as glare, so the
+     per-edge alpha has to sit lower than the pen's #666-on-white did. */
+  --g-edge: rgba(233, 235, 230, .15);
+  height: calc(100vh - 45px);
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  padding: 14px 18px;
+  box-sizing: border-box;
+  background: var(--page);
+}
+@media (max-width: 900px) { .graphpage { height: auto; flex-direction: column; } }
+
+.graphpage section,
+.graphpage aside {
+  background: var(--g-panel);
+  color: var(--g-ink);
+  height: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--g-hair);
+  border-radius: 8px;
+}
+.graphpage section {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+  background: var(--g-canvas);
+}
+.graphpage aside {
+  flex: 0 0 360px;
+  position: relative;
+  padding: 18px 24px;
+  overflow-y: auto;
+  font-family: var(--sans);
+}
+@media (max-width: 900px) {
+  .graphpage section { height: 70vh; }
+  .graphpage aside { flex: none; width: 100%; height: auto; }
+}
+.graphpage section svg { width: 100%; height: 100%; display: block; }
+
+/* ---------- aside typography: the pen's, verbatim ---------- */
+.graphpage aside h1 {
+  text-align: center; text-transform: uppercase;
+  font-family: var(--archivo), "Archivo Black", sans-serif;
+  font-size: 1.8em; line-height: .9em; font-weight: normal;
+  margin-bottom: 0; color: var(--g-ink);
+}
+.graphpage aside h3 { text-align: center; margin: 8px 0 22px; font-size: .8em;
+  font-family: var(--mono); letter-spacing: .07em; color: var(--g-mute);
+  font-weight: 400; text-transform: uppercase; }
+.graphpage aside p { text-align: left; font-size: 12.5px; margin: 5px 0; color: var(--g-ink-2); }
+.graphpage aside strong { font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  font-family: var(--mono); display: block; margin: 16px 0 5px; color: var(--g-ink); }
+.graphpage aside hr { border: none; border-top: 1px solid var(--g-hair); margin: 16px 0; }
+.graphpage aside u { text-underline-offset: 2px; }
+.graphpage aside code { font-size: 11px; color: var(--g-ink); }
+
+/* ---------- edges: the pen's two classes, carrying our meaning ----------
+   .link (solid)   = a relationship really stored in HydraDB
+   .linkish (dash) = one the engine derives but never writes                */
+.graphpage #edges path { transition: opacity .2s ease; }
+.graphpage #edges path.link { fill: none; stroke: var(--g-edge); stroke-width: 1.5px; }
+.graphpage #edges path.linkish {
+  fill: none; stroke: var(--accent); stroke-width: 1.5px; stroke-dasharray: 3px;
+}
+.graphpage #edges path.social { stroke: var(--g-ink-2); stroke-width: 2.4px; }
+.graphpage #edges path.faded { opacity: .07; }
+.graphpage #edges path.lit { stroke: var(--accent); stroke-width: 3px; opacity: 1; }
+/* the social hop — the one the exhibit exists to show */
+.graphpage #edges path.hot { stroke: var(--gold); stroke-width: 4.5px; opacity: 1; }
+
+/* ---------- nodes: the pen's treatment, on a dark ground ---------- */
+.graphpage #nodes g { transition: opacity .2s ease; }
+/* the pen outlines every node in black against white; the dark analogue is to
+   stroke with the page colour, so overlapping nodes read as cut out of it */
+.graphpage #nodes g circle { cursor: grab; stroke: var(--page); stroke-width: 1.5px; }
+.graphpage #nodes g circle:active { cursor: grabbing; }
+.graphpage #nodes g circle.pinned {
+  fill: var(--gold);
+  outline: 2px dashed var(--g-ink); outline-offset: 2px; border-radius: 50%;
+}
+.graphpage #nodes g circle + text {
+  fill: var(--g-ink); font: 10px var(--sans); pointer-events: none;
+  text-transform: capitalize;
+  paint-order: stroke; stroke: rgba(10, 11, 10, .9); stroke-width: 3px;
+}
+.graphpage #nodes g.person circle { stroke-width: 2.6px; }
+.graphpage #nodes g.person text { font-weight: 700; font-size: 13px; text-transform: none; }
+/* a trusted peer outside the triple: present and readable, but not the subject */
+.graphpage #nodes g.peer circle { stroke-width: 1.5px; stroke: var(--g-mute); }
+.graphpage #nodes g.peer text { font-weight: 400; font-size: 11px; fill: var(--g-mute); }
+.graphpage #nodes g.faded { opacity: .11; }
+.graphpage #nodes g.lit circle { stroke: var(--accent); stroke-width: 3px; }
+
+/* ---------- canvas furniture ---------- */
+.graphpage .gcorner {
+  position: absolute; left: 14px; top: 12px; display: flex; gap: 8px; align-items: center;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; color: var(--g-mute);
+  text-transform: uppercase; pointer-events: none;
+}
+.graphpage .gempty {
+  position: absolute; inset: 0; display: grid; place-content: center; text-align: center;
+  padding: 40px; color: var(--g-mute); font-size: 13px; gap: 10px;
+}
+.graphpage .gempty b { font-family: var(--archivo), sans-serif; font-size: 20px;
+  color: var(--g-ink); text-transform: uppercase; }
+
+/* ---------- aside controls ---------- */
+.graphpage .gtabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.graphpage .gtabs button {
+  flex: 1; font-family: var(--mono); font-size: 10px; letter-spacing: .09em;
+  text-transform: uppercase; padding: 6px 4px; border: 1px solid var(--g-line);
+  border-radius: 5px; color: var(--g-ink-2); background: var(--g-card);
+}
+.graphpage .gtabs button:hover { color: var(--g-ink); }
+/* active state matches .depth.on, the app's existing "this chip is picked" idiom */
+.graphpage .gtabs button.on {
+  border-color: var(--accent); color: var(--accent); background: var(--tint-accent);
+}
+.graphpage .gpeople { display: flex; flex-direction: column; gap: 5px; }
+.graphpage .gperson {
+  display: flex; align-items: center; gap: 9px; padding: 6px 9px; width: 100%;
+  border: 1px solid var(--g-hair); border-radius: 6px; background: var(--g-card);
+  text-align: left; color: var(--g-ink);
+}
+.graphpage .gperson:hover { border-color: var(--g-line); }
+.graphpage .gperson.on { border-color: var(--accent); background: var(--tint-accent); }
+.graphpage .gperson i { width: 11px; height: 11px; border-radius: 50%;
+  border: 1.5px solid var(--page); flex: none; }
+.graphpage .gperson b { font-size: 13px; }
+.graphpage .gperson span { font-family: var(--mono); font-size: 10px; color: var(--g-mute); margin-left: auto; }
+.graphpage .gscrub { display: flex; align-items: center; gap: 9px; }
+.graphpage .gscrub input[type="range"] { flex: 1; accent-color: var(--accent);
+  background: transparent; border: none; padding: 0; }
+.graphpage .gday {
+  font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  border: 1px solid var(--g-line); border-radius: 5px; padding: 2px 8px;
+  color: var(--g-ink); white-space: nowrap;
+}
+.graphpage .gkv { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 12px; }
+.graphpage .gkv dt { font-family: var(--mono); font-size: 10px; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--g-mute); align-self: center; }
+.graphpage .gkv dd { margin: 0; font-variant-numeric: tabular-nums; color: var(--g-ink); }
+.graphpage .grel {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .07em; font-weight: 700;
+  border: 1px solid var(--g-line); border-radius: 4px; padding: 1px 6px;
+  display: inline-block; color: var(--g-ink);
+}
+.graphpage .gpath { font-family: var(--mono); font-size: 11px; line-height: 1.7;
+  word-break: break-word; color: var(--g-ink-2); }
+.graphpage .gpath em { font-style: normal; font-weight: 700; color: var(--g-ink); }
+.graphpage .gmotif { border: 1px solid var(--g-hair); border-radius: 6px; padding: 8px 10px;
+  margin-bottom: 7px; background: var(--g-card); }
+.graphpage .gmotif.social { border-color: var(--accent); background: var(--tint-accent); }
+.graphpage .gmotif h4 { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em;
+  text-transform: uppercase; margin: 0 0 5px; color: var(--g-ink); }
+.graphpage .gmath { font-family: var(--mono); font-size: 11px; background: var(--page);
+  border-radius: 5px; padding: 7px 9px; line-height: 1.65; white-space: pre-wrap;
+  color: var(--g-ink-2); }
+.graphpage .glegend { display: flex; flex-direction: column; gap: 4px; }
+.graphpage .glegend div { display: flex; align-items: center; gap: 8px; font-size: 12px;
+  color: var(--g-ink-2); }
+.graphpage .glegend i { width: 13px; height: 13px; border-radius: 50%;
+  border: 1.5px solid var(--page); flex: none; }
+.graphpage .gnote { font-size: 11.5px; color: var(--g-mute); line-height: 1.5; }
+.graphpage .gpick { width: 100%; font-family: var(--mono); font-size: 11px; }
+
+/* ==========================================================================
+   LANDING — the front door (/)
+
+   The constellation is adapted from Halgo's particle pen
+   (codepen.io/Halgo/pen/gOywLyJ); its three deltas live in ParticleField.tsx.
+
+   The rest is a marketing site, and it borrows the app's own vocabulary rather
+   than inventing one: .lkick is the .ph recipe, .lchip is .claimchip,
+   .lmath is .gmath,
+   .lbreaks is the .tape dashed-row texture, .lgtrack/.lgband/.lgval are the
+   two-layer .scard .sbar "reference vs actual" idea, and .lgval carries
+   .frow .fseg's own draw-in transition.
+
+   NO CARDS in the content bands: separation is hairline rules and whitespace.
+   The one exception is .larch, where the boxes ARE the diagram.
+
+   Scoped under .landing. Local --l-* tokens alias the app palette, and
+   .lband.invert redefines only those tokens — which is how one light section
+   exists inside a committed dark theme without leaking a light value anywhere
+   else in the app.
+   ========================================================================== */
+
+.landing {
+  --l-ground: var(--page);
+  --l-ink: var(--ink);
+  --l-ink-2: var(--ink-2);
+  /* #71766f (--muted) measures 4.2:1 on --page — under the AA floor, and this
+     page uses its tertiary ink for real content, not decoration. #8d918a is
+     6.2:1. Nothing inside .landing may use bare var(--muted). */
+  --l-mute: #8d918a;
+  --l-hair: var(--hair);
+  --l-grid: var(--grid);
+  --l-box: var(--card);
+  /* --page at alpha, which a custom property cannot express on its own */
+  --l-veil: rgba(10, 11, 10, .88);
+  display: flex;
+  flex-direction: column;
+  overflow-x: clip;
+  background: var(--l-ground);
+}
+
+/* ---------- wordmark (footer only — the top bars are gone) ---------- */
+.landing .lwordmark {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--martian), var(--mono); font-size: 13px; font-weight: 800;
+  letter-spacing: -.01em; color: var(--ink);
+}
+.landing .lwordmark i {
+  width: 8px; height: 8px; background: var(--accent); border-radius: 2px; flex: none;
+}
+
+/* ---------- buttons ---------- */
+.landing .lcta {
+  display: inline-flex; align-items: center; gap: 12px;
+  font-family: var(--mono); font-size: 12.5px; font-weight: 700;
+  letter-spacing: .16em; text-transform: uppercase;
+  color: #06210f; background: var(--accent);
+  border: 1px solid var(--accent); border-radius: 6px;
+  padding: 16px 32px;
+  transition: background .18s ease, border-color .18s ease, color .18s ease;
+}
+.landing .lcta b { font-weight: 700; transition: transform .18s ease; }
+.landing .lcta:hover {
+  background: var(--accent-ink); border-color: var(--accent-ink); text-decoration: none;
+}
+.landing .lcta:hover b { transform: translateX(3px); }
+.landing .lcta.ghost {
+  color: var(--ink); background: transparent; border-color: var(--line);
+}
+.landing .lcta.ghost:hover { background: var(--hover); border-color: var(--ink-2); color: var(--ink); }
+.landing .lbtns { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 38px; }
+.landing .lherobody .lbtns { justify-content: center; }
+
+/* ---------- hero ---------- */
+.landing .lhero {
+  position: relative;
+  min-height: 100dvh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 96px 24px;
+}
+/* The field spans the two opening screens and stops there: run across every
+   section it would hit ParticleField's point ceiling and read sparse.
+   pointer-events:none because the buttons sit over it. */
+.landing .ltop { position: relative; }
+.landing .lhero, .landing .lpaper { position: relative; z-index: 1; }
+.landing .lfield { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.landing .lfield canvas { display: block; filter: blur(1px); }
+.landing .lscrim {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(54% 44% at 50% 48%,
+    var(--l-ground) 0%, var(--l-veil) 34%, rgba(10, 11, 10, 0) 78%);
+}
+.landing .lframe {
+  position: absolute; inset: 20px; pointer-events: none;
+  border: 1px solid var(--hair);
+}
+.landing .lframe i { position: absolute; width: 15px; height: 15px; }
+.landing .lframe .tl { top: -1px; left: -1px; border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+.landing .lframe .tr { top: -1px; right: -1px; border-top: 1px solid var(--line); border-right: 1px solid var(--line); }
+.landing .lframe .bl { bottom: -1px; left: -1px; border-bottom: 1px solid var(--line); border-left: 1px solid var(--line); }
+.landing .lframe .br { bottom: -1px; right: -1px; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); }
+@media (max-width: 640px) { .landing .lframe { inset: 12px; } }
+
+.landing .lherobody { position: relative; z-index: 1; text-align: center; max-width: 1000px; }
+
+.landing .lmark {
+  font-family: var(--martian), var(--mono);
+  font-weight: 800;
+  font-size: clamp(46px, 11.5vw, 150px);
+  letter-spacing: -.045em;
+  line-height: .95;
+  color: var(--l-ink);
+}
+/* The product line. v2 had this at 10.5px --muted over the constellation and it
+   vanished; size and --ink-2 are the fix. */
+.landing .lsub {
+  margin: 22px 0 0;
+  font-size: clamp(19px, 2.7vw, 34px);
+  font-weight: 400; letter-spacing: -.01em;
+  color: var(--l-ink-2);
+}
+/* Instrument Serif is a display cut — it goes spindly under ~19px, so the
+   mobile step-down must never take it lower. */
+.landing .lbyline {
+  font-family: var(--instrument), Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: clamp(19px, 2.5vw, 32px);
+  line-height: 1.32; letter-spacing: .005em;
+  color: var(--l-ink);
+  max-width: 24em; margin: 24px auto 0;
+}
+
+.landing .lstrip {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px 22px; flex-wrap: wrap;
+  padding: 14px 24px 30px;
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--l-mute);
+}
+.landing .lstrip .on { color: var(--accent); }
+.landing .lstrip .lscroll { letter-spacing: 0; font-size: 13px; }
+
+/* ---------- the research screen: the hero's second beat ---------- */
+.landing .lpaper {
+  min-height: 100dvh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 80px 24px;
+}
+.landing .lpaper .lscrim {
+  background: radial-gradient(66% 58% at 50% 50%,
+    var(--l-ground) 0%, var(--l-veil) 52%, rgba(10, 11, 10, 0) 88%);
+}
+.landing .lpbody { position: relative; z-index: 1; max-width: 780px; }
+.landing .lpbody .lprose { font-size: 20px; margin-bottom: 22px; }
+.landing .lpbody .lprose em { font-style: italic; color: var(--l-ink); }
+.landing .lpcite {
+  margin: 36px 0 0; padding-top: 18px; border-top: 1px solid var(--hair);
+  font-family: var(--mono); font-size: 13px; line-height: 1.6;
+}
+.landing .lpcite a { color: var(--accent); }
+.landing .lpcite span { display: block; margin-top: 5px; color: var(--l-mute); font-size: 12px; }
+
+/* ---------- bands ---------- */
+.landing .lband {
+  position: relative;
+  border-top: 1px solid var(--l-hair);
+  background: var(--l-ground);
+  scroll-margin-top: 24px;
+}
+.landing .lband.alt { --l-ground: var(--card); }
+.landing .lbin { max-width: 1120px; margin: 0 auto; padding: 90px 24px 96px; }
+.landing .lband.last .lbin { padding-bottom: 104px; }
+
+/* The one inverted section. Only the local tokens change, so nothing outside
+   .landing can ever see a light value — the app's dark theme is untouched. */
+.landing .lband.invert {
+  --l-ground: #f2f3ef;
+  --l-ink: #0a0b0a;
+  --l-ink-2: #43463f;
+  --l-mute: #6d716a;
+  --l-hair: rgba(10, 11, 10, .16);
+  --l-grid: rgba(10, 11, 10, .09);
+  --l-box: #e6e8e1;
+  color: var(--l-ink);
+}
+.landing .lticks i {
+  position: absolute; width: 9px; height: 9px; background: var(--accent);
+}
+.landing .lticks .tl { top: 0; left: 0; }
+.landing .lticks .tr { top: 0; right: 0; }
+.landing .lticks .bl { bottom: 0; left: 0; }
+.landing .lticks .br { bottom: 0; right: 0; }
+
+/* the .ph recipe, exactly */
+.landing .lkick {
+  margin: 0 0 20px;
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  letter-spacing: .15em; text-transform: uppercase; color: var(--accent);
+}
+.landing .lhead {
+  margin: 0 0 34px;
+  font-family: var(--martian), var(--mono);
+  font-weight: 800; font-size: clamp(26px, 3.8vw, 46px);
+  letter-spacing: -.035em; line-height: 1.06;
+  color: var(--l-ink);
+}
+.landing .lprose {
+  font-size: 20px; line-height: 1.65; color: var(--l-ink-2); max-width: 42em; margin: 0 0 44px;
+}
+.landing .lprose.narrow { max-width: 40em; margin: 40px 0 0; }
+.landing .lprose code, .landing .lregn code {
+  font-family: var(--mono); font-size: .88em; color: var(--l-ink);
+}
+.landing .lquote {
+  font-family: var(--instrument), Georgia, serif; font-style: italic;
+  font-size: clamp(28px, 4.2vw, 52px); line-height: 1.16; letter-spacing: -.01em;
+  color: var(--l-ink); max-width: 17em; margin: 0 0 30px;
+}
+.landing .lquote.small {
+  font-size: clamp(21px, 2.5vw, 30px); line-height: 1.36;
+  color: var(--l-ink-2); max-width: 24em; margin: 34px 0 0;
+}
+
+/* ---------- 01 comparison ---------- */
+.landing .lcmp {
+  display: grid; grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--l-hair); border-radius: 8px; overflow: hidden;
+}
+.landing .lcmp .h {
+  font-family: var(--mono); font-size: 13px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase;
+  padding: 15px 18px; text-align: center;
+}
+.landing .lcmp .h.a { background: #16181a; color: #e9ebe6; }
+.landing .lcmp .h.b { background: var(--accent); color: #06210f; }
+.landing .lcmp .c {
+  padding: 22px 22px; font-size: 17.5px; line-height: 1.55;
+  border-top: 1px solid var(--l-grid);
+}
+.landing .lcmp .c.a { color: var(--l-mute); border-right: 1px solid var(--l-grid); }
+.landing .lcmp .c.b { color: var(--l-ink); font-weight: 500; }
+@media (max-width: 700px) {
+  .landing .lcmp .c { padding: 14px; font-size: 13.5px; }
+  .landing .lcmp .h { font-size: 9.5px; letter-spacing: .1em; padding: 10px 8px; }
+}
+
+/* ---------- 02 architecture diagram ---------- */
+/* The boxes ARE the diagram here, which is the one place the no-cards rule is
+   suspended. Connectors are a dashed rail plus a glyph arrowhead — the repo has
+   no <marker> anywhere but uses ▸ ▾ ▼ ● → ↓ throughout. */
+.landing .larch { display: flex; flex-direction: column; }
+.landing .lreg {
+  border: 1px solid var(--l-hair); border-radius: 8px;
+  padding: 18px 20px 20px;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, .045) 1px, transparent 0) 0 0 / 16px 16px,
+    var(--surface);
+}
+/* the emphasized region: this is the part that is HydraDB */
+.landing .lreg.core {
+  border-color: var(--accent);
+  background:
+    radial-gradient(circle at 1px 1px, rgba(31, 191, 117, .10) 1px, transparent 0) 0 0 / 16px 16px,
+    var(--surface);
+}
+.landing .lregh {
+  margin: 0 0 16px;
+  font-family: var(--mono); font-size: 12.5px; font-weight: 700;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--accent);
+}
+.landing .lregn {
+  margin: 18px 0 0; font-size: 15px; line-height: 1.6; color: var(--l-mute); max-width: 58em;
+}
+.landing .lflow { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
+.landing .lflow > em {
+  align-self: center; font-style: normal; color: var(--accent); font-size: 11px; flex: none;
+}
+.landing .lnode {
+  flex: 1 1 0; min-width: 150px;
+  border: 1px solid var(--l-hair); border-radius: 6px;
+  background: var(--page); padding: 11px 13px;
+}
+.landing .lnode > b { display: block; font-size: 16px; font-weight: 700; color: var(--l-ink); }
+.landing .lnode > span {
+  display: block; margin-top: 3px;
+  font-family: var(--mono); font-size: 13px; line-height: 1.55; color: var(--l-ink-2);
+}
+.landing .lnode.tall { height: 100%; }
+.landing .lchips { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin-top: 12px; }
+.landing .lchips .lct {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--l-mute); margin-right: 3px;
+}
+/* the .claimchip recipe */
+.landing .lchip {
+  font-family: var(--mono); font-size: 12px; letter-spacing: .04em;
+  border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px 4px;
+  color: var(--l-ink-2); white-space: nowrap;
+}
+.landing .lchip.on { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+
+.landing .lconn {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 4px 0; color: var(--l-mute);
+}
+.landing .lconn i {
+  width: 0; height: 26px; border-left: 1px dashed var(--accent); opacity: .7;
+}
+.landing .lconn span {
+  font-family: var(--mono); font-size: 12.5px; letter-spacing: .04em; line-height: 1.5;
+  text-align: center; max-width: 60em; padding: 0 12px; color: var(--l-mute);
+}
+.landing .lconn b { color: var(--accent); font-size: 10px; line-height: 1; }
+
+.landing .lfam { display: flex; flex-direction: column; }
+.landing .lfamrow {
+  display: grid; grid-template-columns: 34px 260px 1fr; gap: 14px; align-items: baseline;
+  padding: 11px 0; border-top: 1px solid var(--l-grid);
+}
+.landing .lfamrow:first-child { border-top: none; padding-top: 0; }
+.landing .lfamrow .n { font-family: var(--mono); font-size: 13px; color: var(--accent); }
+.landing .lfamrow .t b { display: block; font-size: 17px; font-weight: 700; color: var(--l-ink); }
+.landing .lfamrow .t span { display: block; font-size: 14px; color: var(--l-mute); margin-top: 2px; }
+.landing .lfamrow .e { display: flex; flex-wrap: wrap; gap: 4px; }
+@media (max-width: 780px) {
+  .landing .lfamrow { grid-template-columns: 26px 1fr; }
+  .landing .lfamrow .e { grid-column: 2; }
+}
+
+.landing .lmind { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.landing .lstage { position: relative; display: flex; }
+.landing .lstage .lsarrow {
+  position: absolute; left: -11px; top: 50%; transform: translateY(-50%);
+  font-style: normal; color: var(--accent); font-size: 11px;
+}
+.landing .lstage .lchip { font-size: 11.5px; }
+@media (max-width: 860px) {
+  .landing .lmind { grid-template-columns: 1fr; gap: 22px; }
+  .landing .lstage .lsarrow { left: 50%; top: -17px; transform: translateX(-50%) rotate(90deg); }
+}
+
+/* the .gmath recipe */
+.landing .lmath {
+  font-family: var(--mono); font-size: 13.5px; line-height: 1.75;
+  background: var(--page); border-radius: 6px; padding: 14px 16px;
+  color: var(--l-ink-2); white-space: pre-wrap; margin: 16px 0 0;
+  overflow-x: auto;
+}
+.landing .lloop {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-top: 4px; padding-top: 12px;
+  border-top: 1px dashed var(--accent);
+  font-family: var(--mono); font-size: 12px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--accent);
+}
+
+/* ---------- 03 funnel ---------- */
+.landing .lfunnel { border-top: 1px solid var(--l-hair); }
+.landing .lgchain {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px;
+  padding: 20px 0 22px;
+}
+.landing .lgchain .s { display: inline-flex; align-items: baseline; gap: 10px; }
+.landing .lgchain em { font-style: normal; color: var(--accent); font-size: 10px; }
+.landing .lgchain b {
+  font-family: var(--mono); font-size: 14.5px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--l-ink);
+}
+.landing .lgchain .first b { color: var(--l-mute); }
+.landing .lgchain u {
+  text-decoration: none; font-family: var(--mono); font-size: 13px;
+  color: var(--accent); font-variant-numeric: tabular-nums;
+}
+
+.landing .lgkey {
+  display: flex; gap: 18px; padding: 12px 0 6px;
+  font-family: var(--mono); font-size: 12px; letter-spacing: .1em; color: var(--l-mute);
+}
+.landing .lgkey span { display: inline-flex; align-items: center; gap: 6px; }
+.landing .lgkey .k { width: 14px; height: 9px; border-radius: 2px; }
+.landing .lgkey .k.band { background: var(--tint-accent); border: 1px solid var(--accent); }
+.landing .lgkey .k.val { background: var(--accent); }
+
+.landing .lgate {
+  display: grid; grid-template-columns: 156px 1fr 132px 190px;
+  gap: 16px; align-items: center;
+  padding: 15px 0; border-top: 1px solid var(--l-grid);
+}
+.landing .lgate.end { border-top: 1px solid var(--l-hair); }
+.landing .lgname b {
+  display: block; font-family: var(--mono); font-size: 16px; font-weight: 700;
+  letter-spacing: .1em; color: var(--l-ink);
+}
+.landing .lgate.end .lgname b { font-size: 12.5px; color: var(--l-ink-2); letter-spacing: .12em; }
+.landing .lgname span { font-family: var(--mono); font-size: 12.5px; color: var(--l-mute); }
+/* two layers, the .scard .sbar way: the band is the reference, the bar is what
+   the model actually does */
+.landing .lgtrack {
+  position: relative; height: 22px; background: var(--grid); border-radius: 3px; overflow: hidden;
+}
+.landing .lgband {
+  position: absolute; top: 0; bottom: 0;
+  background: var(--tint-accent);
+  border-left: 1px solid var(--accent); border-right: 1px solid var(--accent);
+}
+.landing .lgval {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  background: var(--accent); opacity: .34;
+  transition: width .7s cubic-bezier(.2, .8, .2, 1);
+}
+.landing .lgtick { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--accent-ink); }
+.landing .lgnum b { display: block; font-family: var(--mono); font-size: 19px; font-weight: 700; color: var(--l-ink); }
+.landing .lgnum span { display: block; font-family: var(--mono); font-size: 12px; color: var(--l-mute); margin-top: 2px; }
+.landing .lgexit { font-family: var(--mono); font-size: 13px; line-height: 1.5; color: var(--l-mute); }
+.landing .lgexit b { color: var(--bad); font-weight: 700; }
+.landing .lgfoot {
+  margin: 26px 0 0; font-family: var(--mono); font-size: 13px; line-height: 1.7;
+  color: var(--l-mute); max-width: 56em;
+}
+.landing .lgfoot code { color: var(--ink-2); }
+@media (max-width: 880px) {
+  .landing .lgate { grid-template-columns: 1fr 96px; gap: 6px 12px; }
+  .landing .lgtrack { grid-column: 1 / -1; order: 3; }
+  .landing .lgexit { grid-column: 1 / -1; order: 4; }
+  .landing .lgnum { text-align: right; }
+}
+
+/* ---------- 04 what breaks — the .tape dashed-row texture ---------- */
+.landing .lbreaks { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--l-hair); }
+.landing .lbreaks li {
+  display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap;
+  padding: 15px 0 15px 14px;
+  border-bottom: 1px dashed var(--l-grid);
+  border-left: 2px solid transparent;
+  transition: border-color .18s ease;
+}
+.landing .lbreaks li:hover { border-left-color: var(--accent); }
+.landing .lbreaks b { font-size: 20px; font-weight: 700; color: var(--l-ink); min-width: 13em; }
+.landing .lbreaks span { font-family: var(--mono); font-size: 14px; color: var(--l-mute); }
+
+/* ---------- 05 numbers — .pfbig's treatment, already borderless ---------- */
+.landing .lnums {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+  border-top: 1px solid var(--l-hair); padding-top: 32px;
+}
+.landing .lnums b {
+  display: block; font-family: var(--martian), var(--mono);
+  font-size: clamp(26px, 4vw, 50px); font-weight: 800;
+  line-height: 1.05; letter-spacing: -.03em; color: var(--accent);
+}
+.landing .lnums span {
+  display: block; margin-top: 10px;
+  font-family: var(--mono); font-size: 12.5px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--l-mute);
+}
+@media (max-width: 720px) { .landing .lnums { grid-template-columns: repeat(2, 1fr); row-gap: 28px; } }
+
+/* ---------- footer ---------- */
+.landing .lfoot {
+  border-top: 1px solid var(--hair);
+  padding: 32px 24px 48px; width: 100%; max-width: 1120px; margin: 0 auto;
+}
+.landing .lfrow {
+  display: flex; align-items: center; gap: 10px 26px; flex-wrap: wrap;
+  font-family: var(--mono); font-size: 13px; letter-spacing: .1em; color: var(--l-mute);
+}
+.landing .lfine { margin: 22px 0 0; max-width: 54em; font-size: 14px; line-height: 1.7; color: var(--l-mute); }
+
+@media (prefers-reduced-motion: no-preference) {
+  :root:has(.landing) { scroll-behavior: smooth; }
+}
+
+@media (max-width: 640px) {
+  .landing .lhero { padding: 86px 18px; }
+  .landing .lsub { font-size: 18px; margin-top: 14px; }
+  .landing .lbyline { font-size: 19px; margin-top: 18px; }
+  .landing .lbtns { margin-top: 28px; }
+  .landing .lcta { padding: 14px 22px; font-size: 11px; letter-spacing: .12em; }
+  .landing .lbin { padding: 56px 18px 60px; }
+  .landing .lreg { padding: 14px 13px 16px; }
+  .landing .lbreaks b { min-width: 0; font-size: 17px; }
+  .landing .lpaper { padding: 64px 18px; min-height: auto; }
+  .landing .lprose, .landing .lpbody .lprose { font-size: 17px; }
+}
+
+/* ==========================================================================
+   05 MIND — the Shopper Mind exhibit (.graphpage's scoped-token pattern)
+   ========================================================================== */
+.mindpage {
+  --m-canvas: var(--page);
+  --m-panel: var(--surface);
+  --m-card: var(--card);
+  --m-ink: var(--ink);
+  --m-ink-2: var(--ink-2);
+  --m-mute: var(--muted);
+  --m-hair: var(--hair);
+  --m-line: var(--line);
+  --m-edge: rgba(233, 235, 230, .13);
+  /* the retrieval path — ParticleField's cyan, the app's "live signal" color */
+  --m-path: #8ffff8;
+  min-height: calc(100vh - 45px);
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  padding: 14px 18px;
+  box-sizing: border-box;
+  background: var(--m-canvas);
+}
+.mindpage .mcol { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.mindpage .mcol.left { flex: 0 0 292px; }
+.mindpage .mcol.right { flex: 0 0 330px; }
+.mindpage .mspacer { flex: 1; }
+.mindpage section.mcanvas {
+  flex: 1; min-width: 0; position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+  /* the head photograph's own ground, so the letterbox bars blend into it */
+  background: #010208;
+  border: 1px solid var(--m-hair); border-radius: 8px;
+}
+.mindpage section.mcanvas svg { width: 100%; flex: 1; min-height: 0; display: block; }
+@media (max-width: 1100px) {
+  .mindpage { flex-direction: column; }
+  .mindpage .mcol.left, .mindpage .mcol.right { flex: none; width: 100%; }
+  .mindpage section.mcanvas { min-height: 74vh; }
+}
+
+/* ---------- title block ---------- */
+.mindpage .mtitle h1 {
+  font-family: var(--archivo), "Archivo Black", sans-serif;
+  font-size: 21px; letter-spacing: .34em; text-transform: uppercase;
+  color: var(--m-ink); font-weight: normal; margin: 2px 0 0;
+}
+.mindpage .msubtitle { font-size: 13px; color: var(--m-ink-2); margin: 4px 0 0; }
+.mindpage .msubtitle em {
+  font-family: var(--instrument), serif; font-style: italic; color: var(--m-ink);
+}
+.mindpage .mprov {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--m-mute); margin: 6px 0 2px;
+}
+
+/* ---------- panels (shared) ---------- */
+.mindpage .mpanel {
+  background: var(--m-panel); border: 1px solid var(--m-hair); border-radius: 8px;
+  padding: 12px 14px;
+}
+.mindpage .mph {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--m-mute); margin-bottom: 9px;
+}
+.mindpage .mnote { font-size: 10.5px; color: var(--m-mute); line-height: 1.5; margin-top: 8px; }
+.mindpage .mnote code, .mindpage .mempty code {
+  font-size: 10px; color: var(--m-ink); word-break: break-all;
+}
+
+/* ---------- left: the stimulus ---------- */
+.mindpage .stimulus img {
+  width: 100%; border-radius: 6px; display: block;
+  border: 1px solid var(--m-hair);
+}
+.mindpage .stimulus .mhead { font-size: 13.5px; font-weight: 700; margin-top: 9px; }
+.mindpage .stimulus .msub { font-size: 11px; color: var(--m-ink-2); margin-top: 3px; }
+.mindpage .mchipslabel {
+  font-family: var(--mono); font-size: 9px; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--m-mute); margin: 10px 0 5px;
+}
+.mindpage .mchips { display: flex; flex-wrap: wrap; gap: 5px; }
+.mindpage .mchips .chip {
+  font-family: var(--mono); font-size: 10.5px; font-weight: 700;
+  border: 1px solid var(--accent); color: var(--accent);
+  background: var(--tint-accent); border-radius: 5px; padding: 2px 8px;
+}
+.mindpage .mchips .chip.sale {
+  border-color: var(--gold); color: var(--gold); background: var(--tint-warn);
+}
+.mindpage .mthumbs { display: flex; gap: 6px; }
+.mindpage .mthumbs button {
+  flex: 1; padding: 0; border: 1px solid var(--m-hair); border-radius: 5px;
+  overflow: hidden; background: var(--m-card); opacity: .55; cursor: pointer;
+}
+.mindpage .mthumbs button:hover { opacity: .85; }
+.mindpage .mthumbs button.on { opacity: 1; border-color: var(--m-path); }
+.mindpage .mthumbs img { width: 100%; height: 34px; object-fit: cover; display: block; }
+
+/* ---------- left: the shopper card ---------- */
+.mindpage .mkv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 11.5px; margin: 0; }
+.mindpage .mkv dt {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--m-mute); align-self: baseline;
+}
+.mindpage .mkv dd { margin: 0; color: var(--m-ink); font-variant-numeric: tabular-nums; }
+.mindpage .mkv .mid { font-family: var(--mono); font-size: 10px; color: var(--m-mute); }
+
+/* ---------- right: appraisal + decision ---------- */
+.mindpage .barrow { display: flex; align-items: center; gap: 7px; margin: 6px 0; padding: 2px 3px; border-radius: 5px; }
+.mindpage .barrow .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.mindpage .barrow .bl { flex: none; width: 128px; font-family: var(--mono); font-size: 10.5px; color: var(--m-ink-2); }
+.mindpage .barrow .bt { flex: 1; height: 7px; background: rgba(255,255,255,.09); border-radius: 4px; overflow: hidden; position: relative; }
+.mindpage .barrow .bt.signed::before {
+  content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px;
+  background: var(--m-line);
+}
+.mindpage .barrow .bf { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 4px; display: block; }
+.mindpage .barrow .bv { flex: none; width: 44px; text-align: right; font-family: var(--mono); font-size: 10.5px; color: var(--m-ink); }
+.mindpage .decision .barrow .bl { width: 52px; font-size: 11px; }
+.mindpage .decision .barrow .bf { background: var(--m-path); opacity: .75; }
+.mindpage .decision .barrow.win {
+  border: 1px solid var(--m-path); background: rgba(143, 255, 248, .07);
+}
+.mindpage .decision .barrow.win .bf { opacity: 1; }
+.mindpage .decision .barrow.win .bl, .mindpage .decision .barrow.win .bv { color: var(--m-path); font-weight: 700; }
+.mindpage .maxis {
+  display: flex; justify-content: space-between; margin: 7px 3px 0;
+  font-family: var(--mono); font-size: 9px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--m-mute);
+  border-top: 1px solid var(--m-hair); padding-top: 5px;
+}
+.mindpage .mcaption {
+  text-align: center; font-family: var(--mono); font-size: 9.5px;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--m-ink-2); margin-top: 6px;
+}
+.mindpage .evarrow, .mindpage .dnarrow {
+  font-family: var(--mono); font-size: 9px; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--m-path); opacity: .8; text-align: center;
+}
+.mindpage .dnarrow { font-size: 12px; line-height: .8; }
+
+/* ---------- canvas: silhouette, mesh, lobes ---------- */
+/* the head: a photograph, pushed back to texture so the photo's own mesh
+   dots never compete with the lobe-coloured data nodes */
+.mindpage .mindbg image { opacity: .8; pointer-events: none; }
+/* the soft veil over the skull interior — the lattice recedes, the outline stays */
+.mindpage .mindbg .veil { pointer-events: none; }
+.mindpage .lobes ellipse {
+  fill: color-mix(in srgb, var(--lobe) 7%, transparent);
+  stroke: color-mix(in srgb, var(--lobe) 38%, transparent);
+  stroke-width: 1.2;
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--lobe) 16%, transparent));
+}
+.mindpage .lobelabel {
+  fill: var(--lobe); font: 800 17px var(--sans); letter-spacing: .01em; text-anchor: middle;
+  paint-order: stroke; stroke: rgba(10, 11, 10, .92); stroke-width: 4px;
+}
+.mindpage .mconn { stroke: rgba(233, 235, 230, .14); stroke-width: 1; stroke-dasharray: 2 4; }
+.mindpage .mconnlabel {
+  fill: var(--m-mute); font: 9px var(--mono); letter-spacing: .12em;
+  text-anchor: middle; opacity: .8;
+}
+.mindpage .entrylabel {
+  fill: var(--m-path); font: 700 9px var(--mono); letter-spacing: .22em;
+}
+
+/* ---------- canvas: edges + the retrieval path ---------- */
+.mindpage #edges path { fill: none; }
+.mindpage #edges path.assoc { stroke: var(--m-edge); stroke-width: 1.2px; }
+.mindpage #edges path.assoc.drv { stroke-dasharray: 3 3; }
+.mindpage #edges path.dim { opacity: .22; }
+/* the decisive path — the motifs the decision consumed — moves, lightly */
+.mindpage #edges path.rp {
+  stroke: var(--m-path); stroke-width: 2px; opacity: 1;
+  stroke-dasharray: 6 7;
+  filter: drop-shadow(0 0 3px rgba(143, 255, 248, .35));
+  animation: mindflow 1.8s linear infinite;
+}
+.mindpage #edges path.rp.hot {
+  stroke: var(--gold); stroke-width: 2.6px;
+  filter: drop-shadow(0 0 3px rgba(217, 160, 31, .35));
+}
+/* the other candidates retrieval surfaced: there, quiet, still */
+.mindpage #edges path.rp.soft {
+  stroke-width: 1.3px; opacity: .38; stroke-dasharray: 3 5;
+  animation: none; filter: none;
+}
+.mindpage #edges path.rp.soft.hot { stroke: var(--gold); }
+@keyframes mindflow { to { stroke-dashoffset: -13; } }
+.mindpage .relabel {
+  fill: var(--m-path); font: 700 8.5px var(--mono); letter-spacing: .1em;
+  text-anchor: middle; paint-order: stroke; stroke: rgba(10, 11, 10, .92); stroke-width: 3px;
+}
+.mindpage .relabel.hotlabel { fill: var(--gold); }
+
+/* ---------- canvas: nodes ---------- */
+.mindpage .mnode circle { stroke: var(--page); stroke-width: 1.6px; }
+.mindpage .mnode .nlabel {
+  fill: var(--m-ink); font: 11px var(--sans); text-anchor: middle;
+  paint-order: stroke; stroke: rgba(10, 11, 10, .92); stroke-width: 3px;
+}
+.mindpage .mnode.k-self circle {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 7px rgba(31, 191, 117, .6));
+}
+.mindpage .mnode.k-self .nlabel { font-weight: 700; font-size: 12px; }
+.mindpage .mnode.k-stimulus circle {
+  fill: var(--m-path);
+  filter: drop-shadow(0 0 9px rgba(143, 255, 248, .7));
+}
+.mindpage .mnode.k-stimulus .nlabel { font-weight: 700; font-size: 11px; fill: var(--m-path); }
+.mindpage .mnode.k-scalar rect {
+  fill: rgba(143, 255, 248, .05); stroke: rgba(143, 255, 248, .35);
+  stroke-width: 1; stroke-dasharray: 3 2;
+}
+.mindpage .mnode .statlabel {
+  fill: var(--m-mute); font: 8.5px var(--mono); letter-spacing: .06em;
+  text-anchor: middle; text-transform: uppercase;
+}
+.mindpage .mnode .statvalue {
+  fill: var(--m-ink); font: 700 10.5px var(--mono); text-anchor: middle;
+}
+
+/* ---------- canvas: legend + empty states ---------- */
+.mindpage .mlegend {
+  display: flex; flex-wrap: wrap; gap: 5px 18px; align-items: center;
+  padding: 9px 14px; border-top: 1px solid var(--m-hair);
+  font-size: 11px; color: var(--m-ink-2);
+}
+.mindpage .mlegend div { display: flex; align-items: center; gap: 7px; }
+.mindpage .mlegend .lg { width: 16px; height: 0; border-top: 2px solid; flex: none; }
+.mindpage .mlegend .lg.path { border-color: var(--m-path); border-top-style: dashed; }
+.mindpage .mlegend .lg.soft { border-color: var(--m-path); border-top-style: dotted; opacity: .5; }
+.mindpage .mlegend .lg.assoc { border-color: var(--m-edge); }
+.mindpage .mlegend .lg.node {
+  width: 9px; height: 9px; border: none; border-radius: 50%; background: var(--gold);
+}
+.mindpage .mlegend .lg.scalar {
+  width: 14px; height: 8px; border: 1px dashed rgba(143, 255, 248, .5);
+  border-radius: 2px; background: rgba(143, 255, 248, .06);
+}
+.mindpage .mlegend .lg.conn { border-color: rgba(233, 235, 230, .3); border-top-style: dotted; }
+.mindpage .mempty {
+  position: absolute; inset: 0; display: grid; place-content: center; text-align: center;
+  padding: 40px; color: var(--m-mute); font-size: 13px; gap: 10px;
+}
+.mindpage .mempty b {
+  font-family: var(--archivo), sans-serif; font-size: 20px;
+  color: var(--m-ink); text-transform: uppercase;
 }

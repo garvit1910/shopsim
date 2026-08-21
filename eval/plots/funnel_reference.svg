@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="400" viewBox="0 0 720 400" font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+<rect width="720" height="400" fill="#ffffff"/>
+<text x="68" y="24" font-size="15" font-weight="600" fill="#1c1c1c">Reference profile · funnel against published bands</text>
+<text x="68" y="39" font-size="11" fill="#6b6b6b">green = inside the published band, red = outside</text>
+<text x="14" y="203" font-size="11" fill="#6b6b6b" transform="rotate(-90 14 203)" text-anchor="middle">rate</text>
+<line x1="68" y1="336.0" x2="696" y2="336.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="340.0" text-anchor="end" font-size="11" fill="#6b6b6b">0</text>
+<line x1="68" y1="247.3" x2="696" y2="247.3" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="251.3" text-anchor="end" font-size="11" fill="#6b6b6b">0.2</text>
+<line x1="68" y1="158.7" x2="696" y2="158.7" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="162.7" text-anchor="end" font-size="11" fill="#6b6b6b">0.4</text>
+<line x1="68" y1="70.0" x2="696" y2="70.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="74.0" text-anchor="end" font-size="11" fill="#6b6b6b">0.6</text>
+<text x="130.8" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">CTR</text>
+<text x="256.4" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">bounce</text>
+<text x="382.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">cart|browse</text>
+<text x="507.6" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">buy|cart</text>
+<text x="633.2" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">visit→purchase</text>
+<line x1="68" y1="336" x2="696" y2="336" stroke="#1c1c1c" stroke-width="1.2"/>
+<rect x="95.6" y="332.1" width="70.3" height="3.9" fill="#3f8f5f" rx="2"/>
+<text x="130.8" y="326.1" text-anchor="middle" font-size="11" fill="#1c1c1c">0.9%</text>
+<text x="130.8" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">CTR</text>
+<rect x="221.2" y="96.5" width="70.3" height="239.5" fill="#3f8f5f" rx="2"/>
+<text x="256.4" y="90.5" text-anchor="middle" font-size="11" fill="#1c1c1c">54.0%</text>
+<text x="256.4" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">bounce</text>
+<rect x="346.8" y="273.1" width="70.3" height="62.9" fill="#3f8f5f" rx="2"/>
+<text x="382.0" y="267.1" text-anchor="middle" font-size="11" fill="#1c1c1c">14.2%</text>
+<text x="382.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">cart|browse</text>
+<rect x="472.4" y="228.2" width="70.3" height="107.8" fill="#3f8f5f" rx="2"/>
+<text x="507.6" y="222.2" text-anchor="middle" font-size="11" fill="#1c1c1c">24.3%</text>
+<text x="507.6" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">buy|cart</text>
+<rect x="598.0" y="329.0" width="70.3" height="7.0" fill="#3f8f5f" rx="2"/>
+<text x="633.2" y="323.0" text-anchor="middle" font-size="11" fill="#1c1c1c">1.6%</text>
+<text x="633.2" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">visit→purchase</text>
+</svg>

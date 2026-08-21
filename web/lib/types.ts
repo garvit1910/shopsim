@@ -177,6 +177,15 @@ export interface RunConfigPayload {
     goal_overrides: Record<string, unknown>;
     goal_waves: { category_id: number; start_tick: number; end_tick: number; rate_multiplier: number }[];
     arms: string[];
+    /** v3.13-draft: the run's CLICK base and its published multiple vs the
+     * calibrated gate (eval/results/calibration.json, reference-trace replay).
+     * `acceleration` is null when the table has no row for this base. */
+    click_gate?: {
+      base: number; calibrated_base: number;
+      acceleration: number | null;
+      p_click_reference: number | null; p_click_model: number | null;
+      source: string;
+    };
   };
 }
 
@@ -318,4 +327,135 @@ export interface CatalogSummary {
   personas: string | null;
   goal_config: string | null;
   n_creatives: number;
+}
+
+/** ---- v3.9-draft: the memory graph (GET /runs/{id}/memory-graph) --------
+ * The payload is the graph's TOPOLOGY plus each edge's full version history;
+ * the day scrub is a client-side filter over `time` + t/valid_to, so moving
+ * through days costs no round-trips. See engine/shopsim/hydramem/memgraph.py. */
+
+export type GraphNodeKind =
+  | "shopper" | "concept" | "category" | "brand" | "product"
+  | "creative" | "page" | "belief" | "aspect" | "anchor";
+
+/** How an edge answers "were you there on day N". `static` = always (the
+ * objective closure and TRUSTS_PERSON); `event` = t <= as_of; `bitemporal` =
+ * t <= as_of < valid_to. */
+export type GraphEdgeTime = "static" | "event" | "bitemporal";
+
+export type GraphEdgeFamily =
+  | "objective" | "episodic" | "subjective" | "preference" | "social";
+
+export interface GraphNode {
+  id: number;
+  kind: GraphNodeKind;
+  label: string | null;
+  sub: string | null;
+  props: Record<string, unknown>;
+}
+
+export interface GraphEdgeVersion {
+  t?: number; valid_to?: number;
+  [k: string]: unknown;
+}
+
+export interface GraphEdge {
+  id: string;
+  source: number;
+  target: number;
+  rel: string;
+  family: GraphEdgeFamily;
+  time: GraphEdgeTime;
+  derived: boolean;
+  owner: number;
+  count: number;
+  versions: GraphEdgeVersion[];
+  reciprocal?: boolean;
+}
+
+export interface TriadCandidate {
+  shopper_ids: number[];
+  offsets: number[];
+  why: string;
+}
+
+/** One captured `get_trace` result: the motif paths retrieval actually walked
+ * for a shopper x stimulus. Frozen alongside the graph because Explain reads
+ * them, and recomputing motifs in the browser would mean the dashboard
+ * inventing graph structure. */
+export interface FrozenTrace {
+  shopper_id?: number;
+  stimulus_id?: number;
+  scalars?: Record<string, unknown>;
+  motifs: MotifPayload[];
+}
+
+export interface MemoryGraph {
+  run_id: string;
+  run_index: number;
+  t0: number;
+  tick_seconds: number;
+  ticks: number;
+  head_tick: number;
+  social_enabled: boolean;
+  focus: number[];
+  candidates: TriadCandidate[];
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  /** Present only on the frozen fixture (GET /memory-graph), keyed
+   * offset -> stimulus id. Absent on a live per-run read. */
+  traces?: Record<string, Record<string, FrozenTrace>>;
+  /** Provenance of the frozen capture — which run it is a photograph of. */
+  captured?: {
+    run_id: string; run_index: number;
+    arm?: string | null; label?: string | null; head_tick: number;
+  };
+  comment?: string;
+}
+
+/** GET /shopper-mind (v3.12-draft) — the frozen Shopper Mind capture. The
+ * v3.11 frozen envelope plus: the catalog whose ads are the demo stimuli,
+ * the (creative, landing page) pairs baked for the pinned shopper, and the
+ * exact decision-preview envelopes computed at export time by the same
+ * appraise()/stage_probabilities() the live endpoint runs. Keyed offset ->
+ * stimulus id, like `traces`. The pinned shopper is focus[0]. */
+export interface FrozenMind extends MemoryGraph {
+  catalog_key: string;
+  demo_stimuli: { creative_id: number; page_id: number | null }[];
+  previews: Record<string, Record<string, DecisionPreview>>;
+}
+
+export interface SocialRunRow {
+  run_id: string;
+  label: string | null;
+  arm: string | null;
+  status: string | null;
+  run_index: number;
+  ticks: number;
+  t0: number;
+  tick_seconds: number;
+}
+
+
+/** GET /engine/busy — the launch guard's verdict, structured.
+ * `stale: true` means the row is marked running but no writer process exists,
+ * which is the only case where forcing past the guard is safe. */
+export interface EngineBusyBlocker {
+  kind: "experiment" | "run";
+  reason: string;
+  stale: boolean;
+  pid: number | null;
+  run_id?: string;
+  label?: string | null;
+  arm?: string | null;
+  experiment?: string;
+  command?: string;
+  tick?: number | null;
+  ticks?: number | null;
+  quiet_s?: number;
+}
+
+export interface EngineBusy {
+  busy: boolean;
+  blocker: EngineBusyBlocker | null;
 }

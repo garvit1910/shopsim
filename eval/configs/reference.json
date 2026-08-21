@@ -1,0 +1,83 @@
+{
+  "comment": "Phase 7 reference run \u2014 the shape the calibration is certified on. Design notes, because each choice is a calibration decision: (1) NO page_ids A/B split. Every committed pre-Phase-7 run sent half its page traffic to 4000002, the variant that deliberately hides a claimed DISCOUNT, which is why those runs read a 63-67% bounce rate against a researched 45-55%. A reference site does not sabotage half its own landing pages; the violating variant belongs in F5's scenario, not in the baseline. (2) All five stock creatives across all three brands, so brand_semantic_fatigue (same brand) and concept_saturation (cross brand) both fire. (3) Promos on: the demo brand's three-cycle schedule moves PRICED_AT, which is what teaches reference prices and makes the realised-price channel live. (4) 24 ticks covers all three promo cycles plus a fortnight of learning. (5) No allocation: the reference measures the population's response to a fixed media plan, not the allocator's skill.",
+  "label": "eval-reference",
+  "seed": 101,
+  "mind": {
+    "decide": "formula",
+    "consolidate": "formula"
+  },
+  "ticks": 20,
+  "t0": 1800000000,
+  "tick_seconds": 86400,
+  "population": {
+    "size": 300,
+    "personas": "fixtures/demo-brand/personas.json"
+  },
+  "catalog_dir": "fixtures/demo-brand",
+  "perception_cache": "fixtures/perception-cache",
+  "exposure": {
+    "frequency_cap_per_tick": 2,
+    "frequency_cap_72h": 6,
+    "schedule": [
+      {
+        "creative_id": 2000001,
+        "start_tick": 0,
+        "end_tick": 23,
+        "reach_prob": 0.3
+      },
+      {
+        "creative_id": 2000002,
+        "start_tick": 0,
+        "end_tick": 23,
+        "reach_prob": 0.3
+      },
+      {
+        "creative_id": 2000003,
+        "start_tick": 0,
+        "end_tick": 23,
+        "reach_prob": 0.3
+      },
+      {
+        "creative_id": 2000004,
+        "start_tick": 0,
+        "end_tick": 23,
+        "reach_prob": 0.3
+      },
+      {
+        "creative_id": 2000005,
+        "start_tick": 0,
+        "end_tick": 23,
+        "reach_prob": 0.3
+      }
+    ]
+  },
+  "goals": {
+    "config": "fixtures/demo-brand/goal_config.json",
+    "overrides": {}
+  },
+  "fulfillment": {
+    "lag_ticks": 2,
+    "sat_noise_sd": 0.08
+  },
+  "promos": {
+    "schedule": "fixtures/demo-brand/promo_schedule.json",
+    "enabled": true
+  },
+  "arms": [
+    {
+      "name": "reference"
+    }
+  ],
+  "calibration": {
+    "stage_bases": {
+      "CLICK": 6.0,
+      "BROWSE": 2.3,
+      "CART": 3.7,
+      "BUY": 2.85
+    },
+    "retrieval": {
+      "pref_recency_half_life_s": 2592000,
+      "violation_min_strength": 0.5
+    }
+  }
+}

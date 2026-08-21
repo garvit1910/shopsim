@@ -14,6 +14,7 @@ import { followHead, openRun, seek, useMarket } from "@/lib/market";
 import { ctrSeries, derive } from "@/lib/selectors";
 import { detectEvents, scheduledEvents } from "@/lib/detectors";
 import { api, proxied } from "@/lib/api";
+import { adjusted } from "@/lib/economics";
 import type { ExperimentDetail } from "@/lib/types";
 import MasterTimeline from "@/components/MasterTimeline";
 import Tape from "@/components/Tape";
@@ -23,7 +24,7 @@ import AllocationRiver, { type RiverSeries } from "@/components/AllocationRiver"
 import { AdRoster } from "@/components/AdCard";
 import Stepper, { pipelineSteps } from "@/components/Stepper";
 import EnginePreflight, { EtaChip } from "@/components/EnginePreflight";
-import { CtrSmallMultiples, FlightKpis } from "@/components/market";
+import { CtrSmallMultiples, FlightKpis, runAdjust } from "@/components/market";
 import {
   ActivityPanel, CtrByDayPanel, EventsLedgerPanel, FunnelByCreativePanel,
   KpiTiles, PageAbPanel, SmallMultiples, creativesFromConfig,
@@ -52,9 +53,18 @@ function MarketInner({ runId }: { runId: string }) {
   const t = Math.max(0, Math.min(s.tick, Math.max(0, s.headTick)));
   const d = derive(s.eventsByTick);
 
+  /** Ids the run actually served, recovered from the event stream. Only used
+   * when there is no schedule to read (a run with no run_config). */
+  const observedIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const row of d.sawPerTick) for (const k of Object.keys(row)) ids.add(Number(k));
+    return [...ids].filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
+  }, [d.sawPerTick]);
+
   const creatives = useMemo(
-    () => creativesFromConfig(s.config?.effective.schedule, s.config?.effective.creative_names, s.cards),
-    [s.config, s.cards],
+    () => creativesFromConfig(s.config?.effective.schedule, s.config?.effective.creative_names,
+                              s.cards, observedIds),
+    [s.config, s.cards, observedIds],
   );
   const scheduled = useMemo(() => scheduledEvents(s.config?.effective ?? null), [s.config]);
 
@@ -72,10 +82,11 @@ function MarketInner({ runId }: { runId: string }) {
     const today = d.sawPerTick[t] ?? {};
     const total = Object.values(today).reduce((a, b) => a + b, 0) || 1;
     const cum = d.funnelCum[t] ?? {};
+    const a = runAdjust(s, ticks);  // per-ad CTR at the same human-scale factor as the tiles
     return Object.fromEntries(creatives.map((c) => {
       const row = cum[String(c.id)] ?? {};
       const saw = row.SAW ?? 0;
-      const ctr = saw ? (row.CLICKED ?? 0) / saw : null;
+      const ctr = adjusted(saw ? (row.CLICKED ?? 0) / saw : null, a);
       return [c.id, (
         <>
           <b>{Math.round((100 * (today[String(c.id)] ?? 0)) / total)}%</b> of today
@@ -83,7 +94,7 @@ function MarketInner({ runId }: { runId: string }) {
         </>
       )];
     }));
-  }, [creatives, d.sawPerTick, d.funnelCum, t]);
+  }, [creatives, d.sawPerTick, d.funnelCum, t, s, ticks]);
 
   const allocated = Boolean(
     (s.config?.raw as { exposure?: { allocation?: { enabled?: boolean } } })
@@ -171,6 +182,15 @@ function MarketInner({ runId }: { runId: string }) {
       </div>
       {s.error && <div className="errbox" style={{ marginBottom: 12 }}>{s.error}</div>}
       {s.warning && <div className="warnbox" style={{ marginBottom: 12 }}>{s.warning}</div>}
+      {s.configMissing && (
+        <div className="warnbox" style={{ marginBottom: 12 }}>
+          This run carries no <code>run_config</code> — only runs launched from
+          Studio do. Ad names, the exposure schedule and the population are
+          unavailable, so the roster is unnamed and the timeline has no
+          scheduled markers. Every number below is still engine truth, read
+          from the run&apos;s own events and results.
+        </div>
+      )}
 
       {s.phase === "starting" ? <EnginePreflight /> : (
         <>

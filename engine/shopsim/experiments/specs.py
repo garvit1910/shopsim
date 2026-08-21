@@ -12,7 +12,14 @@ Common envelope (every type):
     ticks, t0     experiment window — give each experiment a DISTINCT t0
                   window: PRICED_AT is global objective state and the as-of
                   reads key on t (v3.4-draft pricing convention)
-    population    {size, personas?}
+    population    {size, personas?, social?}
+                  social is the P1 trust layer (CONTRACT v3.9-draft): the same
+                  {enabled, degree, rewire_p, weight_min, weight_max} block
+                  run_config.population.social takes, validated by the one
+                  authority — runner.config.parse_social — when the generated
+                  config is loaded. Absent (the default) means the key is not
+                  emitted at all, so every pre-social spec builds a
+                  byte-identical config.
     mind          {decide?, consolidate?} — default formula/formula
     catalog, perception_cache, goal_config    default demo-brand paths
     calibration   optional 4.4 block (run_config "calibration" shape)
@@ -53,6 +60,7 @@ class BaseSpec:
     fulfillment_lag_ticks: int = 2
     sat_noise_sd: float = 0.08
     calibration: dict = field(default_factory=dict)
+    social: dict = field(default_factory=dict)
     scenario_packs: tuple[str, ...] = ()
     raw: dict = field(default_factory=dict)  # the whole parsed spec
 
@@ -140,6 +148,7 @@ def _base_kwargs(raw: dict) -> dict:
         fulfillment_lag_ticks=int(raw.get("fulfillment", {}).get("lag_ticks", 2)),
         sat_noise_sd=float(raw.get("fulfillment", {}).get("sat_noise_sd", 0.08)),
         calibration=dict(raw.get("calibration", {})),
+        social=dict(pop.get("social", {})),
         scenario_packs=tuple(raw.get("scenario_packs", ())),
         raw=raw,
     )

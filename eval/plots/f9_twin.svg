@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="400" viewBox="0 0 720 400" font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+<rect width="720" height="400" fill="#ffffff"/>
+<text x="68" y="24" font-size="15" font-weight="600" fill="#1c1c1c">F9 · a goal moves BUY far more than it moves CTR</text>
+<text x="68" y="39" font-size="11" fill="#6b6b6b">paired twin arms, same seed, same ad — the twin branches from the live arm's own log</text>
+<text x="14" y="203" font-size="11" fill="#6b6b6b" transform="rotate(-90 14 203)" text-anchor="middle">uplift, need-on ÷ need-off</text>
+<line x1="68" y1="336.0" x2="696" y2="336.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="340.0" text-anchor="end" font-size="11" fill="#6b6b6b">0</text>
+<line x1="68" y1="282.8" x2="696" y2="282.8" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="286.8" text-anchor="end" font-size="11" fill="#6b6b6b">0.25</text>
+<line x1="68" y1="229.6" x2="696" y2="229.6" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="233.6" text-anchor="end" font-size="11" fill="#6b6b6b">0.5</text>
+<line x1="68" y1="176.4" x2="696" y2="176.4" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="180.4" text-anchor="end" font-size="11" fill="#6b6b6b">0.75</text>
+<line x1="68" y1="123.2" x2="696" y2="123.2" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="127.2" text-anchor="end" font-size="11" fill="#6b6b6b">1</text>
+<line x1="68" y1="70.0" x2="696" y2="70.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="74.0" text-anchor="end" font-size="11" fill="#6b6b6b">1.25</text>
+<text x="225.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">CTR</text>
+<text x="539.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">BUY per exposure</text>
+<line x1="68" y1="336" x2="696" y2="336" stroke="#1c1c1c" stroke-width="1.2"/>
+<rect x="137.1" y="116.4" width="175.8" height="219.6" fill="#2f6fb0" rx="2"/>
+<text x="225.0" y="110.4" text-anchor="middle" font-size="11" fill="#1c1c1c">1.03×</text>
+<text x="225.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">CTR</text>
+<rect x="451.1" y="102.9" width="175.8" height="233.1" fill="#3f8f5f" rx="2"/>
+<text x="539.0" y="96.9" text-anchor="middle" font-size="11" fill="#1c1c1c">1.10×</text>
+<text x="539.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">BUY per exposure</text>
+<text x="68" y="392" font-size="10" fill="#6b6b6b">relevance carries weight 1.2 at the CLICK gate and 2.2 at BUY — goal-gating is supposed to show up down the funnel</text>
+</svg>

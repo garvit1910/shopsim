@@ -1,0 +1,46 @@
+{
+  "comment": "Phase 5.9 — the run behind the Social Memory Graph (04 Graph). The P1 trust layer is ON (population.social, CONTRACT v3.9-draft) and PAID FOR (calibration.appraisal.w_social 0.5), so TRUSTS_PERSON edges exist AND the social_proof motif actually moves credibility per registry row 20 — with mind.decide formula that makes social_lift.causal mean what it says. Deliberately richer than r044-social-smoke-golden (25 shoppers, 4 ticks, one purchase in the whole run): 100 shoppers over 28 ticks gives the as-of day scrub real range and gives the triad picker more than one friend-bought-it-and-liked-it path to choose from. A SHARED market over all five stock creatives (same shape as market-demo) so every shopper accumulates SAW/CLICKED across several ads and their worldviews overlap on shared concepts, brands and products — that overlap is what makes three memory graphs ONE connected graph instead of three widgets. fulfillment.lag_ticks 1 so a purchase's EXPERIENCED lands the next day and the pair fits inside the window. calibration.stage_bases.CLICK 2 (vs the 6.0 population default) is the same threshold the shipped market-20260819 run uses and is the difference between a funnel and a flat line: at the default, a first pass of this config drew 819 exposures, 8 clicks and zero purchases, which is a truthful simulation and a useless exhibit. t0 1810000000 is a fresh window — PRICED_AT is global objective state read as-of t, so experiments must not share one (v3.4-draft pricing convention).",
+  "type": "ad_test",
+  "name": "social-graph-demo",
+  "seed": 913,
+  "ticks": 28,
+  "t0": 1810000000,
+  "population": {
+    "size": 100,
+    "social": {
+      "enabled": true,
+      "degree": 4,
+      "rewire_p": 0.1,
+      "weight_min": 0.4,
+      "weight_max": 0.9
+    }
+  },
+  "mind": {
+    "decide": "formula",
+    "consolidate": "formula"
+  },
+  "calibration": {
+    "appraisal": {
+      "w_social": 0.5
+    },
+    "stage_bases": {
+      "CLICK": 2
+    }
+  },
+  "fulfillment": {
+    "lag_ticks": 1
+  },
+  "market": {
+    "shared": true,
+    "allocation": {
+      "enabled": true
+    }
+  },
+  "creatives": [
+    {"creative_id": 2000001, "reach_prob": 0.35},
+    {"creative_id": 2000002, "reach_prob": 0.35},
+    {"creative_id": 2000003, "reach_prob": 0.35},
+    {"creative_id": 2000004, "reach_prob": 0.35},
+    {"creative_id": 2000005, "reach_prob": 0.35}
+  ]
+}

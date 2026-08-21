@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="400" viewBox="0 0 720 400" font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+<rect width="720" height="400" fill="#ffffff"/>
+<text x="68" y="24" font-size="15" font-weight="600" fill="#1c1c1c">F1 · frequency response rises, then wears out</text>
+<text x="68" y="39" font-size="11" fill="#6b6b6b">peak at exposure 2, then −44% by the last impression the 72h window can hold</text>
+<text x="14" y="203" font-size="11" fill="#6b6b6b" transform="rotate(-90 14 203)" text-anchor="middle">P(click | exposure)</text>
+<text x="382" y="372" font-size="11" fill="#6b6b6b" text-anchor="middle">exposures to the same creative</text>
+<rect x="68" y="46" width="10" height="10" fill="#2f6fb0" rx="2"/>
+<text x="83" y="55" font-size="11" fill="#1c1c1c">P(click)</text>
+<line x1="68" y1="336.0" x2="696" y2="336.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="340.0" text-anchor="end" font-size="11" fill="#6b6b6b">0</text>
+<line x1="68" y1="282.8" x2="696" y2="282.8" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="286.8" text-anchor="end" font-size="11" fill="#6b6b6b">0.005</text>
+<line x1="68" y1="229.6" x2="696" y2="229.6" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="233.6" text-anchor="end" font-size="11" fill="#6b6b6b">0.01</text>
+<line x1="68" y1="176.4" x2="696" y2="176.4" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="180.4" text-anchor="end" font-size="11" fill="#6b6b6b">0.015</text>
+<line x1="68" y1="123.2" x2="696" y2="123.2" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="127.2" text-anchor="end" font-size="11" fill="#6b6b6b">0.02</text>
+<line x1="68" y1="70.0" x2="696" y2="70.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="74.0" text-anchor="end" font-size="11" fill="#6b6b6b">0.025</text>
+<text x="68.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">0</text>
+<text x="172.7" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">2</text>
+<text x="277.3" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">4</text>
+<text x="382.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">6</text>
+<text x="486.7" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">8</text>
+<text x="591.3" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">10</text>
+<text x="696.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">12</text>
+<line x1="68" y1="336" x2="696" y2="336" stroke="#1c1c1c" stroke-width="1.2"/>
+<path d="M120.3,161.6 L172.7,97.2 L225.0,108.3 L277.3,145.4 L329.7,176.4 L382.0,202.4 L434.3,202.4 L486.7,202.4 L539.0,202.4 L591.3,202.4 L643.7,202.4 L696.0,202.4" fill="none" stroke="#2f6fb0" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="120.3" cy="161.6" r="2.8" fill="#2f6fb0"/>
+<circle cx="172.7" cy="97.2" r="2.8" fill="#2f6fb0"/>
+<circle cx="225.0" cy="108.3" r="2.8" fill="#2f6fb0"/>
+<circle cx="277.3" cy="145.4" r="2.8" fill="#2f6fb0"/>
+<circle cx="329.7" cy="176.4" r="2.8" fill="#2f6fb0"/>
+<circle cx="382.0" cy="202.4" r="2.8" fill="#2f6fb0"/>
+<circle cx="434.3" cy="202.4" r="2.8" fill="#2f6fb0"/>
+<circle cx="486.7" cy="202.4" r="2.8" fill="#2f6fb0"/>
+<circle cx="539.0" cy="202.4" r="2.8" fill="#2f6fb0"/>
+<circle cx="591.3" cy="202.4" r="2.8" fill="#2f6fb0"/>
+<circle cx="643.7" cy="202.4" r="2.8" fill="#2f6fb0"/>
+<circle cx="696.0" cy="202.4" r="2.8" fill="#2f6fb0"/>
+<text x="68" y="392" font-size="10" fill="#6b6b6b">adstock builds the rise; exposures_72h past wearout_free_exposures builds the fall</text>
+</svg>

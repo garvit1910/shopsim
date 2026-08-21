@@ -491,12 +491,6 @@
     "CLICK": 5
    }
   },
-  "expectation_violation": {
-   "mean_strength": 0.18,
-   "prevalence_by_outcome": {
-    "BROWSE": 4
-   }
-  },
   "goal_fit": {
    "mean_strength": 0.8,
    "prevalence_by_outcome": {
@@ -506,7 +500,7 @@
    }
   },
   "preference_fit": {
-   "mean_strength": 0.79018,
+   "mean_strength": 0.66426,
    "prevalence_by_outcome": {
     "CLICK": 9,
     "IGNORE": 2
@@ -527,9 +521,9 @@
    "concept": 5003,
    "segment": 1002,
    "series": [
-    1.0,
-    1.0,
-    1.0
+    0.6875,
+    0.77618,
+    0.83469
    ]
   },
   {
@@ -537,8 +531,8 @@
    "segment": 1004,
    "series": [
     null,
-    1.0,
-    1.0
+    0.6875,
+    0.77273
    ]
   },
   {
@@ -546,8 +540,8 @@
    "segment": 1005,
    "series": [
     null,
-    1.0,
-    1.0
+    0.6875,
+    0.77273
    ]
   },
   {
@@ -565,7 +559,7 @@
    "series": [
     null,
     null,
-    1.0
+    0.72684
    ]
   },
   {
@@ -574,7 +568,7 @@
    "series": [
     null,
     null,
-    1.0
+    0.6875
    ]
   },
   {
@@ -583,7 +577,7 @@
    "series": [
     null,
     null,
-    1.0
+    0.6875
    ]
   },
   {
@@ -591,8 +585,8 @@
    "segment": 1001,
    "series": [
     null,
-    1.0,
-    1.0
+    0.6875,
+    0.6875
    ]
   },
   {
@@ -609,8 +603,8 @@
    "segment": 1004,
    "series": [
     null,
-    1.0,
-    1.0
+    0.6875,
+    0.6875
    ]
   },
   {
@@ -618,8 +612,8 @@
    "segment": 1005,
    "series": [
     null,
-    1.0,
-    1.0
+    0.6875,
+    0.6875
    ]
   },
   {
@@ -627,17 +621,17 @@
    "segment": 1001,
    "series": [
     null,
-    1.0,
-    1.0
+    0.6875,
+    0.6875
    ]
   },
   {
    "concept": 5011,
    "segment": 1002,
    "series": [
-    1.0,
-    1.0,
-    1.0
+    0.6875,
+    0.77618,
+    0.77618
    ]
   },
   {
@@ -645,8 +639,8 @@
    "segment": 1004,
    "series": [
     null,
-    1.0,
-    1.0
+    0.6875,
+    0.6875
    ]
   },
   {
@@ -654,8 +648,8 @@
    "segment": 1005,
    "series": [
     null,
-    1.0,
-    1.0
+    0.6875,
+    0.6875
    ]
   },
   {
@@ -664,7 +658,7 @@
    "series": [
     null,
     null,
-    1.0
+    0.6875
    ]
   },
   {
@@ -673,7 +667,7 @@
    "series": [
     null,
     null,
-    1.0
+    0.6875
    ]
   },
   {
@@ -682,7 +676,7 @@
    "series": [
     null,
     null,
-    1.0
+    0.6875
    ]
   },
   {
@@ -691,7 +685,7 @@
    "series": [
     null,
     null,
-    1.0
+    0.6875
    ]
   }
  ],
@@ -705,14 +699,14 @@
   "coverage": 1.0,
   "prefers": {
    "cause_kinds": {
-    "BOUGHT": 1,
-    "BROWSED": 25,
-    "EXPERIENCED": 3
+    "BOUGHT": 3,
+    "BROWSED": 28,
+    "EXPERIENCED": 4
    },
    "coverage": 1.0,
-   "learned_versions": 29,
-   "versions": 47,
-   "with_cause": 29
+   "learned_versions": 35,
+   "versions": 53,
+   "with_cause": 35
   }
  },
  "reference_price_trajectory": [
@@ -766,7 +760,7 @@
    "decide": "scripted"
   },
   "perception_cache_hash": "c3628b7038844161025014e72fa77fc93dc7c35d0a45fd347f5bd0694f35ea9a",
-  "run_index": 42,
+  "run_index": 52,
   "seed": 58,
   "t0": 1755000000,
   "tick_seconds": 86400,
@@ -776,6 +770,6 @@
  "social_lift": null,
  "violations": {
   "bounce_delta": 0.0,
-  "count": 4
+  "count": 0
  }
 }

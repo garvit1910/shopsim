@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="400" viewBox="0 0 720 400" font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+<rect width="720" height="400" fill="#ffffff"/>
+<text x="68" y="24" font-size="15" font-weight="600" fill="#1c1c1c">F8 · the evidence hierarchy is strict</text>
+<text x="68" y="39" font-size="11" fill="#6b6b6b">equal event counts on an identical starting edge; only the per-event weight differs</text>
+<text x="14" y="203" font-size="11" fill="#6b6b6b" transform="rotate(-90 14 203)" text-anchor="middle">Δw after 3 events</text>
+<line x1="68" y1="336.0" x2="696" y2="336.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="340.0" text-anchor="end" font-size="11" fill="#6b6b6b">0</text>
+<line x1="68" y1="269.5" x2="696" y2="269.5" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="273.5" text-anchor="end" font-size="11" fill="#6b6b6b">0.1</text>
+<line x1="68" y1="203.0" x2="696" y2="203.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="207.0" text-anchor="end" font-size="11" fill="#6b6b6b">0.2</text>
+<line x1="68" y1="136.5" x2="696" y2="136.5" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="140.5" text-anchor="end" font-size="11" fill="#6b6b6b">0.3</text>
+<line x1="68" y1="70.0" x2="696" y2="70.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="74.0" text-anchor="end" font-size="11" fill="#6b6b6b">0.4</text>
+<text x="146.5" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">CLICKED</text>
+<text x="303.5" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">BROWSED</text>
+<text x="460.5" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">CARTED</text>
+<text x="617.5" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">BOUGHT</text>
+<line x1="68" y1="336" x2="696" y2="336" stroke="#1c1c1c" stroke-width="1.2"/>
+<rect x="102.5" y="284.0" width="87.9" height="52.0" fill="#2f6fb0" rx="2"/>
+<text x="146.5" y="278.0" text-anchor="middle" font-size="11" fill="#1c1c1c">0.078</text>
+<text x="146.5" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">CLICKED</text>
+<rect x="259.5" y="227.2" width="87.9" height="108.8" fill="#2f6fb0" rx="2"/>
+<text x="303.5" y="221.2" text-anchor="middle" font-size="11" fill="#1c1c1c">0.164</text>
+<text x="303.5" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">BROWSED</text>
+<rect x="416.5" y="165.0" width="87.9" height="171.0" fill="#2f6fb0" rx="2"/>
+<text x="460.5" y="159.0" text-anchor="middle" font-size="11" fill="#1c1c1c">0.257</text>
+<text x="460.5" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">CARTED</text>
+<rect x="573.5" y="96.6" width="87.9" height="239.4" fill="#2f6fb0" rx="2"/>
+<text x="617.5" y="90.6" text-anchor="middle" font-size="11" fill="#1c1c1c">0.360</text>
+<text x="617.5" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">BOUGHT</text>
+<text x="68" y="392" font-size="10" fill="#6b6b6b">SAW is absent by construction: it carries pref_weight 0.0 — that is F7</text>
+</svg>

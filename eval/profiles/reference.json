@@ -1,0 +1,11 @@
+{
+  "name": "reference",
+  "comment": "The calibrated profile Phase 7 certifies against published ranges. Fitted by engine/shopsim/eval/calibrate.py against the decision trace of the baseline reference run, then verified on real multi-seed runs. Three changes from the Phase-6 defaults, each with a mechanism behind it rather than a number pulled to make a test pass: (1) retrieval.pref_recency_half_life_s 3d -> 30d, because a seeded PREFERS prior is a standing disposition and was decaying at ad speed, collapsing relevance by the second week; (2) retrieval.violation_min_strength 0.0 -> 0.5, because with no floor an EXPECTS picked up from ANY of a brand's creatives fired against EVERY landing page, holding bounce at 60-65% against a researched 45-55%; (3) stage_bases.BUY 3.2 -> 2.85, the one mind constant the fit had to move, bringing P(BUY|cart) from 0.19 to the 0.24-0.28 band implied by 72-76% cart abandonment. Everything else is the Phase-6 default: CLICK, BROWSE and CART bases were already right once retrieval stopped starving them.",
+  "calibration": {
+    "stage_bases": {"CLICK": 6.0, "BROWSE": 2.3, "CART": 3.7, "BUY": 2.85},
+    "retrieval": {
+      "pref_recency_half_life_s": 2592000,
+      "violation_min_strength": 0.5
+    }
+  }
+}

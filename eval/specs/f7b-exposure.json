@@ -1,0 +1,58 @@
+{
+  "comment": "F7(b) \u2014 the behavioural half of never-drop F7. The CLICK gate is forced shut (stage_bases.CLICK = 40 puts the sigmoid at ~1e-17) while exposure runs hot, so the run generates thousands of impressions and not one engagement. Awareness, adstock and EXPECTS must all move \u2014 those ARE the exposure channels \u2014 and every learned preference series must stay flat. Short and cheap: with no clicks there is no page phase at all.",
+  "label": "f7b-exposure",
+  "seed": 617,
+  "ticks": 8,
+  "t0": 1813000000,
+  "population": {
+    "size": 150,
+    "personas": "fixtures/demo-brand/personas.json"
+  },
+  "calibration": {
+    "stage_bases": {
+      "CLICK": 40.0
+    }
+  },
+  "exposure": {
+    "frequency_cap_per_tick": 2,
+    "frequency_cap_72h": 8,
+    "schedule": [
+      {
+        "creative_id": 2000001,
+        "start_tick": 0,
+        "end_tick": 7,
+        "reach_prob": 0.9
+      },
+      {
+        "creative_id": 2000003,
+        "start_tick": 0,
+        "end_tick": 7,
+        "reach_prob": 0.9
+      }
+    ]
+  },
+  "goals": {
+    "config": "fixtures/demo-brand/goal_config.json",
+    "overrides": {}
+  },
+  "promos": {
+    "schedule": "fixtures/demo-brand/promo_schedule.json",
+    "enabled": false
+  },
+  "arms": [
+    {
+      "name": "exposure_only"
+    }
+  ],
+  "tick_seconds": 86400,
+  "mind": {
+    "decide": "formula",
+    "consolidate": "formula"
+  },
+  "catalog_dir": "fixtures/demo-brand",
+  "perception_cache": "fixtures/perception-cache",
+  "fulfillment": {
+    "lag_ticks": 2,
+    "sat_noise_sd": 0.08
+  }
+}

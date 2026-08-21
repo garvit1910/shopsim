@@ -23,45 +23,86 @@ import os
 import subprocess
 import sys
 import threading
-from dataclasses import is_dataclass
-from enum import Enum
-from functools import partial
 from pathlib import Path
 
+from .preview import (
+    _jsonable, build_population, build_preview_ctx, compute_preview)
 
-STALE_AFTER_S = 300  # a "running" row with no progress for this long is stale
+
+# A "running" row with no progress for this long is presumed dead — but only
+# when no writer process can be found. The timer alone is not safe: per-tick
+# cost grows with the store (infra/README.md measures 18.5 s/tick fresh vs
+# 112 s/tick loaded for the SAME shape, and a 500-shopper scenario on a loaded
+# store was measured at ~265 s/tick on 2026-08-20). A window shorter than one
+# tick would declare a genuinely running run stale and admit a second writer
+# into a registry whose read-modify-write is explicitly not concurrent-safe.
+# So: process evidence first, clock second, and a window wide enough that the
+# clock is only ever reached by a run that really did die.
+STALE_AFTER_S = 1800
+
+# Every module that is allowed to write the graph. Law 8 admits one writer at a
+# time, and all three of these are writers — `shopsim.eval` was missing, which
+# is why an eval scenario run could never be named as the thing blocking a
+# launch even while it plainly was.
+WRITER_MODULES = ("shopsim.experiments", "shopsim.eval", "shopsim.runner")
 
 
-def _pid_is_live_orchestrator(pid: int) -> bool:
-    """True only for a live, non-zombie process actually running the
-    experiments CLI. `os.kill(pid, 0)` alone is wrong here: it succeeds on
-    zombies (our un-reaped launch children) and on reused pids — the source
-    of the every-launch-409s bug."""
+def _live_writer_command(pid: int) -> str | None:
+    """The command line of `pid`, if it is a live non-zombie engine writer.
+
+    `os.kill(pid, 0)` alone is wrong here: it succeeds on zombies (our
+    un-reaped launch children) and on reused pids — the source of the
+    every-launch-409s bug.
+    """
     try:
         out = subprocess.run(
             ["ps", "-p", str(pid), "-o", "stat=,command="],
             capture_output=True, text=True, timeout=5,
         ).stdout.strip()
     except Exception:
-        return False
+        return None
     if not out:
-        return False
+        return None
     stat, _, command = out.partition(" ")
     if stat.startswith("Z"):
-        return False
-    return "shopsim.experiments" in command
+        return None
+    return command if any(m in command for m in WRITER_MODULES) else None
 
 
-def _jsonable(obj):
-    if isinstance(obj, Enum):
-        return obj.value
-    if is_dataclass(obj) and not isinstance(obj, type):
-        return {f: _jsonable(getattr(obj, f)) for f in obj.__dataclass_fields__}
-    if isinstance(obj, dict):
-        return {str(k): _jsonable(v) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple)):
-        return [_jsonable(v) for v in obj]
-    return obj
+def _pid_is_live_orchestrator(pid: int) -> bool:
+    """True only for a live, non-zombie process running the experiments CLI."""
+    command = _live_writer_command(pid)
+    return command is not None and "shopsim.experiments" in command
+
+
+def _any_live_writer() -> dict | None:
+    """Any live engine-writer process on this machine, orchestrator or not.
+
+    The registry row tells us a run was started; only this tells us something
+    is still running it. A run started outside the API (`shopsim.eval
+    scenarios`, a bare `shopsim.runner run`) has no pid file anywhere, so
+    scanning for the process is the only way to see it at all.
+    """
+    try:
+        out = subprocess.run(["ps", "-axo", "pid=,stat=,command="],
+                             capture_output=True, text=True, timeout=5).stdout
+    except Exception:
+        return None
+    for line in out.splitlines():
+        parts = line.split(None, 2)
+        if len(parts) < 3:
+            continue
+        pid, stat, command = parts
+        if stat.startswith("Z") or not any(m in command for m in WRITER_MODULES):
+            continue
+        # `runner serve` is the API itself — a reader, not a writer
+        if "shopsim.runner" in command and " run" not in f" {command} ":
+            continue
+        try:
+            return {"pid": int(pid), "command": command}
+        except ValueError:
+            continue
+    return None
 
 
 def create_app(runs_dir: Path):
@@ -130,12 +171,15 @@ def create_app(runs_dir: Path):
 
     # ---- Phase-3 endpoints (byte-identical) --------------------------------
 
-    @app.get("/runs")
-    def list_runs() -> list[dict]:
+    def _registry_rows() -> list[dict]:
         reg = runs_dir / "registry.json"
         if not reg.exists():
             return []
         return json.loads(reg.read_text())["runs"]
+
+    @app.get("/runs")
+    def list_runs() -> list[dict]:
+        return _registry_rows()
 
     @app.get("/runs/{run_id}/progress")
     def progress(run_id: str) -> dict:
@@ -209,6 +253,39 @@ def create_app(runs_dir: Path):
 
     # ---- v3.5-draft: config + population -----------------------------------
 
+    def _click_gate(cfg) -> dict:
+        """The run's CLICK base and how far it sits from the calibrated gate.
+
+        The multiple comes from `eval/results/calibration.json` ->
+        demo_profile.click_gate_acceleration, the reference-trace replay that
+        also publishes the demo profile's 5.6x (v3.13-draft). The market page
+        divides its headline CTR and ROAS by it and prints the raw rate beside
+        them; a base the table does not carry yields `acceleration: null`, and
+        the page then falls back to the raw rate with its band disclosure.
+        Read per request, like the other committed-file reads off `root`: the
+        table is small and a stale cache would outlive a re-calibration.
+        """
+        _ap, _cp, stage_bases = cfg.calibration()
+        base = float(dict(stage_bases)["CLICK"])
+        from ..minds.calibration import DEFAULT_STAGE_BASES
+        calibrated = float(dict(DEFAULT_STAGE_BASES)["CLICK"])
+        out = {"base": base, "calibrated_base": calibrated, "acceleration": None,
+               "p_click_reference": None, "p_click_model": None,
+               "source": "eval/results/calibration.json "
+                         "demo_profile.click_gate_acceleration (reference-trace replay)"}
+        path = root / "eval" / "results" / "calibration.json"
+        try:
+            table = json.loads(path.read_text())["demo_profile"]["click_gate_acceleration"]
+        except (OSError, ValueError, KeyError):
+            return out
+        out["p_click_reference"] = table.get("reference_p_click")
+        for entry in table.get("by_click_base", {}).values():
+            if abs(float(entry["click_base"]) - base) < 1e-6:
+                out["acceleration"] = entry.get("multiple")
+                out["p_click_model"] = entry.get("p_click")
+                break
+        return out
+
     @app.get("/runs/{run_id}/config")
     def run_config(run_id: str) -> dict:
         row, cfg = _cfg_for(run_id)
@@ -243,6 +320,7 @@ def create_app(runs_dir: Path):
                 "goal_overrides": cfg.goal_overrides(arm),
                 "goal_waves": [dict(w) for w in goal_cfg.waves],
                 "arms": [a.name for a in cfg.arms],
+                "click_gate": _click_gate(cfg),
             },
         }
 
@@ -252,17 +330,10 @@ def create_app(runs_dir: Path):
         if cached is not None:
             return cached
         row, cfg = _cfg_for(run_id)
-        from ..population.factory import (
-            PopulationConfig, generate_population, load_segment_specs)
-        _ap, _cp, stage_bases = cfg.calibration()
-        specs = load_segment_specs(cfg.personas_path)
-        shoppers = generate_population(PopulationConfig(
-            seed=cfg.seed, population_size=cfg.population_size,
-            segments=specs, run_index=row["run_index"],
-            stage_bases=stage_bases))
+        built = build_population(cfg, row["run_index"])
         with _global_lock:
-            _pops[run_id] = (specs, shoppers)
-        return specs, shoppers
+            _pops[run_id] = built
+        return built
 
     @app.get("/runs/{run_id}/population")
     def population(run_id: str) -> dict:
@@ -325,6 +396,151 @@ def create_app(runs_dir: Path):
         return _shopper_read(run_id, offset,
                              lambda mem, sid: mem.get_trace(sid, stimulus_id))
 
+    # ---- v3.9-draft: the memory graph (Phase 5.9, the 04 Graph exhibit) ----
+
+    def _creative_names(run_id: str) -> dict[str, str]:
+        """Best-effort ad names. CLI-launched runs keep their config outside
+        the run store, so `_cfg_for` legitimately 404s for them (r044 is one);
+        the graph then labels ads by id rather than guessing a catalog."""
+        try:
+            _row, cfg = _cfg_for(run_id)
+            path = cfg.catalog_dir / "creatives.json"
+            if not path.exists():
+                return {}
+            doc = json.loads(path.read_text())
+            return {str(r["creative_id"]): r.get("name", str(r["creative_id"]))
+                    for r in doc.get("creatives", [])}
+        except Exception:
+            # Labels are decoration. A missing, moved or malformed catalog must
+            # never take the graph itself down — the ads just show as ids.
+            return {}
+
+    @app.get("/memory-graph")
+    def frozen_memory_graph() -> dict:
+        """The committed 04 Graph exhibit — run-independent, store-independent.
+
+        Reads `fixtures/social-graph/memory-graph.json` the same way /catalogs
+        reads its fixtures, off `root = runs_dir.parent`. Deliberately NOT a
+        store read: shopper worldviews live only in HydraDB, and that store is
+        archived and recreated routinely, so a live read blanked the exhibit
+        after every reset. The payload is a frozen capture of one real run and
+        says so in its own `comment` and `captured` block.
+        """
+        path = root / "fixtures" / "social-graph" / "memory-graph.json"
+        if not path.exists():
+            raise HTTPException(
+                status_code=404,
+                detail="no frozen memory graph committed; regenerate with "
+                       "`python -m shopsim.runner export-graph --config CFG "
+                       "--run RUN_ID --out fixtures/social-graph/memory-graph.json`")
+        try:
+            return json.loads(path.read_text())
+        except ValueError as ex:
+            raise HTTPException(status_code=500,
+                                detail=f"frozen memory graph is not valid JSON: {ex}")
+
+    @app.get("/shopper-mind")
+    def frozen_shopper_mind() -> dict:
+        """The committed 05 Mind exhibit (v3.12-draft) — the pinned shopper.
+
+        Same move as /memory-graph one fixture over: a frozen capture of one
+        real run, extended by `export-graph --previews` with `catalog_key`,
+        `demo_stimuli` and `previews` so the Mind page can show retrieval
+        paths AND decision math with the store archived. Never a store read —
+        the mind is chosen once and always exists.
+        """
+        path = root / "fixtures" / "shopper-mind" / "mind.json"
+        if not path.exists():
+            raise HTTPException(
+                status_code=404,
+                detail="no frozen shopper mind committed; regenerate with "
+                       "`python -m shopsim.runner export-graph --config "
+                       "runs/experiments/shopper-mind-demo/run_config.json "
+                       "--run RUN_ID --out fixtures/shopper-mind/mind.json "
+                       "--previews`")
+        try:
+            return json.loads(path.read_text())
+        except ValueError as ex:
+            raise HTTPException(status_code=500,
+                                detail=f"frozen shopper mind is not valid JSON: {ex}")
+
+    @app.get("/social-runs")
+    def social_runs() -> list[dict]:
+        """Runs that actually carry a TRUSTS_PERSON layer. `social_config_hash`
+        is written into the manifest only when one exists (runstore), so its
+        presence is the authority — no graph round-trip needed. A new endpoint
+        rather than a new field on /runs, so no existing payload shape moves."""
+        out = []
+        for row in _registry_rows():
+            path = runs_dir / row["run_id"] / "manifest.json"
+            if not path.exists():
+                continue
+            try:
+                man = json.loads(path.read_text())
+            except (ValueError, OSError):
+                continue
+            if not man.get("social_config_hash"):
+                continue
+            out.append({"run_id": row["run_id"], "label": row.get("label"),
+                        "arm": row.get("arm"), "status": row.get("status"),
+                        "run_index": man.get("run_index"),
+                        "ticks": man.get("ticks"), "t0": man.get("t0"),
+                        "tick_seconds": man.get("tick_seconds")})
+        return out
+
+    @app.get("/runs/{run_id}/memory-graph")
+    def memory_graph(run_id: str, focus: str | None = None) -> dict:
+        """{nodes, edges} for a cohort of shoppers, with full edge history.
+
+        `focus` is a comma-separated offset list; omitted, the server picks the
+        best mutually-trusting triple in the run (one that can actually show
+        TRUSTS_PERSON -> BOUGHT -> EXPERIENCED). Edges carry their versions and
+        a `time` discipline so the client owns the as-of-day scrub — one fetch,
+        no round-trip per day.
+        """
+        mem, lock = _mem_for(run_id)
+        tick, now, man = _clock(run_id)
+        row = _row(run_id)
+        from ..contracts.ids import shopper_id as make_sid
+
+        with lock:
+            mem.set_tick(tick=tick, now=now)
+            try:
+                candidates = mem.find_social_triads()
+                if focus:
+                    try:
+                        offsets = [int(x) for x in focus.split(",") if x.strip() != ""]
+                    except ValueError:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"focus must be a comma-separated offset list, got {focus!r}")
+                elif candidates:
+                    offsets = candidates[0]["offsets"]
+                else:
+                    offsets = []
+                graph = ({"nodes": [], "edges": []} if not offsets else
+                         mem.get_memory_graph(
+                             [make_sid(row["run_index"], o) for o in offsets],
+                             creative_names=_creative_names(run_id)))
+            except HTTPException:
+                raise
+            except Exception as ex:
+                raise HTTPException(status_code=503, detail=f"graph read failed: {ex}")
+
+        return {
+            "run_id": run_id,
+            "run_index": row["run_index"],
+            "t0": man["t0"],
+            "tick_seconds": man["tick_seconds"],
+            "ticks": man["ticks"],
+            "head_tick": tick,
+            "social_enabled": bool(candidates) or bool(man.get("social_config_hash")),
+            "focus": offsets,
+            "candidates": candidates,
+            "nodes": graph["nodes"],
+            "edges": graph["edges"],
+        }
+
     # ---- v3.5-draft item 2: decision preview (real math, no rng) -----------
 
     def _preview_ctx(run_id: str) -> dict:
@@ -333,28 +549,10 @@ def create_app(runs_dir: Path):
         if cached is not None:
             return cached
         row, cfg = _cfg_for(run_id)
-        from ..minds import FormulaMind, ObjectiveView
-        from ..perception.cache import perceived_maps
-        from ..perception.perceive import perceive_catalog
-        from . import steps
-
-        def _no_llm(*_a, **_k):
-            raise HTTPException(status_code=503,
-                                detail="perception cache incomplete for this run")
-
-        perceived, calls = perceive_catalog(
-            cfg.catalog_dir, cache_dir=cfg.perception_cache, call=_no_llm)
-        assert calls == 0
-        claims, offers = perceived_maps(perceived)
-        view = ObjectiveView.from_catalog(cfg.catalog_dir, claims, offers)
-        ap, cp, _sb = cfg.calibration()
-        arm = cfg.arm(row["arm"])
-        sched = cfg.schedule_for(arm)
-        page_of = partial(steps.page_for, cfg.seed,
-                          cfg.page_splits(sched), cfg.resolve_pages(view, sched))
-        built = {"view": view,
-                 "mind": FormulaMind(view, appraisal_params=ap, choice_params=cp),
-                 "cp": cp, "page_of": page_of}
+        try:
+            built = build_preview_ctx(cfg, row["arm"])
+        except ValueError as ex:  # incomplete perception cache
+            raise HTTPException(status_code=503, detail=str(ex))
         with _global_lock:
             _previews[run_id] = built
         return built
@@ -372,37 +570,8 @@ def create_app(runs_dir: Path):
         sh = shoppers[offset]
         ctx = _shopper_read(run_id, offset,
                             lambda mem, sid: mem.get_decision_context(sid, stimulus_id))
-        bound = pv["mind"].for_stimulus(stimulus_id)
-        from dataclasses import replace
-        from ..minds.choice import stage_probabilities
-        a = bound.appraise(ctx, sh.traits)
-        probs = stage_probabilities(a, ctx.scalars, sh.coeffs,
-                                    kind=facts.kind, params=pv["cp"])
-        counterfactual = None
-        if ctx.scalars.active_need is not None:
-            ctx2 = replace(
-                ctx,
-                scalars=replace(ctx.scalars, active_need=None),
-                motifs=[m for m in ctx.motifs if m.type.value != "goal_fit"])
-            a2 = bound.appraise(ctx2, sh.traits)
-            counterfactual = {
-                "label": "same context, need removed",
-                "appraisal": _jsonable(a2),
-                "probabilities": stage_probabilities(
-                    a2, ctx2.scalars, sh.coeffs, kind=facts.kind, params=pv["cp"]),
-            }
         tick, _now, _man = _clock(run_id)
-        return {
-            "tick": tick,
-            "stimulus": {"id": stimulus_id, "kind": facts.kind,
-                         "page_id": (pv["page_of"](offset, stimulus_id)
-                                     if facts.kind == "creative" else None)},
-            "scalars": _jsonable(ctx.scalars),
-            "motifs": _jsonable(list(ctx.motifs)),
-            "appraisal": _jsonable(a),
-            "probabilities": probs,
-            "counterfactual_need_off": counterfactual,
-        }
+        return compute_preview(pv, ctx, sh, offset, stimulus_id, tick)
 
     # ---- v3.5-draft: experiments -------------------------------------------
 
@@ -420,7 +589,14 @@ def create_app(runs_dir: Path):
             pass
         return {"pid": pid, "alive": _pid_is_live_orchestrator(pid)}
 
-    def _busy_reason() -> str | None:
+    def _busy_verdict() -> dict | None:
+        """What is holding the engine, or None if nothing is.
+
+        Structured rather than prose so the dashboard can say *what* is running
+        and how far along, and so it can tell "a real writer is mid-run" from
+        "a crashed run left a row behind" — only the second is safe to force
+        past. Returns None when the engine is free.
+        """
         import time
         for proc in list(_procs):  # reap finished launch children
             if proc.poll() is not None:
@@ -431,14 +607,20 @@ def create_app(runs_dir: Path):
                     continue
                 orch = _orchestrator(d.name)
                 if orch and orch["alive"]:
-                    return (f"experiment {d.name!r} is running (pid {orch['pid']}) — "
-                            "launches are serialized (registry allocation is "
-                            "not concurrent-safe, CONTRACT v3.5-draft)")
-        # registry rows: block only on rows showing recent activity; anything
-        # quiet past STALE_AFTER_S is auto-healed to 'stale' (crashed runs and
-        # zombie leftovers must never wedge the launcher — v3.5-draft).
+                    return {"kind": "experiment", "experiment": d.name,
+                            "pid": orch["pid"], "stale": False,
+                            "reason": f"experiment {d.name!r} is running "
+                                      f"(pid {orch['pid']}) — launches are "
+                                      "serialized (registry allocation is not "
+                                      "concurrent-safe, CONTRACT v3.5-draft)"}
+
+        # Registry rows. A row alone proves a run STARTED; the writer process is
+        # what proves one is still going. Check the process first so a slow tick
+        # can never be mistaken for a dead run, and only fall back to the clock
+        # when no writer exists at all.
         store = _store()
         now_s = time.time()
+        writer = None
         for r in store.rows():
             if r.get("status") not in ("running", "created"):
                 continue
@@ -449,11 +631,37 @@ def create_app(runs_dir: Path):
                     ref = Path(r["dir"]).stat().st_mtime
                 except OSError:
                     ref = 0
-            if now_s - ref < STALE_AFTER_S:
-                return (f"run {r['run_id']} looks live (activity {int(now_s - ref)}s ago) — "
-                        "launches are serialized; retry with force=1 to override")
+            quiet_s = int(now_s - ref)
+            if writer is None:
+                writer = _any_live_writer() or {}
+            if writer:
+                return {"kind": "run", "run_id": r["run_id"], "label": r.get("label"),
+                        "arm": r.get("arm"), "pid": writer.get("pid"),
+                        "command": writer.get("command"), "stale": False,
+                        "tick": prog.get("tick"), "ticks": prog.get("ticks"),
+                        "quiet_s": quiet_s,
+                        "reason": f"run {r['run_id']} is live — a writer process "
+                                  f"(pid {writer.get('pid')}) is running it"
+                                  + (f", tick {prog['tick']}/{prog.get('ticks')}"
+                                     if prog.get("tick") is not None else "")
+                                  + ". Launches are serialized; forcing past a "
+                                    "live writer can corrupt runs/registry.json."}
+            if quiet_s < STALE_AFTER_S:
+                # No writer process, but too recent to declare dead. Do NOT heal.
+                return {"kind": "run", "run_id": r["run_id"], "label": r.get("label"),
+                        "arm": r.get("arm"), "pid": None, "stale": True,
+                        "tick": prog.get("tick"), "ticks": prog.get("ticks"),
+                        "quiet_s": quiet_s,
+                        "reason": f"run {r['run_id']} is marked running but no "
+                                  f"writer process exists and it last moved "
+                                  f"{quiet_s}s ago — it probably crashed. "
+                                  "Retry with force=1 to launch anyway."}
             store.set_status(r["run_id"], "stale")
         return None
+
+    def _busy_reason() -> str | None:
+        v = _busy_verdict()
+        return None if v is None else v["reason"]
 
     @app.get("/experiments")
     def list_experiments() -> list[dict]:
@@ -502,6 +710,17 @@ def create_app(runs_dir: Path):
                 "arm_runs": arm_runs, "orchestrator": _orchestrator(name),
                 "log_tail": log_tail}
 
+    @app.get("/engine/busy")
+    def engine_busy() -> dict:
+        """Is the engine free, and if not, what is holding it?
+
+        The dashboard had no way to ask this: the only path to the answer was
+        to attempt a launch and read the 409 prose. That is why a `make eval`
+        scenario run reads as "something else is running" with no clue what.
+        """
+        v = _busy_verdict()
+        return {"busy": v is not None, "blocker": v}
+
     @app.post("/experiments", status_code=202)
     def launch_experiment(spec: dict, force: bool = False) -> dict:
         from .runstore import write_json_atomic
@@ -510,9 +729,13 @@ def create_app(runs_dir: Path):
             parsed = parse_spec(spec)
         except (KeyError, ValueError, TypeError) as ex:
             raise HTTPException(status_code=422, detail=f"invalid spec: {ex}")
-        busy = None if force else _busy_reason()
+        busy = None if force else _busy_verdict()
         if busy is not None:
-            raise HTTPException(status_code=409, detail=busy)
+            # Structured, so the dashboard can name the blocker and decide
+            # whether offering "force" is safe. `detail` stays a string-first
+            # shape for older clients that only render err.message.
+            raise HTTPException(status_code=409, detail=busy["reason"], headers={
+                "X-Busy-Stale": "1" if busy.get("stale") else "0"})
         exp_dir = exp_root / parsed.name
         exp_dir.mkdir(parents=True, exist_ok=True)
         spec_path = exp_dir / "spec.json"

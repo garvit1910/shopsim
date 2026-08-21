@@ -9,12 +9,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "d3-drag": "^3.0.0",
+    "d3-force": "^3.0.0",
+    "d3-selection": "^3.0.0",
     "next": "^15.4.6",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@types/d3-drag": "^3.0.7",
+    "@types/d3-force": "^3.0.10",
+    "@types/d3-selection": "^3.0.11",
     "@types/node": "^22.10.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",

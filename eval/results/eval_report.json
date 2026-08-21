@@ -1,0 +1,1092 @@
+{
+ "calibration": {
+  "after": {
+   "bounce_rate": 0.5403,
+   "buy_per_exposure": 0.000141,
+   "p_browse": 0.4597,
+   "p_buy_given_cart": 0.243249,
+   "p_cart_given_browse": 0.141803,
+   "p_click": 0.008865,
+   "visit_to_purchase": 0.015857
+  },
+  "before": {
+   "bounce_rate": 0.599125,
+   "p_buy_given_cart": 0.175218,
+   "p_cart_given_browse": 0.123359,
+   "p_click": 0.007707,
+   "visit_to_purchase": 0.008665
+  },
+  "before_after": [
+   {
+    "after": 0.00887,
+    "after_in_band": true,
+    "band": [
+     0.005,
+     0.02
+    ],
+    "before": 0.00771,
+    "before_in_band": true,
+    "metric": "p_click",
+    "source": "market-research.md S1 \u2014 Meta retail CTR 1.59-1.71%, display 0.46%; adopted band 0.5-2%"
+   },
+   {
+    "after": 0.5403,
+    "after_in_band": true,
+    "band": [
+     0.45,
+     0.55
+    ],
+    "before": 0.59913,
+    "before_in_band": false,
+    "metric": "bounce_rate",
+    "source": "market-research.md S2 \u2014 BROWSE = 1 - bounce, target 0.45-0.55"
+   },
+   {
+    "after": 0.1418,
+    "after_in_band": true,
+    "band": [
+     0.1,
+     0.2
+    ],
+    "before": 0.12336,
+    "before_in_band": true,
+    "metric": "p_cart_given_browse",
+    "source": "market-research.md S2 \u2014 fashion add-to-cart 7.1-7.7% of sessions, ~2x conditioned on non-bounce"
+   },
+   {
+    "after": 0.24325,
+    "after_in_band": true,
+    "band": [
+     0.24,
+     0.28
+    ],
+    "before": 0.17522,
+    "before_in_band": false,
+    "metric": "p_buy_given_cart",
+    "source": "market-research.md S2 \u2014 1 - cart abandonment (72-76%)"
+   },
+   {
+    "after": 0.01586,
+    "after_in_band": true,
+    "band": [
+     0.01,
+     0.03
+    ],
+    "before": 0.00867,
+    "before_in_band": false,
+    "metric": "visit_to_purchase",
+    "source": "market-research.md S2 \u2014 apparel sitewide conversion 1-3%"
+   }
+  ],
+  "before_reconstructed": {
+   "bounce_rate": 0.5403,
+   "buy_per_exposure": 9.7e-05,
+   "p_browse": 0.4597,
+   "p_buy_given_cart": 0.191967,
+   "p_cart_given_browse": 0.141803,
+   "p_click": 0.007741,
+   "visit_to_purchase": 0.012514
+  },
+  "before_source": {
+   "context_health": {
+    "pref_recency_mean": 0.23,
+    "trust_share": 0.021,
+    "violation_share": 0.853
+   },
+   "engine": "pre-Phase-7: pref recency 3d (shared with fatigue), no violation floor, cold start (w=0, E=0), stage_bases.BUY 3.2",
+   "measured_on": "2026-08-20",
+   "rates": {
+    "bounce_rate": 0.599125,
+    "p_buy_given_cart": 0.175218,
+    "p_cart_given_browse": 0.123359,
+    "p_click": 0.007707,
+    "visit_to_purchase": 0.008665
+   },
+   "run": "r048-eval-reference-reference"
+  },
+  "decisions": {
+   "creative_decisions": 7878,
+   "page_decisions": 89
+  },
+  "demo_profile": {
+   "achieved_p_click": 0.050033,
+   "committed_click_base": 4.07,
+   "multiples": {
+    "bounce_rate": {
+     "band": [
+      0.45,
+      0.55
+     ],
+     "demo": 0.5403,
+     "demo_in_band": true,
+     "multiple": 1.0,
+     "reference": 0.5403
+    },
+    "p_buy_given_cart": {
+     "band": [
+      0.24,
+      0.28
+     ],
+     "demo": 0.24325,
+     "demo_in_band": true,
+     "multiple": 1.0,
+     "reference": 0.24325
+    },
+    "p_cart_given_browse": {
+     "band": [
+      0.1,
+      0.2
+     ],
+     "demo": 0.1418,
+     "demo_in_band": true,
+     "multiple": 1.0,
+     "reference": 0.1418
+    },
+    "p_click": {
+     "band": [
+      0.005,
+      0.02
+     ],
+     "demo": 0.05003,
+     "demo_in_band": false,
+     "multiple": 5.644,
+     "reference": 0.00887
+    },
+    "visit_to_purchase": {
+     "band": [
+      0.01,
+      0.03
+     ],
+     "demo": 0.01586,
+     "demo_in_band": true,
+     "multiple": 1.0,
+     "reference": 0.01586
+    }
+   },
+   "note": "Only the CLICK threshold moves. BROWSE, CART and BUY stay at their calibrated values, so everything below the click is still the certified funnel.",
+   "solved_click_base": 4.0723,
+   "target_ctr": 0.05
+  },
+  "historical_runs": {
+   "r027-market-demo": {
+    "bought": 0,
+    "bounce": 0.667,
+    "cart_given_browse": 0.067,
+    "ctr": 0.0067,
+    "profile": "stage_bases.CLICK=6.0 (default)"
+   },
+   "r039-market-20260819": {
+    "blended_roas": 46.4,
+    "bought": 25,
+    "bounce": 0.636,
+    "cart_given_browse": 0.1198,
+    "ctr": 0.2797,
+    "profile": "stage_bases.CLICK=2.0 (old demo)"
+   }
+  },
+  "in_band": {
+   "bounce_rate": true,
+   "p_buy_given_cart": true,
+   "p_cart_given_browse": true,
+   "p_click": true,
+   "visit_to_purchase": true
+  },
+  "loss": 0.0,
+  "money": {
+   "band": [
+    1.5,
+    4.0
+   ],
+   "blended_roas": 1.429,
+   "cpm_usd": 13.88,
+   "impressions": 7878,
+   "in_band": false,
+   "note": "Derived, not fitted. Based on 4 simulated purchases, so the interval is wide \u2014 read the order of magnitude, not the decimals. The pre-Phase-7 demo profile put this at ~46x.",
+   "purchases": 4,
+   "revenue": 156.3,
+   "source": "market-research.md S5 \u2014 Meta e-commerce median CPM $13.88; real-world blended e-commerce ROAS 1.5-4x",
+   "spend": 109.35
+  },
+  "pre_phase7_reconstruction": {
+   "note": "A partial cross-check, NOT the before column. Two of the three changes are invertible from a current trace (the recency half-life, because recency = 2^(-age/half_life), and the BUY stage base, because it is a parameter). The violation floor is not: sub-threshold violations stopped being recorded once the floor existed. Reconstruction therefore understates how bad the starting point was \u2014 it reports bounce 0.518 where the engine actually measured 0.599 \u2014 which is why `before` cites the measurement in before_source instead.",
+   "pref_half_life_days": 3.0,
+   "stage_bases_BUY": 3.2
+  },
+  "profile": "reference",
+  "realised": {
+   "bounce_rate": 0.617978,
+   "ctr": 0.010536,
+   "p_buy_given_cart": 0.4,
+   "p_cart_given_browse": 0.294118,
+   "visit_to_purchase": 0.044944
+  },
+  "reference_run_dir": "/Users/garvit/shopsim/runs/r053-eval-reference-reference",
+  "reference_run_id": "r053-eval-reference-reference"
+ },
+ "ctr_by_day": {
+  "band": [
+   0.005,
+   0.02
+  ],
+  "days_out_of_band": [
+   0,
+   6,
+   11,
+   15,
+   16
+  ],
+  "max": 0.02128,
+  "mean": 0.010563,
+  "min": 0.0025,
+  "note": "Reported, not asserted \u2014 a single day is a handful of clicks. The mean is the number to read; the per-day excursions are recorded so the band on the chart is checkable at all.",
+  "series": [
+   {
+    "ctr": 0.0025,
+    "tick": 0
+   },
+   {
+    "ctr": 0.00508,
+    "tick": 1
+   },
+   {
+    "ctr": 0.0099,
+    "tick": 2
+   },
+   {
+    "ctr": 0.01005,
+    "tick": 3
+   },
+   {
+    "ctr": 0.01279,
+    "tick": 4
+   },
+   {
+    "ctr": 0.01018,
+    "tick": 5
+   },
+   {
+    "ctr": 0.0201,
+    "tick": 6
+   },
+   {
+    "ctr": 0.0175,
+    "tick": 7
+   },
+   {
+    "ctr": 0.00743,
+    "tick": 8
+   },
+   {
+    "ctr": 0.00798,
+    "tick": 9
+   },
+   {
+    "ctr": 0.01523,
+    "tick": 10
+   },
+   {
+    "ctr": 0.00258,
+    "tick": 11
+   },
+   {
+    "ctr": 0.01772,
+    "tick": 12
+   },
+   {
+    "ctr": 0.00796,
+    "tick": 13
+   },
+   {
+    "ctr": 0.00955,
+    "tick": 14
+   },
+   {
+    "ctr": 0.02128,
+    "tick": 15
+   },
+   {
+    "ctr": 0.00488,
+    "tick": 16
+   },
+   {
+    "ctr": 0.00739,
+    "tick": 17
+   },
+   {
+    "ctr": 0.01078,
+    "tick": 18
+   },
+   {
+    "ctr": 0.01039,
+    "tick": 19
+   }
+  ],
+  "source": "market-research.md S1 \u2014 adopted band 0.5-2%"
+ },
+ "laws": [
+  {
+   "id": "F1",
+   "name": "frequency response rises then wears out",
+   "never_drop": false,
+   "note": "adstock builds the rise (gamma x min(adstock, cap)); exposures_72h past wearout_free_exposures builds the fall (-delta x wearout).",
+   "numbers": {
+    "decay_from_peak": 0.44053,
+    "p_click_final": 0.012559,
+    "p_click_first": 0.016392,
+    "p_click_peak": 0.022448,
+    "peak_at_exposure": 2
+   },
+   "passed": true,
+   "seeds_checked": 5,
+   "seeds_passed": 5,
+   "series": {
+    "frequency_response": [
+     {
+      "exposures": 1,
+      "exposures_72h": 1,
+      "p_click": 0.016392
+     },
+     {
+      "exposures": 2,
+      "exposures_72h": 2,
+      "p_click": 0.022448
+     },
+     {
+      "exposures": 3,
+      "exposures_72h": 3,
+      "p_click": 0.021404
+     },
+     {
+      "exposures": 4,
+      "exposures_72h": 4,
+      "p_click": 0.017916
+     },
+     {
+      "exposures": 5,
+      "exposures_72h": 5,
+      "p_click": 0.014999
+     },
+     {
+      "exposures": 6,
+      "exposures_72h": 6,
+      "p_click": 0.012559
+     },
+     {
+      "exposures": 7,
+      "exposures_72h": 6,
+      "p_click": 0.012559
+     },
+     {
+      "exposures": 8,
+      "exposures_72h": 6,
+      "p_click": 0.012559
+     },
+     {
+      "exposures": 9,
+      "exposures_72h": 6,
+      "p_click": 0.012559
+     },
+     {
+      "exposures": 10,
+      "exposures_72h": 6,
+      "p_click": 0.012559
+     },
+     {
+      "exposures": 11,
+      "exposures_72h": 6,
+      "p_click": 0.012559
+     },
+     {
+      "exposures": 12,
+      "exposures_72h": 6,
+      "p_click": 0.012559
+     }
+    ]
+   },
+   "threshold": "peak after exposure 1, and >=15% decay from peak by the last exposure (published creative-wearout curves fall 30-60% over a campaign; 15% is the floor for 'visible')",
+   "tier": "analytic"
+  },
+  {
+   "id": "F2",
+   "name": "unaware + no paths + no belief => engagement ~ 0",
+   "never_drop": false,
+   "note": "Abstention is structural: no live PREFERS overlap => no preference_fit, no HOLDS row => null trust_belief. The gate then damps credibility and the perceived offer as well.",
+   "numbers": {
+    "cold_credibility": 0.05909,
+    "cold_relevance": 0.0,
+    "p_click_cold": 0.004642,
+    "p_click_warm": 0.018237,
+    "ratio": 0.25454
+   },
+   "passed": true,
+   "seeds_checked": 5,
+   "seeds_passed": 5,
+   "series": {},
+   "threshold": "cold relevance exactly 0 (structural, not small) and cold CTR <= 0.35x warm CTR",
+   "tier": "analytic"
+  },
+  {
+   "id": "F3",
+   "name": "discount uplift ordering matches price sensitivity",
+   "never_drop": false,
+   "note": "",
+   "numbers": {
+    "mean_price_sensitivity": {
+     "high_price_sensitivity": 0.80578,
+     "low_price_sensitivity": 0.37058,
+     "mid_price_sensitivity": 0.56535
+    },
+    "uplift_x_at_40%": {
+     "high_price_sensitivity": 1.17937,
+     "low_price_sensitivity": 1.10038,
+     "mid_price_sensitivity": 1.13229
+    }
+   },
+   "passed": true,
+   "seeds_checked": 5,
+   "seeds_passed": 5,
+   "series": {
+    "discount_ladder": {
+     "high_price_sensitivity": [
+      {
+       "depth": 0.0,
+       "p_buy": 0.43301
+      },
+      {
+       "depth": 0.1,
+       "p_buy": 0.452282
+      },
+      {
+       "depth": 0.2,
+       "p_buy": 0.471696
+      },
+      {
+       "depth": 0.3,
+       "p_buy": 0.491183
+      },
+      {
+       "depth": 0.4,
+       "p_buy": 0.510677
+      }
+     ],
+     "low_price_sensitivity": [
+      {
+       "depth": 0.0,
+       "p_buy": 0.399414
+      },
+      {
+       "depth": 0.1,
+       "p_buy": 0.409325
+      },
+      {
+       "depth": 0.2,
+       "p_buy": 0.419318
+      },
+      {
+       "depth": 0.3,
+       "p_buy": 0.429382
+      },
+      {
+       "depth": 0.4,
+       "p_buy": 0.439509
+      }
+     ],
+     "mid_price_sensitivity": [
+      {
+       "depth": 0.0,
+       "p_buy": 0.40934
+      },
+      {
+       "depth": 0.1,
+       "p_buy": 0.42271
+      },
+      {
+       "depth": 0.2,
+       "p_buy": 0.436205
+      },
+      {
+       "depth": 0.3,
+       "p_buy": 0.449807
+      },
+      {
+       "depth": 0.4,
+       "p_buy": 0.463491
+      }
+     ]
+    }
+   },
+   "threshold": "strict ordering high > mid > low on BUY uplift at the deepest depth",
+   "tier": "analytic"
+  },
+  {
+   "id": "F5",
+   "name": "the violating page variant bounces more",
+   "never_drop": false,
+   "note": "Same seed, same shoppers, seeded 50/50 split \u2014 the only difference is that the B variant hides a concept its own creative claimed.",
+   "numbers": {
+    "bounce_delta": 0.14118,
+    "bounce_rate_consistent": 0.42132,
+    "bounce_rate_violating": 0.5625,
+    "violations_sighted": 161,
+    "visits_consistent": 197,
+    "visits_violating": 208
+   },
+   "passed": true,
+   "series": {
+    "page_bounce": [
+     {
+      "bounce_rate": 0.42132,
+      "variant": "4000001 (consistent)"
+     },
+     {
+      "bounce_rate": 0.5625,
+      "variant": "4000002 (violating)"
+     }
+    ]
+   },
+   "threshold": "bounce_delta > 0 with at least one expectation_violation motif actually retrieved",
+   "tier": "scenario"
+  },
+  {
+   "id": "F6",
+   "name": "abstention: hallucinated familiarity ~ 0 when gated",
+   "never_drop": false,
+   "note": "The ungated arm fabricates a trust belief the shopper has no evidence for. That is the failure mode this engine refuses structurally rather than by prompt instruction.",
+   "numbers": {
+    "gated_vs_known": 0.25454,
+    "gated_vs_ungated": 0.25454,
+    "p_click_known_brand": 0.018237,
+    "p_click_unknown_gated": 0.004642,
+    "p_click_unknown_ungated": 0.018237
+   },
+   "passed": true,
+   "seeds_checked": 5,
+   "seeds_passed": 5,
+   "series": {
+    "abstention": [
+     {
+      "case": "known brand",
+      "p_click": 0.018237
+     },
+     {
+      "case": "unknown, ungated",
+      "p_click": 0.018237
+     },
+     {
+      "case": "unknown, gated",
+      "p_click": 0.004642
+     }
+    ]
+   },
+   "threshold": "gated unknown-brand CTR <= 0.35x both the known-brand and the ungated-strawman CTR",
+   "tier": "analytic"
+  },
+  {
+   "id": "F7a",
+   "name": "no learning from exposure (invariant audit)",
+   "never_drop": true,
+   "note": "Exposure touches awareness, adstock and EXPECTS only (evidence.py: SAW carries pref_weight 0.0). This audit is the thing that would catch one confused updater putting taste back on the exposure channel.",
+   "numbers": {
+    "forbidden_causes_seen": {},
+    "learned_versions": 5800,
+    "pooled_cause_kinds": {
+     "BOUGHT": 337,
+     "BROWSED": 2104,
+     "CARTED": 295,
+     "CLICKED": 2615,
+     "EXPERIENCED": 333,
+     "VISITED": 116
+    },
+    "runs_audited": [
+     "F12:rotation",
+     "F12:same_concept",
+     "F5:split",
+     "F9:need_off",
+     "F9:need_on",
+     "golden-run"
+    ],
+    "runs_without_provenance": []
+   },
+   "passed": true,
+   "series": {},
+   "threshold": "every LEARNED PREFERS version cites a behavioural cause; a single SAW-caused or cause-less version fails the law",
+   "tier": "audit"
+  },
+  {
+   "id": "F8",
+   "name": "evidence hierarchy: CLICK < BROWSE < CART < BUY",
+   "never_drop": false,
+   "note": "Equal counts, one formula (evidence.blend); only the per-event weight differs. SAW carries pref_weight 0.0 and is absent by construction - that is F7, not this law.",
+   "numbers": {
+    "delta_w": {
+     "BOUGHT": 0.36,
+     "BROWSED": 0.163636,
+     "CARTED": 0.257143,
+     "CLICKED": 0.078261
+    },
+    "events_each": 3,
+    "start_evidence": 2.0,
+    "start_w": 0.4
+   },
+   "passed": true,
+   "seeds_checked": 1,
+   "seeds_passed": 1,
+   "series": {
+    "evidence_hierarchy": [
+     {
+      "delta_w": 0.078261,
+      "event": "CLICKED"
+     },
+     {
+      "delta_w": 0.163636,
+      "event": "BROWSED"
+     },
+     {
+      "delta_w": 0.257143,
+      "event": "CARTED"
+     },
+     {
+      "delta_w": 0.36,
+      "event": "BOUGHT"
+     }
+    ]
+   },
+   "threshold": "strictly increasing delta_w in CLICK < BROWSE < CART < BUY",
+   "tier": "analytic"
+  },
+  {
+   "id": "F9",
+   "name": "the Maya law: a goal moves BUY more than it moves CTR",
+   "never_drop": true,
+   "note": "Same seed, same population, same ad. The twin arm branches from the live arm's own log, so everything before the divergence tick is shared history rather than a re-simulation. That also makes the cross-arm ratios CONSERVATIVE: both arms' funnel counts include the identical pre-divergence prefix, which dilutes the measured uplift toward 1.0. `within_run_uplift_x` is the undiluted statement of the same claim \u2014 it compares decisions carrying an active need against decisions without one, inside a single arm.",
+   "numbers": {
+    "buy_per_exposure_need_off": 0.003932,
+    "buy_per_exposure_need_on": 0.004306,
+    "buy_uplift_x": 1.09524,
+    "buys_need_off": 21,
+    "buys_need_on": 23,
+    "ctr_need_off": 0.05879,
+    "ctr_need_on": 0.060663,
+    "ctr_uplift_x": 1.03185,
+    "within_run_p_buy_need_off": 0.05155,
+    "within_run_p_buy_need_on": 0.0922,
+    "within_run_uplift_x": 1.78855
+   },
+   "passed": false,
+   "series": {
+    "twin": [
+     {
+      "metric": "CTR",
+      "uplift_x": 1.03185
+     },
+     {
+      "metric": "BUY per exposure",
+      "uplift_x": 1.09524
+     }
+    ]
+   },
+   "threshold": "BUY uplift > CTR uplift, with BUY uplift >= 1.5x and CTR uplift >= 1.05x",
+   "tier": "scenario"
+  },
+  {
+   "id": "F10",
+   "name": "confidence-differential updating",
+   "never_drop": false,
+   "note": "",
+   "numbers": {
+    "confidence_high": 0.89552,
+    "confidence_low": 0.51724,
+    "contradiction_target": 0.15,
+    "high_evidence": 6.0,
+    "low_evidence": 0.75,
+    "moved_high_E": 0.15,
+    "moved_low_E": 0.43636,
+    "ratio": 2.90909,
+    "start_value": 0.75
+   },
+   "passed": true,
+   "seeds_checked": 1,
+   "seeds_passed": 1,
+   "series": {
+    "confidence_differential": [
+     {
+      "evidence": 0.75,
+      "moved": 0.43636
+     },
+     {
+      "evidence": 6.0,
+      "moved": 0.15
+     }
+    ]
+   },
+   "threshold": "a low-evidence belief must move strictly further than a high-evidence one under identical contradiction",
+   "tier": "analytic"
+  },
+  {
+   "id": "F12",
+   "name": "repetition decays CTR faster than concept rotation",
+   "never_drop": false,
+   "note": "",
+   "numbers": {
+    "decay_gap": 0.55593,
+    "mean_brand_fatigue_repetition": 0.45293,
+    "mean_brand_fatigue_rotation": 0.0,
+    "repetition_ctr_first_half": 0.047479,
+    "repetition_ctr_second_half": 0.052588,
+    "repetition_decay": -0.10761,
+    "rotation_ctr_first_half": 0.052521,
+    "rotation_ctr_second_half": 0.087371,
+    "rotation_decay": -0.66354
+   },
+   "passed": true,
+   "series": {
+    "fatigue_ctr": {
+     "repetition": [
+      {
+       "ctr": 0.04101,
+       "tick": 0
+      },
+      {
+       "ctr": 0.04878,
+       "tick": 1
+      },
+      {
+       "ctr": 0.05903,
+       "tick": 2
+      },
+      {
+       "ctr": 0.0461,
+       "tick": 3
+      },
+      {
+       "ctr": 0.06419,
+       "tick": 4
+      },
+      {
+       "ctr": 0.05882,
+       "tick": 5
+      },
+      {
+       "ctr": 0.02676,
+       "tick": 6
+      },
+      {
+       "ctr": 0.03607,
+       "tick": 7
+      },
+      {
+       "ctr": 0.07034,
+       "tick": 8
+      },
+      {
+       "ctr": 0.0596,
+       "tick": 9
+      },
+      {
+       "ctr": 0.04422,
+       "tick": 10
+      },
+      {
+       "ctr": 0.03934,
+       "tick": 11
+      },
+      {
+       "ctr": 0.04688,
+       "tick": 12
+      },
+      {
+       "ctr": 0.03793,
+       "tick": 13
+      },
+      {
+       "ctr": 0.05735,
+       "tick": 14
+      },
+      {
+       "ctr": 0.06376,
+       "tick": 15
+      }
+     ],
+     "rotation": [
+      {
+       "ctr": 0.02839,
+       "tick": 0
+      },
+      {
+       "ctr": 0.01742,
+       "tick": 1
+      },
+      {
+       "ctr": 0.03819,
+       "tick": 2
+      },
+      {
+       "ctr": 0.05674,
+       "tick": 3
+      },
+      {
+       "ctr": 0.06419,
+       "tick": 4
+      },
+      {
+       "ctr": 0.06863,
+       "tick": 5
+      },
+      {
+       "ctr": 0.05686,
+       "tick": 6
+      },
+      {
+       "ctr": 0.08852,
+       "tick": 7
+      },
+      {
+       "ctr": 0.10092,
+       "tick": 8
+      },
+      {
+       "ctr": 0.08278,
+       "tick": 9
+      },
+      {
+       "ctr": 0.07823,
+       "tick": 10
+      },
+      {
+       "ctr": 0.07213,
+       "tick": 11
+      },
+      {
+       "ctr": 0.08125,
+       "tick": 12
+      },
+      {
+       "ctr": 0.06552,
+       "tick": 13
+      },
+      {
+       "ctr": 0.11111,
+       "tick": 14
+      },
+      {
+       "ctr": 0.10738,
+       "tick": 15
+      }
+     ]
+    }
+   },
+   "threshold": "repetition CTR decay exceeds rotation decay by >= 10% (half-run vs half-run)",
+   "tier": "scenario"
+  }
+ ],
+ "laws_not_run": [
+  {
+   "id": "F7b",
+   "never_drop": true,
+   "reason": "no heavy-exposure run on disk"
+  },
+  {
+   "id": "F11",
+   "never_drop": false,
+   "reason": "needs both latent-quality arms"
+  },
+  {
+   "id": "F4",
+   "never_drop": false,
+   "reason": "no promo run on disk"
+  }
+ ],
+ "plots": [
+  "plots/calibration_before_after.svg",
+  "plots/ctr_by_day_reference.svg",
+  "plots/f12_fatigue_separation.svg",
+  "plots/f1_frequency_response.svg",
+  "plots/f3_discount_ladder.svg",
+  "plots/f6_abstention.svg",
+  "plots/f8_evidence_hierarchy.svg",
+  "plots/f9_twin.svg",
+  "plots/funnel_reference.svg",
+  "plots/rank_agreement.svg"
+ ],
+ "profile": "reference",
+ "rank_agreement": {
+  "catalog": "fixtures/demo-brand",
+  "caveat": "Construct validity, not external validation: the oracle reads the same population priors the simulator does, so agreement shows the mind's mechanism preserves an ordering that is already implicit in its inputs. It is not evidence that either ranking matches a real market.",
+  "creatives": [
+   2000001,
+   2000002,
+   2000003,
+   2000004,
+   2000005
+  ],
+  "mean_spearman": 0.86,
+  "passed": true,
+  "per_seed": [
+   {
+    "oracle": [
+     0.09347,
+     0.36181,
+     0.34398,
+     0.49042,
+     0.19708
+    ],
+    "seed": 11,
+    "sim": [
+     0.00801,
+     0.009007,
+     0.010436,
+     0.01077,
+     0.008924
+    ],
+    "spearman": 0.9
+   },
+   {
+    "oracle": [
+     0.08504,
+     0.34633,
+     0.32056,
+     0.45761,
+     0.20636
+    ],
+    "seed": 23,
+    "sim": [
+     0.008289,
+     0.009347,
+     0.010851,
+     0.011208,
+     0.009344
+    ],
+    "spearman": 0.9
+   },
+   {
+    "oracle": [
+     0.06801,
+     0.37594,
+     0.33715,
+     0.49972,
+     0.20875
+    ],
+    "seed": 37,
+    "sim": [
+     0.008102,
+     0.009275,
+     0.01064,
+     0.01114,
+     0.009233
+    ],
+    "spearman": 0.9
+   },
+   {
+    "oracle": [
+     0.08128,
+     0.38177,
+     0.31595,
+     0.47997,
+     0.20214
+    ],
+    "seed": 53,
+    "sim": [
+     0.008214,
+     0.009463,
+     0.01045,
+     0.011084,
+     0.009303
+    ],
+    "spearman": 0.9
+   },
+   {
+    "oracle": [
+     0.07504,
+     0.38202,
+     0.33954,
+     0.48519,
+     0.21843
+    ],
+    "seed": 71,
+    "sim": [
+     0.008796,
+     0.009996,
+     0.01161,
+     0.012087,
+     0.010045
+    ],
+    "spearman": 0.7
+   }
+  ],
+  "population_size": 300,
+  "seeds": [
+   11,
+   23,
+   37,
+   53,
+   71
+  ],
+  "threshold": 0.7,
+  "tier": "analytic",
+  "worst_spearman": 0.7
+ },
+ "runs": [
+  {
+   "adopted": true,
+   "arm": "rotation",
+   "dir": "/Users/garvit/shopsim/runs/r066-f12-fatigue-rotation",
+   "label": "f12-fatigue",
+   "population": null,
+   "run_id": "r066-f12-fatigue-rotation",
+   "seed": 523,
+   "ticks": 16,
+   "wall_s": 2680.217
+  },
+  {
+   "adopted": true,
+   "arm": "same_concept",
+   "dir": "/Users/garvit/shopsim/runs/r065-f12-fatigue-same_concept",
+   "label": "f12-fatigue",
+   "population": null,
+   "run_id": "r065-f12-fatigue-same_concept",
+   "seed": 523,
+   "ticks": 16,
+   "wall_s": 1752.657
+  },
+  {
+   "adopted": true,
+   "arm": "split",
+   "dir": "/Users/garvit/shopsim/runs/r058-f5-violation-split",
+   "label": "f5-violation",
+   "population": null,
+   "run_id": "r058-f5-violation-split",
+   "seed": 311,
+   "ticks": 16,
+   "wall_s": 499.71
+  },
+  {
+   "adopted": true,
+   "arm": "need_off",
+   "dir": "/Users/garvit/shopsim/runs/r064-f9-twin-need_off",
+   "label": "f9-twin",
+   "population": null,
+   "run_id": "r064-f9-twin-need_off",
+   "seed": 419,
+   "ticks": 14,
+   "wall_s": 1242.848
+  },
+  {
+   "adopted": true,
+   "arm": "need_on",
+   "dir": "/Users/garvit/shopsim/runs/r063-f9-twin-need_on",
+   "label": "f9-twin",
+   "population": null,
+   "run_id": "r063-f9-twin-need_on",
+   "seed": 419,
+   "ticks": 14,
+   "wall_s": 966.331
+  }
+ ],
+ "scenario_profile": {
+  "profile": "demo",
+  "reason": "the demo profile accelerates ONLY the click gate (multiple 1.0 on every post-click gate, see calibration.json demo_multiples), so it draws more samples of the gates these laws test without changing them; on the reference profile F5 got 17 page visits total and reported a coin flip"
+ },
+ "unmeasured_never_drop": [
+  "F7b"
+ ]
+}

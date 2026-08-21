@@ -2,9 +2,10 @@
 
 import type {
   AdsManifestPayload, CatalogSummary, CreativeCard, DecisionPreview,
-  EnginePace, EventsPage, ExperimentDetail,
-  ExperimentSummary, Manifest, Population, PrefVersion, Progress, RegistryRow,
-  ResultsLive, RunConfigPayload, TracePayload, Worldview,
+  EngineBusy, EnginePace, EventsPage, ExperimentDetail,
+  ExperimentSummary, FrozenMind, Manifest, MemoryGraph, Population,
+  PrefVersion, Progress, RegistryRow, ResultsLive, RunConfigPayload,
+  SocialRunRow, TracePayload, Worldview,
 } from "./types";
 
 const BASE = "/api/sim";
@@ -52,7 +53,26 @@ export const api = {
     get<TracePayload>(`/runs/${id}/shoppers/${offset}/trace/${stimulus}`),
   decisionPreview: (id: string, offset: number, stimulus: number) =>
     get<DecisionPreview>(`/runs/${id}/shoppers/${offset}/decision-preview/${stimulus}`),
+  /** The committed 04 Graph exhibit: one frozen capture of a real run, served
+   * from fixtures/. Independent of which simulation is loaded and of whatever
+   * the graph store currently holds — which is the point, since the store is
+   * archived and recreated routinely. */
+  frozenGraph: () => get<MemoryGraph>("/memory-graph"),
+  /** The committed 05 Mind exhibit (v3.12-draft): the pinned shopper's frozen
+   * capture, extended with baked decision previews so the page never needs
+   * the live store. The mind is chosen once and always exists. */
+  frozenMind: () => get<FrozenMind>("/shopper-mind"),
+  /** Runs that carry a TRUSTS_PERSON layer — the ones the live path can draw. */
+  socialRuns: () => get<SocialRunRow[]>("/social-runs"),
+  /** Omit `focus` to let the engine pick the best mutually-trusting triple. */
+  memoryGraph: (id: string, focus?: number[]) =>
+    get<MemoryGraph>(`/runs/${id}/memory-graph${
+      focus && focus.length ? `?focus=${focus.join(",")}` : ""}`),
   experiments: () => get<ExperimentSummary[]>("/experiments"),
+  /** Is the engine free, and if not, what is holding it? Answers the question
+   * a bare 409 could not: WHICH run, started by WHICH process, how far along,
+   * and whether it is genuinely live or a crashed leftover. */
+  busy: () => get<EngineBusy>("/engine/busy"),
   experiment: (name: string) => get<ExperimentDetail>(`/experiments/${encodeURIComponent(name)}`),
   creatives: (runId: string) =>
     get<{ catalog: string; perception_cache: string; creatives: CreativeCard[] }>(

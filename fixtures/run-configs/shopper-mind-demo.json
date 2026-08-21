@@ -1,0 +1,50 @@
+{
+  "comment": "The pinned Shopper Mind run (v3.12-draft) — the run whose frozen capture backs the 05 Mind page forever. Nisolo's five real image ads over a social-enabled population: same calibration recipe as social-graph-demo (w_social 0.5 so the P1 trust layer is paid for, stage_bases.CLICK 2 so the funnel is a funnel, fulfillment.lag_ticks 1 so BOUGHT->EXPERIENCED pairs land inside the window), but the WORLD is fixtures/nisolo — brand 6100, creatives 2000101-2000105, the committed perception cache reading the actual campaign images. 100 shoppers x 28 ticks gives find_social_triads real choice and the day range depth. t0 1832000000 is a fresh PRICED_AT window (v3.4-draft: pricing is global objective state read as-of t, experiments must not share one; social-graph-demo ends ~1812.4M). Export with `python -m shopsim.runner export-graph ... --previews` into fixtures/shopper-mind/ — see the README there.",
+  "type": "ad_test",
+  "name": "shopper-mind-demo",
+  "seed": 917,
+  "ticks": 28,
+  "t0": 1832000000,
+  "population": {
+    "size": 100,
+    "personas": "fixtures/nisolo/personas.json",
+    "social": {
+      "enabled": true,
+      "degree": 4,
+      "rewire_p": 0.1,
+      "weight_min": 0.4,
+      "weight_max": 0.9
+    }
+  },
+  "mind": {
+    "decide": "formula",
+    "consolidate": "formula"
+  },
+  "catalog": "fixtures/nisolo",
+  "perception_cache": "fixtures/nisolo/perception-cache",
+  "goal_config": "fixtures/nisolo/goal_config.json",
+  "calibration": {
+    "appraisal": {
+      "w_social": 0.5
+    },
+    "stage_bases": {
+      "CLICK": 2
+    }
+  },
+  "fulfillment": {
+    "lag_ticks": 1
+  },
+  "market": {
+    "shared": true,
+    "allocation": {
+      "enabled": true
+    }
+  },
+  "creatives": [
+    {"creative_id": 2000101, "reach_prob": 0.35},
+    {"creative_id": 2000102, "reach_prob": 0.35},
+    {"creative_id": 2000103, "reach_prob": 0.35},
+    {"creative_id": 2000104, "reach_prob": 0.35},
+    {"creative_id": 2000105, "reach_prob": 0.35}
+  ]
+}

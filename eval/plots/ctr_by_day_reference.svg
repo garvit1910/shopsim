@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="400" viewBox="0 0 720 400" font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+<rect width="720" height="400" fill="#ffffff"/>
+<text x="68" y="24" font-size="15" font-weight="600" fill="#1c1c1c">Reference profile · CTR by simulated day</text>
+<text x="68" y="39" font-size="11" fill="#6b6b6b">daily CTR against the researched 0.5–2% band (market-research.md §1)</text>
+<text x="14" y="203" font-size="11" fill="#6b6b6b" transform="rotate(-90 14 203)" text-anchor="middle">CTR</text>
+<text x="382" y="372" font-size="11" fill="#6b6b6b" text-anchor="middle">simulated day</text>
+<rect x="68" y="46" width="10" height="10" fill="#2f6fb0" rx="2"/>
+<text x="83" y="55" font-size="11" fill="#1c1c1c">CTR</text>
+<line x1="68" y1="336.0" x2="696" y2="336.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="340.0" text-anchor="end" font-size="11" fill="#6b6b6b">0</text>
+<line x1="68" y1="282.8" x2="696" y2="282.8" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="286.8" text-anchor="end" font-size="11" fill="#6b6b6b">0.005</text>
+<line x1="68" y1="229.6" x2="696" y2="229.6" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="233.6" text-anchor="end" font-size="11" fill="#6b6b6b">0.01</text>
+<line x1="68" y1="176.4" x2="696" y2="176.4" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="180.4" text-anchor="end" font-size="11" fill="#6b6b6b">0.015</text>
+<line x1="68" y1="123.2" x2="696" y2="123.2" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="127.2" text-anchor="end" font-size="11" fill="#6b6b6b">0.02</text>
+<line x1="68" y1="70.0" x2="696" y2="70.0" stroke="#e4e4e4" stroke-width="1"/>
+<text x="60" y="74.0" text-anchor="end" font-size="11" fill="#6b6b6b">0.025</text>
+<text x="68.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">0</text>
+<text x="225.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">5</text>
+<text x="382.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">10</text>
+<text x="539.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">15</text>
+<text x="696.0" y="354" text-anchor="middle" font-size="11" fill="#6b6b6b">20</text>
+<line x1="68" y1="336" x2="696" y2="336" stroke="#1c1c1c" stroke-width="1.2"/>
+<rect x="68" y="123.2" width="628" height="159.6" fill="#dff0e0" stroke="#8cc79a" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="690" y="118.2" text-anchor="end" font-size="10" fill="#4d7a58">published band</text>
+<path d="M68.0,309.4 L99.4,281.9 L130.8,230.7 L162.2,229.1 L193.6,199.9 L225.0,227.7 L256.4,122.1 L287.8,149.8 L319.2,256.9 L350.6,251.1 L382.0,174.0 L413.4,308.5 L444.8,147.5 L476.2,251.3 L507.6,234.4 L539.0,109.6 L570.4,284.1 L601.8,257.4 L633.2,221.3 L664.6,225.5" fill="none" stroke="#2f6fb0" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="68.0" cy="309.4" r="2.8" fill="#2f6fb0"/>
+<circle cx="99.4" cy="281.9" r="2.8" fill="#2f6fb0"/>
+<circle cx="130.8" cy="230.7" r="2.8" fill="#2f6fb0"/>
+<circle cx="162.2" cy="229.1" r="2.8" fill="#2f6fb0"/>
+<circle cx="193.6" cy="199.9" r="2.8" fill="#2f6fb0"/>
+<circle cx="225.0" cy="227.7" r="2.8" fill="#2f6fb0"/>
+<circle cx="256.4" cy="122.1" r="2.8" fill="#2f6fb0"/>
+<circle cx="287.8" cy="149.8" r="2.8" fill="#2f6fb0"/>
+<circle cx="319.2" cy="256.9" r="2.8" fill="#2f6fb0"/>
+<circle cx="350.6" cy="251.1" r="2.8" fill="#2f6fb0"/>
+<circle cx="382.0" cy="174.0" r="2.8" fill="#2f6fb0"/>
+<circle cx="413.4" cy="308.5" r="2.8" fill="#2f6fb0"/>
+<circle cx="444.8" cy="147.5" r="2.8" fill="#2f6fb0"/>
+<circle cx="476.2" cy="251.3" r="2.8" fill="#2f6fb0"/>
+<circle cx="507.6" cy="234.4" r="2.8" fill="#2f6fb0"/>
+<circle cx="539.0" cy="109.6" r="2.8" fill="#2f6fb0"/>
+<circle cx="570.4" cy="284.1" r="2.8" fill="#2f6fb0"/>
+<circle cx="601.8" cy="257.4" r="2.8" fill="#2f6fb0"/>
+<circle cx="633.2" cy="221.3" r="2.8" fill="#2f6fb0"/>
+<circle cx="664.6" cy="225.5" r="2.8" fill="#2f6fb0"/>
+</svg>

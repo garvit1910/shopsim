@@ -1,11 +1,12 @@
 """CLI: python -m shopsim.runner <run|resume|branch|serve|export-fixtures> ...
 
     run             --config CFG [--arm NAME] [--mind scripted|formula]
-                    [--crash-after phase:tick] [--quiet]
+                    [--crash-after phase:tick] [--quiet] [--trace-decisions]
     resume          --config CFG --run <run_id|dir> [--quiet]
     branch          --config CFG --arm NAME [--quiet]
     serve           --config CFG [--port 8000]
     export-fixtures --config CFG --out DIR
+    export-graph    --config CFG --run RUN_ID --out FILE.json [--previews]
 """
 
 from __future__ import annotations
@@ -45,7 +46,8 @@ def cmd_run(args) -> int:
     run_index, run_dir = store.allocate(cfg, arm_name)
     print(f"run {run_dir.name} (block {run_index})")
     runner = SimRunner(cfg, arm_name, run_index, run_dir,
-                       crash_after=args.crash_after, quiet=args.quiet)
+                       crash_after=args.crash_after, quiet=args.quiet,
+                       trace_decisions=getattr(args, "trace_decisions", False))
     runner.prepare(seed_graph=True)
     store.set_status(run_dir.name, "running")
     results = runner.run()
@@ -172,6 +174,172 @@ def cmd_export_fixtures(args) -> int:
     return 0
 
 
+def cmd_export_graph(args) -> int:
+    """Freeze one run's social memory graph into a committed fixture.
+
+    Same move as _export_shoppers, one level up: read the live graph through
+    the shipped HydraMem API at a pinned as-of clock and write the payload to
+    disk, so the dashboard can show it forever without the store.
+
+    That matters because shopper worldviews live ONLY in HydraDB. `runs/`
+    keeps events and results, but the graph goes with the store, and the store
+    gets archived and recreated routinely (infra/README.md's reset ritual).
+    Reading it live meant the 04 Graph exhibit blanked every time somebody
+    reset before a timed run, and reshaped itself run to run in between.
+
+    The traces are captured too, not just nodes and edges: Explain mode reads
+    them, and recomputing motifs client-side would mean the dashboard
+    inventing graph structure, which is the one thing it must never do.
+    """
+    cfg = _load_cfg(args)
+    store = RunStore(cfg.root)
+    row = store.find(args.run)
+    run_dir = Path(row["dir"])
+    man = json.loads((run_dir / "manifest.json").read_text())
+
+    # As-of the last fully consolidated tick — the same clock the API pins
+    # every graph read to, so the capture matches what the live page showed.
+    progress_path = run_dir / "progress.json"
+    head = man["ticks"] - 1
+    if progress_path.exists():
+        head = min(head, json.loads(progress_path.read_text()).get("tick", head))
+    now = man["t0"] + head * man["tick_seconds"]
+
+    from ..contracts.ids import shopper_id as make_sid
+    from ..hydramem.real import HydraMem
+
+    mem = HydraMem(run_index=row["run_index"])
+    try:
+        mem.set_tick(tick=head, now=now, tick_start=now)
+        candidates = mem.find_social_triads()
+        if not candidates:
+            print(f"export-graph: {row['run_id']} has no TRUSTS_PERSON edges in the "
+                  "store — either it was built without population.social, or its "
+                  "store has been archived away", file=sys.stderr)
+            return 1
+        focus = candidates[0]
+        creative_names = _creative_names(cfg)
+
+        # --previews (v3.12-draft, the Shopper Mind capture): every scheduled
+        # creative and its landing page for the pinned shopper (focus[0]) is
+        # forced on screen, traced, and appraised — met or not — so the page
+        # can show the retrieval path AND the decision math for any demo ad
+        # without the store. Baked by the same code the live endpoint runs
+        # (runner/preview.py); traits/coeffs still never leave the process.
+        pv = None
+        demo_stimuli: list[dict] = []
+        stim_ids: set[int] = set()
+        if args.previews:
+            from .preview import build_population, build_preview_ctx, compute_preview
+            try:
+                pv = build_preview_ctx(cfg, row["arm"])
+            except ValueError as ex:
+                print(f"export-graph: {ex}", file=sys.stderr)
+                return 1
+            offset0 = focus["offsets"][0]
+            for cid in sorted({r.creative_id for r in pv["sched"]}):
+                page_id = pv["page_of"](offset0, cid)
+                demo_stimuli.append({"creative_id": cid, "page_id": page_id})
+                stim_ids.add(cid)
+                if page_id is not None:
+                    stim_ids.add(int(page_id))
+
+        graph = mem.get_memory_graph(focus["shopper_ids"],
+                                     creative_names=creative_names,
+                                     extra_stimuli=sorted(stim_ids))
+
+        # Explain offers exactly the stimuli a shopper actually met, so the
+        # capture walks the edges just read rather than the whole catalog —
+        # except the pinned shopper under --previews, whose demo stimuli are
+        # all traced so the Mind page never lacks a retrieval path.
+        traces: dict[str, dict] = {}
+        for sid, offset in zip(focus["shopper_ids"], focus["offsets"]):
+            met = {e["target"] for e in graph["edges"]
+                   if e["source"] == sid and e["rel"] in ("SAW", "VISITED")}
+            if pv is not None and offset == focus["offsets"][0]:
+                met |= stim_ids
+            traces[str(offset)] = {
+                str(stim): mem.get_trace(sid, stim) for stim in sorted(met)}
+
+        previews: dict[str, dict] = {}
+        if pv is not None:
+            _specs, shoppers = build_population(cfg, row["run_index"])
+            offset0 = focus["offsets"][0]
+            sid0 = focus["shopper_ids"][0]
+            previews[str(offset0)] = {}
+            for stim in sorted(stim_ids):
+                ctx = mem.get_decision_context(sid0, stim)
+                previews[str(offset0)][str(stim)] = compute_preview(
+                    pv, ctx, shoppers[offset0], offset0, stim, head)
+    finally:
+        mem.close()
+
+    payload = {
+        "comment": (
+            f"Frozen capture of the 04 Graph exhibit, taken from {row['run_id']} "
+            f"as of day {head} of {man['ticks']}. Every node, edge and trace here "
+            "came out of HydraDB through the shipped read API — this is a "
+            "photograph of a real run, not a mock. It is committed because "
+            "shopper worldviews live only in the graph store, and that store is "
+            "archived and recreated routinely (infra/README.md); reading it live "
+            "meant the exhibit blanked after every reset and reshaped itself run "
+            "to run. WHAT THIS IS NOT: it does not reflect whichever simulation "
+            "is currently loaded or running, and the page says so. Regenerate "
+            "with `python -m shopsim.runner export-graph` — see the README beside "
+            "this file."),
+        "captured": {
+            "run_id": row["run_id"],
+            "run_index": row["run_index"],
+            "arm": row.get("arm"),
+            "label": row.get("label"),
+            "head_tick": head,
+        },
+        "run_id": row["run_id"],
+        "run_index": row["run_index"],
+        "t0": man["t0"],
+        "tick_seconds": man["tick_seconds"],
+        "ticks": man["ticks"],
+        "head_tick": head,
+        "social_enabled": True,
+        "focus": focus["offsets"],
+        "candidates": candidates,
+        "nodes": graph["nodes"],
+        "edges": graph["edges"],
+        "traces": traces,
+    }
+    if pv is not None:
+        payload["comment"] += (
+            " PREVIEWS: this capture also carries `catalog_key`, `demo_stimuli` "
+            "and `previews` (offset -> stimulus -> the exact decision-preview "
+            "envelope, computed at export time by the same appraise()/"
+            "stage_probabilities() the live endpoint runs) — the Shopper Mind "
+            "page reads those, v3.12-draft.")
+        payload["catalog_key"] = cfg.catalog_dir.name
+        payload["demo_stimuli"] = demo_stimuli
+        payload["previews"] = previews
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    write_json_atomic(out, payload)
+    n_traces = sum(len(v) for v in traces.values())
+    n_previews = sum(len(v) for v in previews.values())
+    print(f"graph exported to {out}: {len(payload['nodes'])} nodes, "
+          f"{len(payload['edges'])} edges, {n_traces} traces, "
+          f"{n_previews} previews, "
+          f"focus offsets {focus['offsets']} ({focus['why']})")
+    return 0
+
+
+def _creative_names(cfg: RunConfig) -> dict[str, str]:
+    """Ad names off the run's own catalog, so the frozen graph reads in words
+    rather than ids. Missing catalog is not fatal — labels are decoration."""
+    path = cfg.catalog_dir / "creatives.json"
+    if not path.exists():
+        return {}
+    doc = json.loads(path.read_text())
+    return {str(r["creative_id"]): r.get("name", str(r["creative_id"]))
+            for r in doc.get("creatives", [])}
+
+
 def _export_shoppers(cfg: RunConfig, row: dict, arm_dir: Path) -> None:
     """Worldview/trace/preference-history samples: the Maya twin offsets plus
     the two most active buyers (Phase 5.3 drill-down fixtures)."""
@@ -220,6 +388,10 @@ def main(argv=None) -> int:
     common(sp)
     sp.add_argument("--arm")
     sp.add_argument("--crash-after", help="phase:tick fault injection, e.g. consolidation:7")
+    sp.add_argument("--trace-decisions", action="store_true",
+                    help="write decisions.jsonl beside the run (Phase 7 calibration "
+                         "input). Off by default: no file, no branch in the tick "
+                         "loop, byte-identical results.json")
     sp.set_defaults(fn=cmd_run)
 
     sp = sub.add_parser("resume")
@@ -241,6 +413,17 @@ def main(argv=None) -> int:
     common(sp)
     sp.add_argument("--out", required=True)
     sp.set_defaults(fn=cmd_export_fixtures)
+
+    sp = sub.add_parser("export-graph")
+    common(sp)
+    sp.add_argument("--run", required=True)
+    sp.add_argument("--out", required=True)
+    sp.add_argument("--previews", action="store_true",
+                    help="also bake decision previews (appraisal + gate "
+                         "probabilities) for the pinned shopper x every "
+                         "scheduled creative and its landing page — the "
+                         "Shopper Mind capture (v3.12-draft)")
+    sp.set_defaults(fn=cmd_export_graph)
 
     args = p.parse_args(argv)
     return args.fn(args)
