@@ -34,7 +34,7 @@ import {
 import type { GraphEdge, GraphNode } from "@/lib/types";
 import {
   classifyMind, LOBE_BY_ID, LOBE_CONNECTORS, LOBES, MIND_IMAGE, MIND_VIEWBOX,
-  type LobeId,
+  type LobeId, type LobeSpec,
 } from "@/lib/mindLayout";
 
 /** where the ad's signal enters — just in front of the face, eye level */
@@ -43,6 +43,16 @@ const ENTRY = { x: 268, y: 470 };
 const SELF = { x: 815, y: 372 };
 /** captions per lobe; retrieval-path nodes never count against it */
 const CAPTION_BUDGET = 5;
+/** must match `.mindpage .lobelabel` / `.mconnlabel` in globals.css — the
+ * connector labels keep clear of the titles by these measurements */
+const TITLE_PX = 17;
+const LABEL_PX = 9;
+
+/** where a lobe's title sits: on the ellipse's top edge, at the anchor that
+ * keeps a vertical connector at cx beside the words rather than through them */
+const titleX = (lobe: LobeSpec) =>
+  lobe.titleAnchor === "start" ? lobe.cx - lobe.rx
+    : lobe.titleAnchor === "end" ? lobe.cx + lobe.rx : lobe.cx;
 
 type MindNode = SimulationNodeDatum & {
   id: number;
@@ -237,12 +247,24 @@ export default function MindGraph({
     for (const n of simNodes) projectInside(n);
 
     // --- background: the head ------------------------------------------------
-    svg.append("g").attr("class", "mindbg").attr("aria-hidden", "true")
-      .append("image")
+    const bg = svg.append("g").attr("class", "mindbg").attr("aria-hidden", "true");
+    bg.append("image")
       .attr("href", MIND_IMAGE.href)
       .attr("x", 0).attr("y", 0)
       .attr("width", MIND_IMAGE.w).attr("height", MIND_IMAGE.h)
       .attr("preserveAspectRatio", "none");
+    // a soft veil over the skull interior: the photo's lattice recedes behind
+    // the data, while the face and skull outline — beyond the veil's reach —
+    // keep their full glow
+    const veil = bg.append("defs").append("radialGradient").attr("id", "mindveil")
+      .attr("cx", "50%").attr("cy", "50%").attr("r", "50%");
+    for (const [offset, alpha] of [["0%", 0.62], ["70%", 0.5], ["100%", 0]] as const) {
+      veil.append("stop").attr("offset", offset)
+        .attr("stop-color", "rgb(1,2,8)").attr("stop-opacity", alpha);
+    }
+    bg.append("ellipse").attr("class", "veil")
+      .attr("cx", 790).attr("cy", 440).attr("rx", 370).attr("ry", 350)
+      .attr("fill", "url(#mindveil)");
 
     // --- lobe hulls: the fixed regions -------------------------------------
     const hulls = svg.append("g").attr("class", "lobes");
@@ -255,6 +277,18 @@ export default function MindGraph({
     }
 
     // --- the architecture legend: labelled inter-lobe connectors -----------
+    // Titles are the only things near these labels; each label tries a few
+    // spots along its line and is dropped rather than allowed to touch one.
+    type Box = { x0: number; y0: number; x1: number; y1: number };
+    const hits = (p: Box, q: Box) =>
+      p.x0 < q.x1 && q.x0 < p.x1 && p.y0 < q.y1 && q.y0 < p.y1;
+    const titleBoxes: Box[] = LOBES.map((lobe) => {
+      const w = lobe.title.length * TITLE_PX * 0.58, m = 6;
+      const x = titleX(lobe), y = lobe.cy - lobe.ry - 9;
+      const x0 = lobe.titleAnchor === "start" ? x
+        : lobe.titleAnchor === "end" ? x - w : x - w / 2;
+      return { x0: x0 - m, x1: x0 + w + m, y0: y - TITLE_PX - m, y1: y + m };
+    });
     const conns = svg.append("g").attr("class", "mconns");
     for (const c of LOBE_CONNECTORS) {
       const a = LOBE_BY_ID[c.from], b = LOBE_BY_ID[c.to];
@@ -265,11 +299,21 @@ export default function MindGraph({
       // a label beside a near-vertical line, above a near-horizontal one
       const vertical = Math.abs(y2 - y1) > Math.abs(x2 - x1);
       const side = (a.cx + b.cx) / 2 < 800 ? 1 : -1;
-      conns.append("text").attr("class", "mconnlabel")
-        .attr("x", vertical ? (x1 + x2) / 2 + 12 * side : (x1 + x2) / 2)
-        .attr("y", vertical ? (y1 + y2) / 2 + 3 : (y1 + y2) / 2 - 5)
-        .style("text-anchor", vertical ? (side > 0 ? "start" : "end") : "middle")
-        .text(c.label);
+      const anchor = vertical ? (side > 0 ? "start" : "end") : "middle";
+      const lw = c.label.length * LABEL_PX * 0.72, lh = LABEL_PX;
+      for (const t of [0.5, 0.3, 0.7, 0.2, 0.8]) {
+        const px = x1 + (x2 - x1) * t, py = y1 + (y2 - y1) * t;
+        const lx = vertical ? px + 12 * side : px;
+        const ly = vertical ? py + 3 : py - 5;
+        const bx0 = anchor === "start" ? lx : anchor === "end" ? lx - lw : lx - lw / 2;
+        const box = { x0: bx0, x1: bx0 + lw, y0: ly - lh, y1: ly };
+        if (titleBoxes.some((tb) => hits(box, tb))) continue;
+        conns.append("text").attr("class", "mconnlabel")
+          .attr("x", lx).attr("y", ly)
+          .style("text-anchor", anchor)
+          .text(c.label);
+        break;
+      }
     }
 
     // --- the ad's connector into the head + entry label --------------------
@@ -352,12 +396,10 @@ export default function MindGraph({
     // buried under a hub defeats the layout
     const titles = svg.append("g").attr("class", "lobetitles");
     for (const lobe of LOBES) {
-      const x = lobe.titleAnchor === "start" ? lobe.cx - lobe.rx
-        : lobe.titleAnchor === "end" ? lobe.cx + lobe.rx : lobe.cx;
       titles.append("text").attr("class", "lobelabel")
         .style("--lobe" as never, lobe.color)
         .style("text-anchor", lobe.titleAnchor)
-        .attr("x", x).attr("y", lobe.cy - lobe.ry - 9)
+        .attr("x", titleX(lobe)).attr("y", lobe.cy - lobe.ry - 9)
         .text(lobe.title);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

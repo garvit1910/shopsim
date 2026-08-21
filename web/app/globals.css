@@ -1393,6 +1393,8 @@ button.adcard:hover { border-color: var(--line); }
 /* the head: a photograph, pushed back to texture so the photo's own mesh
    dots never compete with the lobe-coloured data nodes */
 .mindpage .mindbg image { opacity: .8; pointer-events: none; }
+/* the soft veil over the skull interior — the lattice recedes, the outline stays */
+.mindpage .mindbg .veil { pointer-events: none; }
 .mindpage .lobes ellipse {
   fill: color-mix(in srgb, var(--lobe) 7%, transparent);
   stroke: color-mix(in srgb, var(--lobe) 38%, transparent);
@@ -1400,8 +1402,8 @@ button.adcard:hover { border-color: var(--line); }
   filter: drop-shadow(0 0 12px color-mix(in srgb, var(--lobe) 16%, transparent));
 }
 .mindpage .lobelabel {
-  fill: var(--lobe); font: 700 14px var(--sans); text-anchor: middle;
-  paint-order: stroke; stroke: rgba(10, 11, 10, .9); stroke-width: 3px;
+  fill: var(--lobe); font: 800 17px var(--sans); letter-spacing: .01em; text-anchor: middle;
+  paint-order: stroke; stroke: rgba(10, 11, 10, .92); stroke-width: 4px;
 }
 .mindpage .mconn { stroke: rgba(233, 235, 230, .14); stroke-width: 1; stroke-dasharray: 2 4; }
 .mindpage .mconnlabel {
